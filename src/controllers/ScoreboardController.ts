@@ -22,4 +22,8 @@ export default class ScoreboardController {
     clone.splice(index, 1)
     this.players.next(clone)
   }
+
+  dispose() {
+    this.players.complete()
+  }
 }
