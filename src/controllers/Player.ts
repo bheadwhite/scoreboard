@@ -11,6 +11,14 @@ export default class Player {
   setName(newName: string) {
     this.name = newName
   }
+
+  getName() {
+    return this.name
+  }
+
+  getScore() {
+    return this.score
+  }
   increaseScore() {
     this.score = this.score + 1
   }

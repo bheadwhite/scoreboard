@@ -10,6 +10,6 @@ describe("scoreboardController should...", () => {
   test("default name of players should be Player <num>", () => {
     const scoreboard = new ScoreboardController(2)
 
-    expect(scoreboard.players[0].name).toBe("Player 1")
+    expect(scoreboard.players.getState()[0].name).toBe("Player 1")
   })
 })
