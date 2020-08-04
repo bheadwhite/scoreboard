@@ -1,6 +1,11 @@
+export interface PlayerInfoProps {
+  name: string
+  score: number
+}
+
 export default class Player {
   id: number
-  name: string
+  name: string = ""
   score: number = 0
 
   constructor(id: number, name: string) {
@@ -8,17 +13,13 @@ export default class Player {
     this.name = name
   }
 
-  setName(newName: string) {
+  setPlayerName(newName: string) {
     this.name = newName
   }
-
-  getName() {
-    return this.name
+  setPlayerScore(score: number) {
+    this.score = score
   }
 
-  getScore() {
-    return this.score
-  }
   increaseScore() {
     this.score = this.score + 1
   }

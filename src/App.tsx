@@ -8,7 +8,7 @@ function App() {
   return (
     <div className='App'>
       <Display />
-      <Button />
+      <Button>Add New Player</Button>
     </div>
   )
 }
