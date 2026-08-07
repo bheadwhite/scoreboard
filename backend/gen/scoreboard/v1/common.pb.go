@@ -209,6 +209,65 @@ func (MatchStatus) EnumDescriptor() ([]byte, []int) {
 	return file_scoreboard_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// Whether a player has actually agreed to play. Being named by whoever set the
+// match up only creates an invitation — nobody is dragged into a game, and only
+// PARTICIPANT_STATUS_JOINED players take teams, claim, concede, or appear in
+// the record.
+type ParticipantStatus int32
+
+const (
+	ParticipantStatus_PARTICIPANT_STATUS_UNSPECIFIED ParticipantStatus = 0
+	// Asked, but has not answered yet.
+	ParticipantStatus_PARTICIPANT_STATUS_INVITED ParticipantStatus = 1
+	// In. Holds a team and counts toward starting.
+	ParticipantStatus_PARTICIPANT_STATUS_JOINED ParticipantStatus = 2
+	// Said no. Kept rather than deleted so the invitation is not re-sent.
+	ParticipantStatus_PARTICIPANT_STATUS_DECLINED ParticipantStatus = 3
+)
+
+// Enum value maps for ParticipantStatus.
+var (
+	ParticipantStatus_name = map[int32]string{
+		0: "PARTICIPANT_STATUS_UNSPECIFIED",
+		1: "PARTICIPANT_STATUS_INVITED",
+		2: "PARTICIPANT_STATUS_JOINED",
+		3: "PARTICIPANT_STATUS_DECLINED",
+	}
+	ParticipantStatus_value = map[string]int32{
+		"PARTICIPANT_STATUS_UNSPECIFIED": 0,
+		"PARTICIPANT_STATUS_INVITED":     1,
+		"PARTICIPANT_STATUS_JOINED":      2,
+		"PARTICIPANT_STATUS_DECLINED":    3,
+	}
+)
+
+func (x ParticipantStatus) Enum() *ParticipantStatus {
+	p := new(ParticipantStatus)
+	*p = x
+	return p
+}
+
+func (x ParticipantStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ParticipantStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_scoreboard_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (ParticipantStatus) Type() protoreflect.EnumType {
+	return &file_scoreboard_v1_common_proto_enumTypes[3]
+}
+
+func (x ParticipantStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ParticipantStatus.Descriptor instead.
+func (ParticipantStatus) EnumDescriptor() ([]byte, []int) {
+	return file_scoreboard_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
 // A participant's outcome, written at finalization.
 type ParticipantResult int32
 
@@ -246,11 +305,11 @@ func (x ParticipantResult) String() string {
 }
 
 func (ParticipantResult) Descriptor() protoreflect.EnumDescriptor {
-	return file_scoreboard_v1_common_proto_enumTypes[3].Descriptor()
+	return file_scoreboard_v1_common_proto_enumTypes[4].Descriptor()
 }
 
 func (ParticipantResult) Type() protoreflect.EnumType {
-	return &file_scoreboard_v1_common_proto_enumTypes[3]
+	return &file_scoreboard_v1_common_proto_enumTypes[4]
 }
 
 func (x ParticipantResult) Number() protoreflect.EnumNumber {
@@ -259,7 +318,7 @@ func (x ParticipantResult) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ParticipantResult.Descriptor instead.
 func (ParticipantResult) EnumDescriptor() ([]byte, []int) {
-	return file_scoreboard_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_scoreboard_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
 // A player. Mirrors a Supabase auth user; the id is the Supabase user id.
@@ -727,12 +786,16 @@ type MatchParticipant struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	MatchId string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
 	User    *User                  `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	TeamId  string                 `protobuf:"bytes,3,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
-	Result  ParticipantResult      `protobuf:"varint,4,opt,name=result,proto3,enum=scoreboard.v1.ParticipantResult" json:"result,omitempty"`
+	// Empty until the player joins — an invitation carries no team.
+	TeamId string            `protobuf:"bytes,3,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
+	Result ParticipantResult `protobuf:"varint,4,opt,name=result,proto3,enum=scoreboard.v1.ParticipantResult" json:"result,omitempty"`
 	// When this player acknowledged the claim. Unset if they have not.
 	ConcededAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=conceded_at,json=concededAt,proto3" json:"conceded_at,omitempty"`
 	// When this player disputed the claim. Unset if they have not.
 	DisputedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=disputed_at,json=disputedAt,proto3" json:"disputed_at,omitempty"`
+	Status        ParticipantStatus      `protobuf:"varint,7,opt,name=status,proto3,enum=scoreboard.v1.ParticipantStatus" json:"status,omitempty"`
+	InvitedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=invited_at,json=invitedAt,proto3" json:"invited_at,omitempty"`
+	RespondedAt   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -809,6 +872,27 @@ func (x *MatchParticipant) GetDisputedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *MatchParticipant) GetStatus() ParticipantStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ParticipantStatus_PARTICIPANT_STATUS_UNSPECIFIED
+}
+
+func (x *MatchParticipant) GetInvitedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.InvitedAt
+	}
+	return nil
+}
+
+func (x *MatchParticipant) GetRespondedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RespondedAt
+	}
+	return nil
+}
+
 type Match struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -833,8 +917,14 @@ type Match struct {
 	AwaitingConcession []*User `protobuf:"bytes,15,rep,name=awaiting_concession,json=awaitingConcession,proto3" json:"awaiting_concession,omitempty"`
 	// Whether the caller personally still owes a concession.
 	ViewerOwesConcession bool `protobuf:"varint,16,opt,name=viewer_owes_concession,json=viewerOwesConcession,proto3" json:"viewer_owes_concession,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Players who have agreed to play. This is the roster that matters.
+	Joined []*MatchParticipant `protobuf:"bytes,17,rep,name=joined,proto3" json:"joined,omitempty"`
+	// Players who have been asked and have not answered.
+	Invited []*MatchParticipant `protobuf:"bytes,18,rep,name=invited,proto3" json:"invited,omitempty"`
+	// Whether the caller has an unanswered invitation to this match.
+	ViewerIsInvited bool `protobuf:"varint,19,opt,name=viewer_is_invited,json=viewerIsInvited,proto3" json:"viewer_is_invited,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Match) Reset() {
@@ -979,6 +1069,27 @@ func (x *Match) GetViewerOwesConcession() bool {
 	return false
 }
 
+func (x *Match) GetJoined() []*MatchParticipant {
+	if x != nil {
+		return x.Joined
+	}
+	return nil
+}
+
+func (x *Match) GetInvited() []*MatchParticipant {
+	if x != nil {
+		return x.Invited
+	}
+	return nil
+}
+
+func (x *Match) GetViewerIsInvited() bool {
+	if x != nil {
+		return x.ViewerIsInvited
+	}
+	return false
+}
+
 var File_scoreboard_v1_common_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_common_proto_rawDesc = "" +
@@ -1027,7 +1138,7 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bmatch_id\x18\x02 \x01(\tR\amatchId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
-	"\aordinal\x18\x04 \x01(\x05R\aordinal\"\xa3\x02\n" +
+	"\aordinal\x18\x04 \x01(\x05R\aordinal\"\xd7\x03\n" +
 	"\x10MatchParticipant\x12\x19\n" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12'\n" +
 	"\x04user\x18\x02 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x17\n" +
@@ -1036,7 +1147,11 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\vconceded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"concededAt\x12;\n" +
 	"\vdisputed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"disputedAt\"\xba\x06\n" +
+	"disputedAt\x128\n" +
+	"\x06status\x18\a \x01(\x0e2 .scoreboard.v1.ParticipantStatusR\x06status\x129\n" +
+	"\n" +
+	"invited_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tinvitedAt\x12=\n" +
+	"\fresponded_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vrespondedAt\"\xda\a\n" +
 	"\x05Match\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12'\n" +
@@ -1058,7 +1173,10 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x10concede_deadline\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0fconcedeDeadline\x12=\n" +
 	"\ffinalized_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vfinalizedAt\x12D\n" +
 	"\x13awaiting_concession\x18\x0f \x03(\v2\x13.scoreboard.v1.UserR\x12awaitingConcession\x124\n" +
-	"\x16viewer_owes_concession\x18\x10 \x01(\bR\x14viewerOwesConcession*X\n" +
+	"\x16viewer_owes_concession\x18\x10 \x01(\bR\x14viewerOwesConcession\x127\n" +
+	"\x06joined\x18\x11 \x03(\v2\x1f.scoreboard.v1.MatchParticipantR\x06joined\x129\n" +
+	"\ainvited\x18\x12 \x03(\v2\x1f.scoreboard.v1.MatchParticipantR\ainvited\x12*\n" +
+	"\x11viewer_is_invited\x18\x13 \x01(\bR\x0fviewerIsInvited*X\n" +
 	"\n" +
 	"FamilyRole\x12\x1b\n" +
 	"\x17FAMILY_ROLE_UNSPECIFIED\x10\x00\x12\x16\n" +
@@ -1078,7 +1196,12 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x14MATCH_STATUS_CLAIMED\x10\x03\x12\x16\n" +
 	"\x12MATCH_STATUS_FINAL\x10\x04\x12\x19\n" +
 	"\x15MATCH_STATUS_DISPUTED\x10\x05\x12\x19\n" +
-	"\x15MATCH_STATUS_CANCELED\x10\x06*\x90\x01\n" +
+	"\x15MATCH_STATUS_CANCELED\x10\x06*\x97\x01\n" +
+	"\x11ParticipantStatus\x12\"\n" +
+	"\x1ePARTICIPANT_STATUS_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aPARTICIPANT_STATUS_INVITED\x10\x01\x12\x1d\n" +
+	"\x19PARTICIPANT_STATUS_JOINED\x10\x02\x12\x1f\n" +
+	"\x1bPARTICIPANT_STATUS_DECLINED\x10\x03*\x90\x01\n" +
 	"\x11ParticipantResult\x12\"\n" +
 	"\x1ePARTICIPANT_RESULT_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aPARTICIPANT_RESULT_PENDING\x10\x01\x12\x1a\n" +
@@ -1098,52 +1221,58 @@ func file_scoreboard_v1_common_proto_rawDescGZIP() []byte {
 	return file_scoreboard_v1_common_proto_rawDescData
 }
 
-var file_scoreboard_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_scoreboard_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_scoreboard_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_scoreboard_v1_common_proto_goTypes = []any{
 	(FamilyRole)(0),               // 0: scoreboard.v1.FamilyRole
 	(ContractKind)(0),             // 1: scoreboard.v1.ContractKind
 	(MatchStatus)(0),              // 2: scoreboard.v1.MatchStatus
-	(ParticipantResult)(0),        // 3: scoreboard.v1.ParticipantResult
-	(*User)(nil),                  // 4: scoreboard.v1.User
-	(*Family)(nil),                // 5: scoreboard.v1.Family
-	(*FamilyMember)(nil),          // 6: scoreboard.v1.FamilyMember
-	(*Game)(nil),                  // 7: scoreboard.v1.Game
-	(*Contract)(nil),              // 8: scoreboard.v1.Contract
-	(*MatchTeam)(nil),             // 9: scoreboard.v1.MatchTeam
-	(*MatchParticipant)(nil),      // 10: scoreboard.v1.MatchParticipant
-	(*Match)(nil),                 // 11: scoreboard.v1.Match
-	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(ParticipantStatus)(0),        // 3: scoreboard.v1.ParticipantStatus
+	(ParticipantResult)(0),        // 4: scoreboard.v1.ParticipantResult
+	(*User)(nil),                  // 5: scoreboard.v1.User
+	(*Family)(nil),                // 6: scoreboard.v1.Family
+	(*FamilyMember)(nil),          // 7: scoreboard.v1.FamilyMember
+	(*Game)(nil),                  // 8: scoreboard.v1.Game
+	(*Contract)(nil),              // 9: scoreboard.v1.Contract
+	(*MatchTeam)(nil),             // 10: scoreboard.v1.MatchTeam
+	(*MatchParticipant)(nil),      // 11: scoreboard.v1.MatchParticipant
+	(*Match)(nil),                 // 12: scoreboard.v1.Match
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
 }
 var file_scoreboard_v1_common_proto_depIdxs = []int32{
-	12, // 0: scoreboard.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	12, // 1: scoreboard.v1.Family.created_at:type_name -> google.protobuf.Timestamp
+	13, // 0: scoreboard.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	13, // 1: scoreboard.v1.Family.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: scoreboard.v1.Family.viewer_role:type_name -> scoreboard.v1.FamilyRole
-	4,  // 3: scoreboard.v1.FamilyMember.user:type_name -> scoreboard.v1.User
+	5,  // 3: scoreboard.v1.FamilyMember.user:type_name -> scoreboard.v1.User
 	0,  // 4: scoreboard.v1.FamilyMember.role:type_name -> scoreboard.v1.FamilyRole
-	12, // 5: scoreboard.v1.FamilyMember.joined_at:type_name -> google.protobuf.Timestamp
-	12, // 6: scoreboard.v1.Game.created_at:type_name -> google.protobuf.Timestamp
+	13, // 5: scoreboard.v1.FamilyMember.joined_at:type_name -> google.protobuf.Timestamp
+	13, // 6: scoreboard.v1.Game.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 7: scoreboard.v1.Contract.kind:type_name -> scoreboard.v1.ContractKind
-	4,  // 8: scoreboard.v1.MatchParticipant.user:type_name -> scoreboard.v1.User
-	3,  // 9: scoreboard.v1.MatchParticipant.result:type_name -> scoreboard.v1.ParticipantResult
-	12, // 10: scoreboard.v1.MatchParticipant.conceded_at:type_name -> google.protobuf.Timestamp
-	12, // 11: scoreboard.v1.MatchParticipant.disputed_at:type_name -> google.protobuf.Timestamp
-	7,  // 12: scoreboard.v1.Match.game:type_name -> scoreboard.v1.Game
-	2,  // 13: scoreboard.v1.Match.status:type_name -> scoreboard.v1.MatchStatus
-	8,  // 14: scoreboard.v1.Match.contract:type_name -> scoreboard.v1.Contract
-	9,  // 15: scoreboard.v1.Match.teams:type_name -> scoreboard.v1.MatchTeam
-	10, // 16: scoreboard.v1.Match.participants:type_name -> scoreboard.v1.MatchParticipant
-	12, // 17: scoreboard.v1.Match.created_at:type_name -> google.protobuf.Timestamp
-	12, // 18: scoreboard.v1.Match.started_at:type_name -> google.protobuf.Timestamp
-	12, // 19: scoreboard.v1.Match.claimed_at:type_name -> google.protobuf.Timestamp
-	12, // 20: scoreboard.v1.Match.concede_deadline:type_name -> google.protobuf.Timestamp
-	12, // 21: scoreboard.v1.Match.finalized_at:type_name -> google.protobuf.Timestamp
-	4,  // 22: scoreboard.v1.Match.awaiting_concession:type_name -> scoreboard.v1.User
-	23, // [23:23] is the sub-list for method output_type
-	23, // [23:23] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	5,  // 8: scoreboard.v1.MatchParticipant.user:type_name -> scoreboard.v1.User
+	4,  // 9: scoreboard.v1.MatchParticipant.result:type_name -> scoreboard.v1.ParticipantResult
+	13, // 10: scoreboard.v1.MatchParticipant.conceded_at:type_name -> google.protobuf.Timestamp
+	13, // 11: scoreboard.v1.MatchParticipant.disputed_at:type_name -> google.protobuf.Timestamp
+	3,  // 12: scoreboard.v1.MatchParticipant.status:type_name -> scoreboard.v1.ParticipantStatus
+	13, // 13: scoreboard.v1.MatchParticipant.invited_at:type_name -> google.protobuf.Timestamp
+	13, // 14: scoreboard.v1.MatchParticipant.responded_at:type_name -> google.protobuf.Timestamp
+	8,  // 15: scoreboard.v1.Match.game:type_name -> scoreboard.v1.Game
+	2,  // 16: scoreboard.v1.Match.status:type_name -> scoreboard.v1.MatchStatus
+	9,  // 17: scoreboard.v1.Match.contract:type_name -> scoreboard.v1.Contract
+	10, // 18: scoreboard.v1.Match.teams:type_name -> scoreboard.v1.MatchTeam
+	11, // 19: scoreboard.v1.Match.participants:type_name -> scoreboard.v1.MatchParticipant
+	13, // 20: scoreboard.v1.Match.created_at:type_name -> google.protobuf.Timestamp
+	13, // 21: scoreboard.v1.Match.started_at:type_name -> google.protobuf.Timestamp
+	13, // 22: scoreboard.v1.Match.claimed_at:type_name -> google.protobuf.Timestamp
+	13, // 23: scoreboard.v1.Match.concede_deadline:type_name -> google.protobuf.Timestamp
+	13, // 24: scoreboard.v1.Match.finalized_at:type_name -> google.protobuf.Timestamp
+	5,  // 25: scoreboard.v1.Match.awaiting_concession:type_name -> scoreboard.v1.User
+	11, // 26: scoreboard.v1.Match.joined:type_name -> scoreboard.v1.MatchParticipant
+	11, // 27: scoreboard.v1.Match.invited:type_name -> scoreboard.v1.MatchParticipant
+	28, // [28:28] is the sub-list for method output_type
+	28, // [28:28] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_scoreboard_v1_common_proto_init() }
@@ -1156,7 +1285,7 @@ func file_scoreboard_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scoreboard_v1_common_proto_rawDesc), len(file_scoreboard_v1_common_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,

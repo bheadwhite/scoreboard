@@ -52,7 +52,11 @@ export function MatchView({
     <div className="stack stack--lg">
       {error && <Alert message={error} />}
 
-      {match.status === MatchStatus.LOBBY && (
+      {match.status === MatchStatus.LOBBY && match.viewerIsInvited && (
+        <InvitationStage presenter={presenter} match={match} busy={busy} />
+      )}
+
+      {match.status === MatchStatus.LOBBY && !match.viewerIsInvited && (
         <LobbyStage presenter={presenter} match={match} busy={busy} />
       )}
 
@@ -116,6 +120,22 @@ function LobbyStage({
 
       <TeamBuilder presenter={presenter} match={match} busy={busy} />
 
+      {match.invited.length > 0 && (
+        <div className="card stack">
+          <span className="section-label">Waiting to hear back</span>
+          <div className="waiting" style={{ justifyContent: "flex-start", marginTop: 0 }}>
+            {match.invited.map((p) => (
+              <span key={p.user?.id} className="waiting__name">
+                {displayName(p.user)}
+              </span>
+            ))}
+          </div>
+          <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
+            You can start without them — anyone who has not answered by then is counted out.
+          </p>
+        </div>
+      )}
+
       <div className="row">
         {inMatch ? (
           <button className="btn" onClick={() => void presenter.leave()} disabled={busy}>
@@ -134,10 +154,14 @@ function LobbyStage({
       <div className="bottombar">
         <button
           className="btn btn--primary btn--block btn--claim"
-          disabled={busy || !contractSet || match.participants.length < 2}
+          disabled={busy || !contractSet || match.joined.length < 2}
           onClick={() => void presenter.start_()}
         >
-          {contractSet ? "Start playing" : "Set the contract first"}
+          {!contractSet
+            ? "Set the contract first"
+            : match.joined.length < 2
+              ? "Waiting for someone to join"
+              : `Start with ${match.joined.length} players`}
         </button>
       </div>
     </div>
@@ -245,7 +269,7 @@ function TeamBuilder({
   const pairUp = () => {
     if (selected.length < 2) return;
 
-    const rest = match.participants
+    const rest = match.joined
       .map((p) => p.user?.id)
       .filter((id): id is string => id != null && !selected.includes(id));
 
@@ -259,7 +283,7 @@ function TeamBuilder({
   };
 
   const splitAll = () => {
-    const teams = match.participants
+    const teams = match.joined
       .map((p) => p.user?.id)
       .filter((id): id is string => id != null)
       .map((id) => ({ name: nameOf(match, id), userIds: [id] }));
@@ -281,7 +305,7 @@ function TeamBuilder({
       </p>
 
       <div className="stack" style={{ gap: 8 }}>
-        {match.participants.map((p) => {
+        {match.joined.map((p) => {
           const id = p.user?.id ?? "";
           const isSelected = selected.includes(id);
           return (
@@ -348,7 +372,7 @@ function InPlayStage({
             disabled={busy}
             onClick={() => void presenter.claimVictory(myTeam)}
           >
-            🏆 We won
+            {presenter.amSolo(match) ? "🏆 I won" : "🏆 We won"}
           </button>
         ) : (
           <button
@@ -610,7 +634,8 @@ function TeamList({ presenter, match }: { presenter: MatchPresenter; match: Matc
   return (
     <div className="stack">
       <span className="section-label">
-        {match.participants.length} player{match.participants.length === 1 ? "" : "s"}
+        {match.joined.length} player{match.joined.length === 1 ? "" : "s"}
+        {match.invited.length > 0 && ` · ${match.invited.length} still deciding`}
       </span>
       <div className="stack" style={{ gap: 8 }}>
         {teams.map((team) => {
@@ -651,7 +676,7 @@ function TeamList({ presenter, match }: { presenter: MatchPresenter; match: Matc
 }
 
 function nameOf(match: Match, userId: string): string {
-  const p = match.participants.find((x) => x.user?.id === userId);
+  const p = match.joined.find((x) => x.user?.id === userId);
   return displayName(p?.user);
 }
 
@@ -661,6 +686,66 @@ function teamNameFor(match: Match, userIds: string[]): string {
 
 function teamNameOf(match: Match, participant: MatchParticipant): string {
   const team = match.teams.find((t) => t.id === participant.teamId);
-  const size = match.participants.filter((p) => p.teamId === participant.teamId).length;
+  const size = match.joined.filter((p) => p.teamId === participant.teamId).length;
   return size > 1 ? (team?.name ?? "") : "solo";
+}
+
+/**
+ * What an invited player sees. Being named by whoever set the match up is a
+ * question, not an enrolment — so this is the whole screen until it is
+ * answered, and declining is as easy as accepting.
+ */
+function InvitationStage({
+  presenter,
+  match,
+  busy,
+}: {
+  presenter: MatchPresenter;
+  match: Match;
+  busy: boolean;
+}) {
+  const host = match.joined.find((p) => p.user?.id === match.createdBy)?.user;
+
+  return (
+    <>
+      <div className="claim">
+        <div className="claim__eyebrow">You are invited</div>
+        <div className="claim__who">{gameLabel(match.game)}</div>
+        <div className="claim__says">
+          {displayName(host)} wants you in
+          {match.contract && match.contract.kind !== ContractKind.UNSPECIFIED
+            ? ` — ${contractText(match.contract)}`
+            : ""}
+        </div>
+        {match.joined.length > 0 && (
+          <div className="waiting">
+            {match.joined.map((p) => (
+              <span key={p.user?.id} className="waiting__name">
+                {displayName(p.user)}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bottombar">
+        <div className="stack" style={{ gap: 8 }}>
+          <button
+            className="btn btn--primary btn--block btn--claim"
+            disabled={busy}
+            onClick={() => void presenter.join()}
+          >
+            I am in
+          </button>
+          <button
+            className="btn btn--ghost btn--block btn--sm"
+            disabled={busy}
+            onClick={() => void presenter.decline()}
+          >
+            No thanks
+          </button>
+        </div>
+      </div>
+    </>
+  );
 }

@@ -75,7 +75,7 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
 
       <section className="stack">
         <div className="row row--between">
-          <span className="section-label">Who is playing?</span>
+          <span className="section-label">Who do you want to invite?</span>
           <span className="section-label num">
             {count}
             {game ? ` / ${game.maxPlayers}` : ""}
@@ -109,7 +109,8 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
           })}
         </div>
         <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
-          You are already in. Anyone you miss can join from the lobby.
+          They each decide whether to play. You can start once at least one person accepts,
+          and anyone you miss can still join from the lobby.
         </p>
       </section>
 
@@ -125,11 +126,11 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
             ? "Setting up…"
             : !game
               ? "Pick a game"
-              : count < game.minPlayers
-                ? `Needs ${game.minPlayers} players`
                 : count > game.maxPlayers
                   ? `Too many for ${game.name}`
-                  : `Start ${gameLabel(game)}`}
+                  : count > 1
+                    ? `Invite ${count - 1} to ${gameLabel(game)}`
+                    : `Set up ${gameLabel(game)}`}
         </button>
       </div>
     </div>

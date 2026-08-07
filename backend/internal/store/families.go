@@ -88,7 +88,13 @@ func (s *Store) JoinFamily(ctx context.Context, userID, code string) (model.Fami
 			FROM families WHERE invite_code = $1`
 		if err := tx.QueryRow(ctx, find, code).
 			Scan(&f.ID, &f.Name, &f.InviteCode, &f.OwnerID, &f.CreatedAt); err != nil {
-			return noRows(err)
+			if errors.Is(err, pgx.ErrNoRows) {
+				// A bare "not found" is useless on the one screen where people
+				// arrive from a shared link and cannot tell whether they
+				// mistyped, the code was rotated, or the link is stale.
+				return fmt.Errorf("%w: that invite code does not match any family — it may have been changed since the link was shared", ErrNotFound)
+			}
+			return err
 		}
 
 		const join = `

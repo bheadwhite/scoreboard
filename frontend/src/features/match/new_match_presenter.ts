@@ -87,17 +87,22 @@ export class NewMatchPresenter {
   }
 
   /**
-   * The creator counts toward the player total but is not in the invited set,
-   * so headcount is invited + 1.
+   * Everyone invited, plus you. These are the people who *could* play — each
+   * still decides for themselves, so this is a ceiling rather than a roster.
    */
   playerCount(): number {
     return this._invited.get().size + 1;
   }
 
+  /**
+   * A lobby only needs a game and somebody to ask. The minimum-players rule
+   * belongs at kickoff, once people have actually accepted — blocking here
+   * would mean you could not even send the invitations.
+   */
   canCreate(games: Game[]): boolean {
     const game = this.selectedGame(games);
     if (!game) return false;
-    return this.playerCount() >= game.minPlayers && this.playerCount() <= game.maxPlayers;
+    return this.playerCount() <= game.maxPlayers;
   }
 
   get addingGameBroadcast() {

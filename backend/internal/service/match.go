@@ -78,6 +78,51 @@ func (svc *MatchService) LeaveMatch(
 	return connect.NewResponse(&scoreboardv1.LeaveMatchResponse{Match: matchPB(m, uid)}), nil
 }
 
+// DeclineMatch turns down an invitation. Only the invited player can do this
+// for themselves — nobody declines on somebody else's behalf.
+func (svc *MatchService) DeclineMatch(
+	ctx context.Context, req *connect.Request[scoreboardv1.DeclineMatchRequest],
+) (*connect.Response[scoreboardv1.DeclineMatchResponse], error) {
+	uid, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if _, _, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid); err != nil {
+		return nil, err
+	}
+
+	out, err := svc.store.DeclineMatch(ctx, req.Msg.GetMatchId(), uid)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return connect.NewResponse(&scoreboardv1.DeclineMatchResponse{Match: matchPB(out, uid)}), nil
+}
+
+func (svc *MatchService) InvitePlayers(
+	ctx context.Context, req *connect.Request[scoreboardv1.InvitePlayersRequest],
+) (*connect.Response[scoreboardv1.InvitePlayersResponse], error) {
+	uid, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m, _, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
+	if err != nil {
+		return nil, err
+	}
+	if !isParticipant(m, uid) {
+		return nil, denied("only players in this match can invite others")
+	}
+	if len(req.Msg.GetUserIds()) == 0 {
+		return nil, invalid("pick someone to invite")
+	}
+
+	out, err := svc.store.InvitePlayers(ctx, req.Msg.GetMatchId(), req.Msg.GetUserIds())
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return connect.NewResponse(&scoreboardv1.InvitePlayersResponse{Match: matchPB(out, uid)}), nil
+}
+
 func (svc *MatchService) SetTeams(
 	ctx context.Context, req *connect.Request[scoreboardv1.SetTeamsRequest],
 ) (*connect.Response[scoreboardv1.SetTeamsResponse], error) {
@@ -351,8 +396,10 @@ func (svc *MatchService) ListMatches(
 	return connect.NewResponse(&scoreboardv1.ListMatchesResponse{Matches: matchesPB(matches, uid)}), nil
 }
 
+// isParticipant reports whether the caller actually joined. Holding an
+// unanswered invitation does not make you a player.
 func isParticipant(m model.Match, userID string) bool {
-	for _, p := range m.Participants {
+	for _, p := range m.JoinedParticipants() {
 		if p.User.ID == userID {
 			return true
 		}

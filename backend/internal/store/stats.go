@@ -15,12 +15,16 @@ import (
 //
 // gameID narrows to a single game; zero since means all time.
 func (s *Store) LoadParticipations(ctx context.Context, familyID, gameID string, since time.Time) ([]stats.Participation, error) {
+	// Only players who joined and were given an outcome count. Someone who
+	// declined the invitation, or never answered it, has a 'pending' row on the
+	// match and must not be handed a loss for a game they did not play.
 	q := `
 		SELECT p.match_id, p.user_id, coalesce(p.team_id::text, ''), m.game_id, p.result,
 		       (extract(epoch FROM m.finalized_at) * 1000000)::bigint
 		FROM match_participants p
 		JOIN matches m ON m.id = p.match_id
-		WHERE m.family_id = $1 AND m.status = 'final' AND m.finalized_at IS NOT NULL`
+		WHERE m.family_id = $1 AND m.status = 'final' AND m.finalized_at IS NOT NULL
+		  AND p.status = 'joined' AND p.result IN ('win', 'loss')`
 	args := []any{familyID}
 
 	if gameID != "" {

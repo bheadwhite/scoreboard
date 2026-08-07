@@ -55,6 +55,17 @@ export function FamilyView({
           <p style={{ margin: "8px 0 14px", color: "var(--ink-dim)", fontSize: "0.88rem" }}>
             Anyone with this code can join {family.name}.
           </p>
+          <div className="stack" style={{ gap: 8 }}>
+            <button
+              className="btn btn--primary btn--block"
+              onClick={() => void presenter.shareInvite(family.name, family.inviteCode)}
+            >
+              {copied ? "Link copied ✓" : "Share invite link"}
+            </button>
+            <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--ink-faint)", wordBreak: "break-all" }}>
+              {presenter.inviteLink(family.inviteCode)}
+            </p>
+          </div>
           <div className="row">
             <button
               className="btn btn--block"

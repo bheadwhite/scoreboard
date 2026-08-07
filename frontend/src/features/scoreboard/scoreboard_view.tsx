@@ -49,7 +49,10 @@ export function ScoreboardView({
   }, [presenter]);
 
   const needsYou = live.filter((m) => m.viewerOwesConcession);
-  const otherLive = live.filter((m) => !m.viewerOwesConcession);
+  const invitations = live.filter((m) => m.viewerIsInvited && !m.viewerOwesConcession);
+  const otherLive = live.filter(
+    (m) => !m.viewerOwesConcession && !m.viewerIsInvited,
+  );
 
   return (
     <div className="stack stack--lg">
@@ -57,6 +60,14 @@ export function ScoreboardView({
         <section className="stack">
           {needsYou.map((match) => (
             <ClaimCallout key={match.id} match={match} onOpen={() => app.openMatch(match.id)} />
+          ))}
+        </section>
+      )}
+
+      {invitations.length > 0 && (
+        <section className="stack">
+          {invitations.map((match) => (
+            <InviteCallout key={match.id} match={match} onOpen={() => app.openMatch(match.id)} />
           ))}
         </section>
       )}
@@ -225,6 +236,26 @@ function ClaimCallout({ match, onOpen }: { match: Match; onOpen: () => void }) {
   );
 }
 
+/** An unanswered invitation, surfaced where it will actually be seen. */
+function InviteCallout({ match, onOpen }: { match: Match; onOpen: () => void }) {
+  return (
+    <div className="claim">
+      <div className="claim__eyebrow">You are invited</div>
+      <div className="claim__who">{gameLabel(match.game)}</div>
+      <div className="claim__says">
+        {match.joined.length} {match.joined.length === 1 ? "player is" : "players are"} in
+      </div>
+      <button
+        className="btn btn--primary btn--block btn--claim"
+        style={{ marginTop: 16 }}
+        onClick={onOpen}
+      >
+        Respond
+      </button>
+    </div>
+  );
+}
+
 function LiveRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const claimed = match.status === MatchStatus.CLAIMED;
   const disputed = match.status === MatchStatus.DISPUTED;
@@ -234,7 +265,7 @@ function LiveRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
       <span className="rowbtn__main">
         <span className="rowbtn__name">{gameLabel(match.game)}</span>
         <span className="rowbtn__meta">
-          {match.participants.length} playing · {contractText(match.contract)}
+          {match.joined.length} playing · {contractText(match.contract)}
         </span>
       </span>
       {disputed ? (

@@ -16,6 +16,10 @@ service MatchService {
   rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
   rpc JoinMatch(JoinMatchRequest) returns (JoinMatchResponse);
   rpc LeaveMatch(LeaveMatchRequest) returns (LeaveMatchResponse);
+  // Turn down an invitation. The match carries on without you.
+  rpc DeclineMatch(DeclineMatchRequest) returns (DeclineMatchResponse);
+  // Ask more players once the lobby already exists.
+  rpc InvitePlayers(InvitePlayersRequest) returns (InvitePlayersResponse);
   // Replaces the whole team layout while still in the lobby.
   rpc SetTeams(SetTeamsRequest) returns (SetTeamsResponse);
   rpc SetContract(SetContractRequest) returns (SetContractResponse);
@@ -41,7 +45,8 @@ service MatchService {
 message CreateMatchRequest {
   string family_id = 1;
   string game_id = 2;
-  // Optional: seed the lobby with these players alongside the creator.
+  // Players to invite. They are asked, not added — each decides for themselves,
+  // and the match can start without the ones who never answer.
   repeated string invite_user_ids = 3;
 }
 
@@ -62,6 +67,23 @@ message LeaveMatchRequest {
 }
 
 message LeaveMatchResponse {
+  Match match = 1;
+}
+
+message DeclineMatchRequest {
+  string match_id = 1;
+}
+
+message DeclineMatchResponse {
+  Match match = 1;
+}
+
+message InvitePlayersRequest {
+  string match_id = 1;
+  repeated string user_ids = 2;
+}
+
+message InvitePlayersResponse {
   Match match = 1;
 }
 

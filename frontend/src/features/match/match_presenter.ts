@@ -178,6 +178,15 @@ export class MatchPresenter {
   join = (): Promise<void> =>
     this._run(() => this._domain.api.matches.joinMatch({ matchId: this._matchId }));
 
+  /** Turn down an invitation. The match carries on without you. */
+  decline = (): Promise<void> =>
+    this._run(() => this._domain.api.matches.declineMatch({ matchId: this._matchId }));
+
+  invitePlayers = (userIds: string[]): Promise<void> =>
+    this._run(() =>
+      this._domain.api.matches.invitePlayers({ matchId: this._matchId, userIds }),
+    );
+
   leave = (): Promise<void> =>
     this._run(() => this._domain.api.matches.leaveMatch({ matchId: this._matchId }));
 
@@ -242,7 +251,7 @@ export class MatchPresenter {
     return match.teams.map((team) => ({
       id: team.id,
       name: team.name,
-      players: match.participants.filter((p) => p.teamId === team.id),
+      players: match.joined.filter((p) => p.teamId === team.id),
     }));
   }
 
@@ -250,11 +259,26 @@ export class MatchPresenter {
   myTeamId(match: Match): string | null {
     const me = this._domain.session.user?.id;
     if (!me) return null;
-    return match.participants.find((p) => p.user?.id === me)?.teamId ?? null;
+    return match.joined.find((p) => p.user?.id === me)?.teamId ?? null;
   }
 
   amIn(match: Match): boolean {
     return this.myTeamId(match) !== null;
+  }
+
+  /** How many players share the signed-in player's side. */
+  myTeamSize(match: Match): number {
+    const team = this.myTeamId(match);
+    if (!team) return 0;
+    return match.joined.filter((p) => p.teamId === team).length;
+  }
+
+  /**
+   * True when the signed-in player is a team of one — which is every
+   * free-for-all game, and the reason claiming cannot just say "we".
+   */
+  amSolo(match: Match): boolean {
+    return this.myTeamSize(match) === 1;
   }
 
   /**
@@ -289,13 +313,38 @@ export class MatchPresenter {
 }
 
 /**
- * Connect errors carry a readable message; anything else falls back to
- * something a person can act on.
+ * Connect prefixes every error with its code, so the raw message reads
+ * "not found: that invite code does not match any family". The code is noise to
+ * a player, but only the known codes are stripped — a blanket "text before the
+ * first colon" rule would eat legitimate content like "Points to win: 500".
  */
+const CONNECT_CODE = new RegExp(
+  "^\\[?(" +
+    [
+      "canceled",
+      "unknown",
+      "invalid[ _]argument",
+      "deadline[ _]exceeded",
+      "not[ _]found",
+      "already[ _]exists",
+      "permission[ _]denied",
+      "resource[ _]exhausted",
+      "failed[ _]precondition",
+      "aborted",
+      "out[ _]of[ _]range",
+      "unimplemented",
+      "internal",
+      "unavailable",
+      "data[ _]loss",
+      "unauthenticated",
+    ].join("|") +
+    ")\\]?:\\s*",
+  "i",
+);
+
 export function messageOf(e: unknown): string {
   if (e instanceof Error && e.message) {
-    // Connect prefixes messages with the code, e.g. "failed_precondition: …".
-    const stripped = e.message.replace(/^\[?[a-z_]+\]?:\s*/i, "");
+    const stripped = e.message.replace(CONNECT_CODE, "").trim();
     return stripped || e.message;
   }
   return "Something went wrong. Try again.";

@@ -243,3 +243,82 @@ func TestDevLoginRouteExistsWhenEnabled(t *testing.T) {
 		t.Error("dev login should set a session cookie")
 	}
 }
+
+func TestSafeNextRejectsOpenRedirects(t *testing.T) {
+	// This value lands in a Location header after a genuine Google consent
+	// screen, so anything that escapes the origin is a phishing primitive.
+	hostile := []string{
+		"//evil.com",
+		"//evil.com/path",
+		"https://evil.com",
+		"http://evil.com",
+		"/\\evil.com",
+		"/\\/evil.com",
+		"javascript:alert(1)",
+		"evil.com",
+		"/path\r\nLocation: https://evil.com",
+		"/path\nSet-Cookie: x=y",
+		"//evil.com/redirect?to=https://evil.com",
+	}
+	for _, next := range hostile {
+		if got := safeNext(next); got != "/" {
+			t.Errorf("safeNext(%q) = %q — must fall back to /", next, got)
+		}
+	}
+}
+
+func TestSafeNextKeepsSameOriginPaths(t *testing.T) {
+	for _, next := range []string{"/", "/join/ABC123", "/match/1?x=2", "/a/b/c"} {
+		if got := safeNext(next); got != next {
+			t.Errorf("safeNext(%q) = %q — a same-origin path should survive", next, got)
+		}
+	}
+}
+
+func TestSafeNextRejectsOverlyLongValues(t *testing.T) {
+	if got := safeNext("/" + strings.Repeat("a", 600)); got != "/" {
+		t.Errorf("expected fallback for an over-long path, got %q", got)
+	}
+}
+
+func TestStartCarriesNextInsideTheSignedState(t *testing.T) {
+	a := testAuth(t)
+
+	req := httptest.NewRequest("GET", "/auth/google/start?next=/join/ABC123", nil)
+	rec := httptest.NewRecorder()
+	a.start(rec, req)
+
+	var state string
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == oauthCookie {
+			state = c.Value
+		}
+	}
+	claims := a.verify(state)
+	if claims == nil {
+		t.Fatal("state cookie did not verify")
+	}
+	if claims.Next != "/join/ABC123" {
+		t.Errorf("expected the destination in the signed state, got %q", claims.Next)
+	}
+	// It must NOT ride in the query string to Google, where it could be edited.
+	if strings.Contains(rec.Header().Get("Location"), "join/ABC123") {
+		t.Error("the destination must not travel in the Google redirect URL")
+	}
+}
+
+func TestStartSanitizesAHostileNext(t *testing.T) {
+	a := testAuth(t)
+
+	req := httptest.NewRequest("GET", "/auth/google/start?next=//evil.com", nil)
+	rec := httptest.NewRecorder()
+	a.start(rec, req)
+
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == oauthCookie {
+			if got := a.verify(c.Value); got == nil || got.Next != "/" {
+				t.Errorf("hostile next was not sanitized: %+v", got)
+			}
+		}
+	}
+}

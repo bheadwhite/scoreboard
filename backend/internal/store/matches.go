@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -78,6 +79,7 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 
 	partRows, err := q.Query(ctx, `
 		SELECT p.match_id, p.team_id, p.result, p.conceded_at, p.disputed_at,
+		       p.status, p.invited_at, p.responded_at,
 		       u.id, u.display_name, u.avatar_url, u.created_at
 		FROM match_participants p
 		JOIN users u ON u.id = p.user_id
@@ -92,6 +94,7 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 	for partRows.Next() {
 		var p model.MatchParticipant
 		if err := partRows.Scan(&p.MatchID, &p.TeamID, &p.Result, &p.ConcededAt, &p.DisputedAt,
+			&p.Status, &p.InvitedAt, &p.RespondedAt,
 			&p.User.ID, &p.User.DisplayName, &p.User.AvatarURL, &p.User.CreatedAt); err != nil {
 			return err
 		}
@@ -100,18 +103,32 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 	return partRows.Err()
 }
 
-// addParticipant puts a user in a match with a team of their own. Every
-// participant always has a team, including in free-for-all games; SetTeams
-// regroups them later if the game calls for it.
-func addParticipant(ctx context.Context, tx pgx.Tx, matchID, userID string) error {
-	var exists bool
-	if err := tx.QueryRow(ctx,
-		`SELECT EXISTS (SELECT 1 FROM match_participants WHERE match_id = $1 AND user_id = $2)`,
-		matchID, userID).Scan(&exists); err != nil {
+// invitePlayer records an invitation. No team is created — an invitation is a
+// question, and the roster only gains a member when it is answered.
+func invitePlayer(ctx context.Context, tx pgx.Tx, matchID, userID string) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO match_participants (match_id, user_id, status)
+		VALUES ($1, $2, 'invited')
+		ON CONFLICT (match_id, user_id) DO NOTHING`, matchID, userID)
+	return err
+}
+
+// joinParticipant marks a player as in and gives them a team of their own.
+// Every joined participant always has a team, including in free-for-all games;
+// SetTeams regroups them later if the game calls for it.
+func joinParticipant(ctx context.Context, tx pgx.Tx, matchID, userID string) error {
+	var status string
+	var teamID *string
+	err := tx.QueryRow(ctx,
+		`SELECT status, team_id FROM match_participants WHERE match_id = $1 AND user_id = $2`,
+		matchID, userID).Scan(&status, &teamID)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		// Not invited, but a family member walking up to a lobby can join.
+	case err != nil:
 		return err
-	}
-	if exists {
-		return nil // joining twice is a no-op
+	case status == model.InviteJoined && teamID != nil:
+		return nil // already in; joining twice is a no-op
 	}
 
 	var name string
@@ -129,16 +146,21 @@ func addParticipant(ctx context.Context, tx pgx.Tx, matchID, userID string) erro
 		return err
 	}
 
-	var teamID string
+	var newTeam string
 	if err := tx.QueryRow(ctx,
 		`INSERT INTO match_teams (match_id, name, ordinal) VALUES ($1, $2, $3) RETURNING id`,
-		matchID, name, ordinal).Scan(&teamID); err != nil {
+		matchID, name, ordinal).Scan(&newTeam); err != nil {
 		return err
 	}
 
-	_, err := tx.Exec(ctx,
-		`INSERT INTO match_participants (match_id, user_id, team_id) VALUES ($1, $2, $3)`,
-		matchID, userID, teamID)
+	_, err = tx.Exec(ctx, `
+		INSERT INTO match_participants (match_id, user_id, team_id, status, responded_at)
+		VALUES ($1, $2, $3, 'joined', now())
+		ON CONFLICT (match_id, user_id) DO UPDATE SET
+			team_id      = EXCLUDED.team_id,
+			status       = 'joined',
+			responded_at = now()`,
+		matchID, userID, newTeam)
 	return err
 }
 
@@ -153,7 +175,8 @@ func (s *Store) CreateMatch(ctx context.Context, familyID, gameID, createdBy str
 			return err
 		}
 
-		if err := addParticipant(ctx, tx, id, createdBy); err != nil {
+		// The creator is in by definition; everybody else is asked.
+		if err := joinParticipant(ctx, tx, id, createdBy); err != nil {
 			return err
 		}
 		for _, uid := range invite {
@@ -170,7 +193,7 @@ func (s *Store) CreateMatch(ctx context.Context, familyID, gameID, createdBy str
 			if !member {
 				return fmt.Errorf("%w: user %s is not in this family", ErrConflict, uid)
 			}
-			if err := addParticipant(ctx, tx, id, uid); err != nil {
+			if err := invitePlayer(ctx, tx, id, uid); err != nil {
 				return err
 			}
 		}
@@ -194,9 +217,88 @@ func (s *Store) JoinMatch(ctx context.Context, matchID, userID string) (model.Ma
 		if m.Status != model.StatusLobby {
 			return fmt.Errorf("%w: this match has already started", ErrConflict)
 		}
-		if err := addParticipant(ctx, tx, matchID, userID); err != nil {
+		if err := joinParticipant(ctx, tx, matchID, userID); err != nil {
 			return err
 		}
+		out, err = loadMatch(ctx, tx, matchID)
+		return err
+	})
+
+	return out, err
+}
+
+// DeclineMatch turns down an invitation. The row is kept rather than deleted so
+// the same person is not re-invited by a later bulk invite, and so the lobby can
+// show who has actually answered.
+func (s *Store) DeclineMatch(ctx context.Context, matchID, userID string) (model.Match, error) {
+	var out model.Match
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		m, err := loadMatch(ctx, tx, matchID)
+		if err != nil {
+			return err
+		}
+		if m.Status != model.StatusLobby {
+			return fmt.Errorf("%w: this match has already started", ErrConflict)
+		}
+
+		var teamID *string
+		err = tx.QueryRow(ctx, `
+			UPDATE match_participants
+			SET status = 'declined', responded_at = now(), team_id = NULL
+			WHERE match_id = $1 AND user_id = $2
+			RETURNING team_id`, matchID, userID).Scan(&teamID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("%w: you were not invited to this match", ErrConflict)
+		}
+		if err != nil {
+			return err
+		}
+
+		// Drop any team the player held, if declining emptied it.
+		if _, err := tx.Exec(ctx, `
+			DELETE FROM match_teams t
+			WHERE t.match_id = $1
+			  AND NOT EXISTS (SELECT 1 FROM match_participants p WHERE p.team_id = t.id)`,
+			matchID); err != nil {
+			return err
+		}
+
+		out, err = loadMatch(ctx, tx, matchID)
+		return err
+	})
+
+	return out, err
+}
+
+// InvitePlayers asks more people once the lobby exists.
+func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []string) (model.Match, error) {
+	var out model.Match
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		m, err := loadMatch(ctx, tx, matchID)
+		if err != nil {
+			return err
+		}
+		if m.Status != model.StatusLobby {
+			return fmt.Errorf("%w: this match has already started", ErrConflict)
+		}
+
+		for _, uid := range userIDs {
+			var member bool
+			if err := tx.QueryRow(ctx,
+				`SELECT EXISTS (SELECT 1 FROM family_members WHERE family_id = $1 AND user_id = $2)`,
+				m.FamilyID, uid).Scan(&member); err != nil {
+				return err
+			}
+			if !member {
+				return fmt.Errorf("%w: that player is not in this family", ErrConflict)
+			}
+			if err := invitePlayer(ctx, tx, matchID, uid); err != nil {
+				return err
+			}
+		}
+
 		out, err = loadMatch(ctx, tx, matchID)
 		return err
 	})
@@ -268,12 +370,13 @@ func (s *Store) SetTeams(ctx context.Context, matchID string, teams []TeamAssign
 				assigned[uid] = true
 			}
 		}
-		for _, p := range m.Participants {
+		joined := m.JoinedParticipants()
+		for _, p := range joined {
 			if !assigned[p.User.ID] {
 				return fmt.Errorf("%w: %s is not on a team", ErrConflict, p.User.DisplayName)
 			}
 		}
-		if len(assigned) != len(m.Participants) {
+		if len(assigned) != len(joined) {
 			return fmt.Errorf("%w: team roster includes someone who is not in this match", ErrConflict)
 		}
 		if len(teams) < 2 {
@@ -348,11 +451,22 @@ func (s *Store) StartMatch(ctx context.Context, matchID string) (model.Match, er
 		if m.Status != model.StatusLobby {
 			return fmt.Errorf("%w: this match has already started", ErrConflict)
 		}
-		if len(m.Participants) < 2 {
-			return fmt.Errorf("%w: a match needs at least two players", ErrConflict)
+		// Only players who accepted count. Outstanding invitations do not hold
+		// the game up — whoever showed up plays.
+		joined := m.JoinedParticipants()
+		if len(joined) < 2 {
+			return fmt.Errorf("%w: at least two players need to join before you can start", ErrConflict)
 		}
 		if len(m.Teams) < 2 {
 			return fmt.Errorf("%w: a match needs at least two sides", ErrConflict)
+		}
+
+		// An unanswered invitation at kickoff is a no.
+		if _, err := tx.Exec(ctx, `
+			UPDATE match_participants
+			SET status = 'declined', responded_at = now(), team_id = NULL
+			WHERE match_id = $1 AND status = 'invited'`, matchID); err != nil {
+			return err
 		}
 		if m.Contract.Kind == "" || m.Contract.Kind == model.ContractUnspecified {
 			return fmt.Errorf("%w: set the winning contract before starting", ErrConflict)
@@ -733,10 +847,12 @@ func finalizeIfExpired(ctx context.Context, tx pgx.Tx, matchID string) error {
 // finalize writes the result onto every participant and closes the match. This
 // is the only place a match becomes part of the permanent record.
 func finalize(ctx context.Context, tx pgx.Tx, matchID, winningTeamID string) error {
+	// Only the joined roster reaches the record; a declined invitation is not a
+	// loss.
 	if _, err := tx.Exec(ctx, `
 		UPDATE match_participants
 		SET result = CASE WHEN team_id = $2 THEN 'win' ELSE 'loss' END
-		WHERE match_id = $1`, matchID, winningTeamID); err != nil {
+		WHERE match_id = $1 AND status = 'joined'`, matchID, winningTeamID); err != nil {
 		return err
 	}
 	_, err := tx.Exec(ctx, `
@@ -746,8 +862,10 @@ func finalize(ctx context.Context, tx pgx.Tx, matchID, winningTeamID string) err
 	return err
 }
 
+// participant finds a player who actually joined. Someone holding an
+// unanswered invitation is not in the match and cannot claim or concede.
 func participant(m model.Match, userID string) (model.MatchParticipant, bool) {
-	for _, p := range m.Participants {
+	for _, p := range m.JoinedParticipants() {
 		if p.User.ID == userID {
 			return p, true
 		}

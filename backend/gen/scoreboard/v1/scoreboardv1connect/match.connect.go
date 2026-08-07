@@ -40,6 +40,12 @@ const (
 	MatchServiceJoinMatchProcedure = "/scoreboard.v1.MatchService/JoinMatch"
 	// MatchServiceLeaveMatchProcedure is the fully-qualified name of the MatchService's LeaveMatch RPC.
 	MatchServiceLeaveMatchProcedure = "/scoreboard.v1.MatchService/LeaveMatch"
+	// MatchServiceDeclineMatchProcedure is the fully-qualified name of the MatchService's DeclineMatch
+	// RPC.
+	MatchServiceDeclineMatchProcedure = "/scoreboard.v1.MatchService/DeclineMatch"
+	// MatchServiceInvitePlayersProcedure is the fully-qualified name of the MatchService's
+	// InvitePlayers RPC.
+	MatchServiceInvitePlayersProcedure = "/scoreboard.v1.MatchService/InvitePlayers"
 	// MatchServiceSetTeamsProcedure is the fully-qualified name of the MatchService's SetTeams RPC.
 	MatchServiceSetTeamsProcedure = "/scoreboard.v1.MatchService/SetTeams"
 	// MatchServiceSetContractProcedure is the fully-qualified name of the MatchService's SetContract
@@ -73,6 +79,10 @@ type MatchServiceClient interface {
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
+	// Turn down an invitation. The match carries on without you.
+	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
+	// Ask more players once the lobby already exists.
+	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
 	// Replaces the whole team layout while still in the lobby.
 	SetTeams(context.Context, *connect.Request[v1.SetTeamsRequest]) (*connect.Response[v1.SetTeamsResponse], error)
 	SetContract(context.Context, *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error)
@@ -119,6 +129,18 @@ func NewMatchServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+MatchServiceLeaveMatchProcedure,
 			connect.WithSchema(matchServiceMethods.ByName("LeaveMatch")),
+			connect.WithClientOptions(opts...),
+		),
+		declineMatch: connect.NewClient[v1.DeclineMatchRequest, v1.DeclineMatchResponse](
+			httpClient,
+			baseURL+MatchServiceDeclineMatchProcedure,
+			connect.WithSchema(matchServiceMethods.ByName("DeclineMatch")),
+			connect.WithClientOptions(opts...),
+		),
+		invitePlayers: connect.NewClient[v1.InvitePlayersRequest, v1.InvitePlayersResponse](
+			httpClient,
+			baseURL+MatchServiceInvitePlayersProcedure,
+			connect.WithSchema(matchServiceMethods.ByName("InvitePlayers")),
 			connect.WithClientOptions(opts...),
 		),
 		setTeams: connect.NewClient[v1.SetTeamsRequest, v1.SetTeamsResponse](
@@ -189,6 +211,8 @@ type matchServiceClient struct {
 	createMatch    *connect.Client[v1.CreateMatchRequest, v1.CreateMatchResponse]
 	joinMatch      *connect.Client[v1.JoinMatchRequest, v1.JoinMatchResponse]
 	leaveMatch     *connect.Client[v1.LeaveMatchRequest, v1.LeaveMatchResponse]
+	declineMatch   *connect.Client[v1.DeclineMatchRequest, v1.DeclineMatchResponse]
+	invitePlayers  *connect.Client[v1.InvitePlayersRequest, v1.InvitePlayersResponse]
 	setTeams       *connect.Client[v1.SetTeamsRequest, v1.SetTeamsResponse]
 	setContract    *connect.Client[v1.SetContractRequest, v1.SetContractResponse]
 	startMatch     *connect.Client[v1.StartMatchRequest, v1.StartMatchResponse]
@@ -214,6 +238,16 @@ func (c *matchServiceClient) JoinMatch(ctx context.Context, req *connect.Request
 // LeaveMatch calls scoreboard.v1.MatchService.LeaveMatch.
 func (c *matchServiceClient) LeaveMatch(ctx context.Context, req *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error) {
 	return c.leaveMatch.CallUnary(ctx, req)
+}
+
+// DeclineMatch calls scoreboard.v1.MatchService.DeclineMatch.
+func (c *matchServiceClient) DeclineMatch(ctx context.Context, req *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error) {
+	return c.declineMatch.CallUnary(ctx, req)
+}
+
+// InvitePlayers calls scoreboard.v1.MatchService.InvitePlayers.
+func (c *matchServiceClient) InvitePlayers(ctx context.Context, req *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error) {
+	return c.invitePlayers.CallUnary(ctx, req)
 }
 
 // SetTeams calls scoreboard.v1.MatchService.SetTeams.
@@ -271,6 +305,10 @@ type MatchServiceHandler interface {
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
+	// Turn down an invitation. The match carries on without you.
+	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
+	// Ask more players once the lobby already exists.
+	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
 	// Replaces the whole team layout while still in the lobby.
 	SetTeams(context.Context, *connect.Request[v1.SetTeamsRequest]) (*connect.Response[v1.SetTeamsResponse], error)
 	SetContract(context.Context, *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error)
@@ -313,6 +351,18 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 		MatchServiceLeaveMatchProcedure,
 		svc.LeaveMatch,
 		connect.WithSchema(matchServiceMethods.ByName("LeaveMatch")),
+		connect.WithHandlerOptions(opts...),
+	)
+	matchServiceDeclineMatchHandler := connect.NewUnaryHandler(
+		MatchServiceDeclineMatchProcedure,
+		svc.DeclineMatch,
+		connect.WithSchema(matchServiceMethods.ByName("DeclineMatch")),
+		connect.WithHandlerOptions(opts...),
+	)
+	matchServiceInvitePlayersHandler := connect.NewUnaryHandler(
+		MatchServiceInvitePlayersProcedure,
+		svc.InvitePlayers,
+		connect.WithSchema(matchServiceMethods.ByName("InvitePlayers")),
 		connect.WithHandlerOptions(opts...),
 	)
 	matchServiceSetTeamsHandler := connect.NewUnaryHandler(
@@ -383,6 +433,10 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 			matchServiceJoinMatchHandler.ServeHTTP(w, r)
 		case MatchServiceLeaveMatchProcedure:
 			matchServiceLeaveMatchHandler.ServeHTTP(w, r)
+		case MatchServiceDeclineMatchProcedure:
+			matchServiceDeclineMatchHandler.ServeHTTP(w, r)
+		case MatchServiceInvitePlayersProcedure:
+			matchServiceInvitePlayersHandler.ServeHTTP(w, r)
 		case MatchServiceSetTeamsProcedure:
 			matchServiceSetTeamsHandler.ServeHTTP(w, r)
 		case MatchServiceSetContractProcedure:
@@ -422,6 +476,14 @@ func (UnimplementedMatchServiceHandler) JoinMatch(context.Context, *connect.Requ
 
 func (UnimplementedMatchServiceHandler) LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.LeaveMatch is not implemented"))
+}
+
+func (UnimplementedMatchServiceHandler) DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.DeclineMatch is not implemented"))
+}
+
+func (UnimplementedMatchServiceHandler) InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.InvitePlayers is not implemented"))
 }
 
 func (UnimplementedMatchServiceHandler) SetTeams(context.Context, *connect.Request[v1.SetTeamsRequest]) (*connect.Response[v1.SetTeamsResponse], error) {

@@ -105,6 +105,54 @@ export class FamiliesPresenter {
     });
   };
 
+  /**
+   * Joins using a code from an invite link rather than the typed-in field.
+   * Resolves to the family id on success so the caller can select it.
+   */
+  joinWithCode = async (code: string): Promise<string | null> => {
+    let joined: string | null = null;
+    await this._act(async () => {
+      const res = await this._domain.api.families.joinFamily({ inviteCode: code.trim() });
+      await this._domain.store.families.load(true);
+      if (res.family) {
+        this._domain.store.members.invalidate(res.family.id);
+        joined = res.family.id;
+      }
+    });
+    return joined;
+  };
+
+  /** The link you text to a relative. */
+  inviteLink(code: string): string {
+    return `${window.location.origin}/join/${encodeURIComponent(code)}`;
+  }
+
+  /**
+   * Hands the invite to the OS share sheet where there is one — on a phone that
+   * is the whole point, since the link goes straight into a text message. Falls
+   * back to the clipboard on desktop.
+   */
+  shareInvite = async (familyName: string, code: string): Promise<void> => {
+    const url = this.inviteLink(code);
+    const text = `Join ${familyName} on Scoreboard`;
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "Scoreboard", text, url });
+        return;
+      } catch {
+        // Dismissing the share sheet throws; fall through to copying.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      this._copied.set(true);
+      setTimeout(() => this._copied.set(false), 2000);
+    } catch {
+      // Clipboard access can be refused; the code is on screen anyway.
+    }
+  };
+
   regenerateCode = (familyId: string): Promise<void> =>
     this._act(async () => {
       await this._domain.api.families.regenerateInviteCode({ familyId });

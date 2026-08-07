@@ -99,6 +99,20 @@ enum MatchStatus {
   MATCH_STATUS_CANCELED = 6;
 }
 
+// Whether a player has actually agreed to play. Being named by whoever set the
+// match up only creates an invitation — nobody is dragged into a game, and only
+// PARTICIPANT_STATUS_JOINED players take teams, claim, concede, or appear in
+// the record.
+enum ParticipantStatus {
+  PARTICIPANT_STATUS_UNSPECIFIED = 0;
+  // Asked, but has not answered yet.
+  PARTICIPANT_STATUS_INVITED = 1;
+  // In. Holds a team and counts toward starting.
+  PARTICIPANT_STATUS_JOINED = 2;
+  // Said no. Kept rather than deleted so the invitation is not re-sent.
+  PARTICIPANT_STATUS_DECLINED = 3;
+}
+
 // A participant's outcome, written at finalization.
 enum ParticipantResult {
   PARTICIPANT_RESULT_UNSPECIFIED = 0;
@@ -119,12 +133,17 @@ message MatchTeam {
 message MatchParticipant {
   string match_id = 1;
   User user = 2;
+  // Empty until the player joins — an invitation carries no team.
   string team_id = 3;
   ParticipantResult result = 4;
   // When this player acknowledged the claim. Unset if they have not.
   google.protobuf.Timestamp conceded_at = 5;
   // When this player disputed the claim. Unset if they have not.
   google.protobuf.Timestamp disputed_at = 6;
+
+  ParticipantStatus status = 7;
+  google.protobuf.Timestamp invited_at = 8;
+  google.protobuf.Timestamp responded_at = 9;
 }
 
 message Match {
@@ -155,4 +174,11 @@ message Match {
   repeated User awaiting_concession = 15;
   // Whether the caller personally still owes a concession.
   bool viewer_owes_concession = 16;
+
+  // Players who have agreed to play. This is the roster that matters.
+  repeated MatchParticipant joined = 17;
+  // Players who have been asked and have not answered.
+  repeated MatchParticipant invited = 18;
+  // Whether the caller has an unanswered invitation to this match.
+  bool viewer_is_invited = 19;
 }

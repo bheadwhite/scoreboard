@@ -5,6 +5,11 @@ import { runtimeConfig } from "../runtime_config.js";
 
 export type AuthStatus = "loading" | "signed_out" | "signed_in";
 
+/** Where the browser is now, as a same-origin path. */
+function currentPath(): string {
+  return window.location.pathname + window.location.search;
+}
+
 /**
  * Human-readable versions of the `?auth_error=` codes the server redirects back
  * with when the OAuth round trip fails.
@@ -103,14 +108,22 @@ export class Session {
     );
   }
 
-  /** Full-page redirect into the server's OAuth flow. */
-  signInWithGoogle(): void {
-    window.location.href = "/auth/google/start";
+  /**
+   * Full-page redirect into the server's OAuth flow.
+   *
+   * The current location travels along so an invite link still works when the
+   * recipient is signed out — otherwise the round trip through Google would
+   * drop them on the home screen with the invite code gone. The server only
+   * honours same-origin paths.
+   */
+  signInWithGoogle(next: string = currentPath()): void {
+    window.location.href = `/auth/google/start?next=${encodeURIComponent(next)}`;
   }
 
   /** Local development only; the route does not exist in production. */
-  devLogin(name: string): void {
-    window.location.href = `/auth/dev/login?name=${encodeURIComponent(name)}`;
+  devLogin(name: string, next: string = currentPath()): void {
+    window.location.href =
+      `/auth/dev/login?name=${encodeURIComponent(name)}&next=${encodeURIComponent(next)}`;
   }
 
   async signOut(): Promise<void> {

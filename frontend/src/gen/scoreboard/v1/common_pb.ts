@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/common.proto.
  */
 export const file_scoreboard_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSJsCgRVc2VyEgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRISCgphdmF0YXJfdXJsGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIr8BCgZGYW1pbHkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtpbnZpdGVfY29kZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIuCgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgt2aWV3ZXJfcm9sZRgGIAEoDjIZLnNjb3JlYm9hcmQudjEuRmFtaWx5Um9sZRIUCgxtZW1iZXJfY291bnQYByABKAUiiQEKDEZhbWlseU1lbWJlchIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEicKBHJvbGUYAiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSLQoJam9pbmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKwAQoER2FtZRIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRINCgVlbW9qaRgEIAEoCRISCgp0ZWFtX2Jhc2VkGAUgASgIEhMKC21pbl9wbGF5ZXJzGAYgASgFEhMKC21heF9wbGF5ZXJzGAcgASgFEi4KCmNyZWF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKCENvbnRyYWN0EikKBGtpbmQYASABKA4yGy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0S2luZBIOCgZ0YXJnZXQYAiABKAUSDgoGZGV0YWlsGAMgASgJIkgKCU1hdGNoVGVhbRIKCgJpZBgBIAEoCRIQCghtYXRjaF9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB29yZGluYWwYBCABKAUi7AEKEE1hdGNoUGFydGljaXBhbnQSEAoIbWF0Y2hfaWQYASABKAkSIQoEdXNlchgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIPCgd0ZWFtX2lkGAMgASgJEjAKBnJlc3VsdBgEIAEoDjIgLnNjb3JlYm9hcmQudjEuUGFydGljaXBhbnRSZXN1bHQSLwoLY29uY2VkZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2Rpc3B1dGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCL6BAoFTWF0Y2gSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEiEKBGdhbWUYAyABKAsyEy5zY29yZWJvYXJkLnYxLkdhbWUSKgoGc3RhdHVzGAQgASgOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIpCghjb250cmFjdBgFIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QSEgoKY3JlYXRlZF9ieRgGIAEoCRInCgV0ZWFtcxgHIAMoCzIYLnNjb3JlYm9hcmQudjEuTWF0Y2hUZWFtEjUKDHBhcnRpY2lwYW50cxgIIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpzdGFydGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjbGFpbWVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJjbGFpbWVkX2J5X3RlYW1faWQYDCABKAkSNAoQY29uY2VkZV9kZWFkbGluZRgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZmluYWxpemVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwChNhd2FpdGluZ19jb25jZXNzaW9uGA8gAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEh4KFnZpZXdlcl9vd2VzX2NvbmNlc3Npb24YECABKAgqWAoKRmFtaWx5Um9sZRIbChdGQU1JTFlfUk9MRV9VTlNQRUNJRklFRBAAEhYKEkZBTUlMWV9ST0xFX01FTUJFUhABEhUKEUZBTUlMWV9ST0xFX09XTkVSEAIqxAEKDENvbnRyYWN0S2luZBIdChlDT05UUkFDVF9LSU5EX1VOU1BFQ0lGSUVEEAASIAocQ09OVFJBQ1RfS0lORF9GSVJTVF9UT19TQ09SRRABEhkKFUNPTlRSQUNUX0tJTkRfQkVTVF9PRhACEh8KG0NPTlRSQUNUX0tJTkRfTEFTVF9TVEFORElORxADEh0KGUNPTlRSQUNUX0tJTkRfU0lOR0xFX0dBTUUQBBIYChRDT05UUkFDVF9LSU5EX0NVU1RPTRAFKskBCgtNYXRjaFN0YXR1cxIcChhNQVRDSF9TVEFUVVNfVU5TUEVDSUZJRUQQABIWChJNQVRDSF9TVEFUVVNfTE9CQlkQARIcChhNQVRDSF9TVEFUVVNfSU5fUFJPR1JFU1MQAhIYChRNQVRDSF9TVEFUVVNfQ0xBSU1FRBADEhYKEk1BVENIX1NUQVRVU19GSU5BTBAEEhkKFU1BVENIX1NUQVRVU19ESVNQVVRFRBAFEhkKFU1BVENIX1NUQVRVU19DQU5DRUxFRBAGKpABChFQYXJ0aWNpcGFudFJlc3VsdBIiCh5QQVJUSUNJUEFOVF9SRVNVTFRfVU5TUEVDSUZJRUQQABIeChpQQVJUSUNJUEFOVF9SRVNVTFRfUEVORElORxABEhoKFlBBUlRJQ0lQQU5UX1JFU1VMVF9XSU4QAhIbChdQQVJUSUNJUEFOVF9SRVNVTFRfTE9TUxADQr4BChFjb20uc2NvcmVib2FyZC52MUILQ29tbW9uUHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSJsCgRVc2VyEgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRISCgphdmF0YXJfdXJsGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIr8BCgZGYW1pbHkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtpbnZpdGVfY29kZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIuCgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgt2aWV3ZXJfcm9sZRgGIAEoDjIZLnNjb3JlYm9hcmQudjEuRmFtaWx5Um9sZRIUCgxtZW1iZXJfY291bnQYByABKAUiiQEKDEZhbWlseU1lbWJlchIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEicKBHJvbGUYAiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSLQoJam9pbmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKwAQoER2FtZRIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRINCgVlbW9qaRgEIAEoCRISCgp0ZWFtX2Jhc2VkGAUgASgIEhMKC21pbl9wbGF5ZXJzGAYgASgFEhMKC21heF9wbGF5ZXJzGAcgASgFEi4KCmNyZWF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKCENvbnRyYWN0EikKBGtpbmQYASABKA4yGy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0S2luZBIOCgZ0YXJnZXQYAiABKAUSDgoGZGV0YWlsGAMgASgJIkgKCU1hdGNoVGVhbRIKCgJpZBgBIAEoCRIQCghtYXRjaF9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB29yZGluYWwYBCABKAUigAMKEE1hdGNoUGFydGljaXBhbnQSEAoIbWF0Y2hfaWQYASABKAkSIQoEdXNlchgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIPCgd0ZWFtX2lkGAMgASgJEjAKBnJlc3VsdBgEIAEoDjIgLnNjb3JlYm9hcmQudjEuUGFydGljaXBhbnRSZXN1bHQSLwoLY29uY2VkZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2Rpc3B1dGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgZzdGF0dXMYByABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50U3RhdHVzEi4KCmludml0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDHJlc3BvbmRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi+AUKBU1hdGNoEgoKAmlkGAEgASgJEhEKCWZhbWlseV9pZBgCIAEoCRIhCgRnYW1lGAMgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEioKBnN0YXR1cxgEIAEoDjIaLnNjb3JlYm9hcmQudjEuTWF0Y2hTdGF0dXMSKQoIY29udHJhY3QYBSABKAsyFy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0EhIKCmNyZWF0ZWRfYnkYBiABKAkSJwoFdGVhbXMYByADKAsyGC5zY29yZWJvYXJkLnYxLk1hdGNoVGVhbRI1CgxwYXJ0aWNpcGFudHMYCCADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKc3RhcnRlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2xhaW1lZF9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSY2xhaW1lZF9ieV90ZWFtX2lkGAwgASgJEjQKEGNvbmNlZGVfZGVhZGxpbmUYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGZpbmFsaXplZF9hdBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoTYXdhaXRpbmdfY29uY2Vzc2lvbhgPIAMoCzITLnNjb3JlYm9hcmQudjEuVXNlchIeChZ2aWV3ZXJfb3dlc19jb25jZXNzaW9uGBAgASgIEi8KBmpvaW5lZBgRIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIwCgdpbnZpdGVkGBIgAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50EhkKEXZpZXdlcl9pc19pbnZpdGVkGBMgASgIKlgKCkZhbWlseVJvbGUSGwoXRkFNSUxZX1JPTEVfVU5TUEVDSUZJRUQQABIWChJGQU1JTFlfUk9MRV9NRU1CRVIQARIVChFGQU1JTFlfUk9MRV9PV05FUhACKsQBCgxDb250cmFjdEtpbmQSHQoZQ09OVFJBQ1RfS0lORF9VTlNQRUNJRklFRBAAEiAKHENPTlRSQUNUX0tJTkRfRklSU1RfVE9fU0NPUkUQARIZChVDT05UUkFDVF9LSU5EX0JFU1RfT0YQAhIfChtDT05UUkFDVF9LSU5EX0xBU1RfU1RBTkRJTkcQAxIdChlDT05UUkFDVF9LSU5EX1NJTkdMRV9HQU1FEAQSGAoUQ09OVFJBQ1RfS0lORF9DVVNUT00QBSrJAQoLTWF0Y2hTdGF0dXMSHAoYTUFUQ0hfU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSTUFUQ0hfU1RBVFVTX0xPQkJZEAESHAoYTUFUQ0hfU1RBVFVTX0lOX1BST0dSRVNTEAISGAoUTUFUQ0hfU1RBVFVTX0NMQUlNRUQQAxIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfRElTUFVURUQQBRIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiqXAQoRUGFydGljaXBhbnRTdGF0dXMSIgoeUEFSVElDSVBBTlRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHgoaUEFSVElDSVBBTlRfU1RBVFVTX0lOVklURUQQARIdChlQQVJUSUNJUEFOVF9TVEFUVVNfSk9JTkVEEAISHwobUEFSVElDSVBBTlRfU1RBVFVTX0RFQ0xJTkVEEAMqkAEKEVBhcnRpY2lwYW50UmVzdWx0EiIKHlBBUlRJQ0lQQU5UX1JFU1VMVF9VTlNQRUNJRklFRBAAEh4KGlBBUlRJQ0lQQU5UX1JFU1VMVF9QRU5ESU5HEAESGgoWUEFSVElDSVBBTlRfUkVTVUxUX1dJThACEhsKF1BBUlRJQ0lQQU5UX1JFU1VMVF9MT1NTEANCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtDb21tb25Qcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * A player. Mirrors a Supabase auth user; the id is the Supabase user id.
@@ -269,6 +269,8 @@ export type MatchParticipant = Message<"scoreboard.v1.MatchParticipant"> & {
   user?: User | undefined;
 
   /**
+   * Empty until the player joins — an invitation carries no team.
+   *
    * @generated from field: string team_id = 3;
    */
   teamId: string;
@@ -291,6 +293,21 @@ export type MatchParticipant = Message<"scoreboard.v1.MatchParticipant"> & {
    * @generated from field: google.protobuf.Timestamp disputed_at = 6;
    */
   disputedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: scoreboard.v1.ParticipantStatus status = 7;
+   */
+  status: ParticipantStatus;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp invited_at = 8;
+   */
+  invitedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp responded_at = 9;
+   */
+  respondedAt?: Timestamp | undefined;
 };
 
 /**
@@ -393,6 +410,27 @@ export type Match = Message<"scoreboard.v1.Match"> & {
    * @generated from field: bool viewer_owes_concession = 16;
    */
   viewerOwesConcession: boolean;
+
+  /**
+   * Players who have agreed to play. This is the roster that matters.
+   *
+   * @generated from field: repeated scoreboard.v1.MatchParticipant joined = 17;
+   */
+  joined: MatchParticipant[];
+
+  /**
+   * Players who have been asked and have not answered.
+   *
+   * @generated from field: repeated scoreboard.v1.MatchParticipant invited = 18;
+   */
+  invited: MatchParticipant[];
+
+  /**
+   * Whether the caller has an unanswered invitation to this match.
+   *
+   * @generated from field: bool viewer_is_invited = 19;
+   */
+  viewerIsInvited: boolean;
 };
 
 /**
@@ -551,6 +589,48 @@ export const MatchStatusSchema: GenEnum<MatchStatus> = /*@__PURE__*/
   enumDesc(file_scoreboard_v1_common, 2);
 
 /**
+ * Whether a player has actually agreed to play. Being named by whoever set the
+ * match up only creates an invitation — nobody is dragged into a game, and only
+ * PARTICIPANT_STATUS_JOINED players take teams, claim, concede, or appear in
+ * the record.
+ *
+ * @generated from enum scoreboard.v1.ParticipantStatus
+ */
+export enum ParticipantStatus {
+  /**
+   * @generated from enum value: PARTICIPANT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Asked, but has not answered yet.
+   *
+   * @generated from enum value: PARTICIPANT_STATUS_INVITED = 1;
+   */
+  INVITED = 1,
+
+  /**
+   * In. Holds a team and counts toward starting.
+   *
+   * @generated from enum value: PARTICIPANT_STATUS_JOINED = 2;
+   */
+  JOINED = 2,
+
+  /**
+   * Said no. Kept rather than deleted so the invitation is not re-sent.
+   *
+   * @generated from enum value: PARTICIPANT_STATUS_DECLINED = 3;
+   */
+  DECLINED = 3,
+}
+
+/**
+ * Describes the enum scoreboard.v1.ParticipantStatus.
+ */
+export const ParticipantStatusSchema: GenEnum<ParticipantStatus> = /*@__PURE__*/
+  enumDesc(file_scoreboard_v1_common, 3);
+
+/**
  * A participant's outcome, written at finalization.
  *
  * @generated from enum scoreboard.v1.ParticipantResult
@@ -581,5 +661,5 @@ export enum ParticipantResult {
  * Describes the enum scoreboard.v1.ParticipantResult.
  */
 export const ParticipantResultSchema: GenEnum<ParticipantResult> = /*@__PURE__*/
-  enumDesc(file_scoreboard_v1_common, 3);
+  enumDesc(file_scoreboard_v1_common, 4);
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ContractKind } from "../gen/scoreboard/v1/common_pb.js";
+import { messageOf } from "../features/match/match_presenter.js";
 import {
   contractText,
   initials,
@@ -92,5 +93,28 @@ describe("rivalryVerdict", () => {
   it("handles a clean sweep in either direction", () => {
     expect(rivalryVerdict(4, 0, "Dad")).toBe("Undefeated against Dad.");
     expect(rivalryVerdict(0, 4, "Dad")).toBe("Dad has never lost to you.");
+  });
+});
+
+describe("messageOf", () => {
+  it("strips the Connect code prefix", () => {
+    expect(messageOf(new Error("not found: that invite code does not match any family"))).toBe(
+      "that invite code does not match any family",
+    );
+    expect(messageOf(new Error("failed_precondition: this match has already started"))).toBe(
+      "this match has already started",
+    );
+    expect(messageOf(new Error("[permission_denied]: only the family organizer can do that"))).toBe(
+      "only the family organizer can do that",
+    );
+  });
+
+  it("leaves a message with an ordinary colon alone", () => {
+    expect(messageOf(new Error("Points to win: 500"))).toBe("Points to win: 500");
+  });
+
+  it("falls back for anything that is not an Error", () => {
+    expect(messageOf(undefined)).toBe("Something went wrong. Try again.");
+    expect(messageOf("a bare string")).toBe("Something went wrong. Try again.");
   });
 });

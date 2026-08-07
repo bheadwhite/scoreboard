@@ -76,6 +76,15 @@ type Contract struct {
 	Detail string
 }
 
+// Participant status values. Being named by whoever set the match up creates
+// an invitation, not a participant — only StatusJoined players hold a team,
+// count toward starting, claim, concede, or reach the record.
+const (
+	InviteInvited  = "invited"
+	InviteJoined   = "joined"
+	InviteDeclined = "declined"
+)
+
 // Result values, written at finalization.
 const (
 	ResultPending = "pending"
@@ -93,12 +102,20 @@ type MatchTeam struct {
 type MatchParticipant struct {
 	MatchID string
 	User    User
-	// Nil only in the window between joining a lobby and teams being set.
+	// Nil while the player is still only invited — an invitation carries no team.
 	TeamID     *string
 	Result     string
 	ConcededAt *time.Time
 	DisputedAt *time.Time
+
+	// InviteInvited, InviteJoined or InviteDeclined.
+	Status      string
+	InvitedAt   time.Time
+	RespondedAt *time.Time
 }
+
+// Joined reports whether this player actually agreed to play.
+func (p MatchParticipant) Joined() bool { return p.Status == InviteJoined }
 
 type Match struct {
 	ID        string
@@ -122,14 +139,38 @@ type Match struct {
 	Participants []MatchParticipant
 }
 
+// JoinedParticipants returns the players who agreed to play. This is the
+// roster every rule operates on; invitations that were never answered are not
+// part of the match.
+func (m *Match) JoinedParticipants() []MatchParticipant {
+	var out []MatchParticipant
+	for _, p := range m.Participants {
+		if p.Joined() {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// PendingInvites returns players who have been asked and have not answered.
+func (m *Match) PendingInvites() []MatchParticipant {
+	var out []MatchParticipant
+	for _, p := range m.Participants {
+		if p.Status == InviteInvited {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // OpposingParticipants returns the players who owe the claiming team a
-// response: everyone not on the claimed team.
+// response: every joined player not on the claimed team.
 func (m *Match) OpposingParticipants() []MatchParticipant {
 	if m.ClaimedByTeamID == nil {
 		return nil
 	}
 	var out []MatchParticipant
-	for _, p := range m.Participants {
+	for _, p := range m.JoinedParticipants() {
 		if p.TeamID == nil || *p.TeamID != *m.ClaimedByTeamID {
 			out = append(out, p)
 		}

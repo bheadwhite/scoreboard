@@ -20,6 +20,17 @@ export type Route =
 const FAMILY_KEY = "scoreboard.familyId";
 
 /**
+ * Reads an invite code out of a /join/CODE link.
+ *
+ * The code lives in the URL rather than storage so it survives being opened in
+ * any browser, and so the sign-in round trip can carry it back verbatim.
+ */
+function inviteCodeFromLocation(): string {
+  const match = window.location.pathname.match(/^\/join\/([A-Za-z0-9]{4,12})\/?$/);
+  return match?.[1]?.toUpperCase() ?? "";
+}
+
+/**
  * AppPresenter is the root of the presenter tree. It creates the domain, owns
  * every feature presenter, holds navigation and the current family, and
  * coordinates the refreshes that cross screens — finalizing a match changes the
@@ -37,6 +48,8 @@ export class AppPresenter {
   private readonly _familyId = new Signal<string>("");
   private readonly _boot = new Runner<void>(undefined);
   private readonly _error = new Signal<string | null>(null);
+  /** An invite code from a /join/CODE link, pending the user accepting it. */
+  private readonly _invite = new Signal<string>("");
 
   // Dynamic children, kept in sync with the route.
   private readonly _match = new Signal<MatchPresenter | null>(null);
@@ -70,6 +83,10 @@ export class AppPresenter {
     return this._error.broadcast;
   }
 
+  get inviteBroadcast() {
+    return this._invite.broadcast;
+  }
+
   get matchBroadcast() {
     return this._match.broadcast;
   }
@@ -98,6 +115,8 @@ export class AppPresenter {
     return this._boot.execute(async () => {
       this._error.set(null);
       this.domain.session.init();
+      // Captured before anything else touches the URL.
+      this._invite.set(inviteCodeFromLocation());
 
       // The session is an HttpOnly cookie, so the only way to know whether we
       // are signed in is to ask. A rejected GetMe means no valid session.
@@ -117,6 +136,25 @@ export class AppPresenter {
       if (pick) this.selectFamily(pick.id);
     });
   }
+
+  /**
+   * Accepts a pending invite. Clears the code and the /join/ URL either way, so
+   * a refresh does not re-run a join that already happened.
+   */
+  acceptInvite = async (): Promise<void> => {
+    const code = this._invite.get();
+    if (!code) return;
+
+    const familyId = await this.families.joinWithCode(code);
+    this._invite.set("");
+    window.history.replaceState({}, "", "/");
+    if (familyId) this.selectFamily(familyId);
+  };
+
+  dismissInvite = (): void => {
+    this._invite.set("");
+    window.history.replaceState({}, "", "/");
+  };
 
   selectFamily(familyId: string): void {
     if (!familyId) return;
@@ -240,6 +278,7 @@ export class AppPresenter {
     this._familyId.dispose();
     this._boot.dispose();
     this._error.dispose();
+    this._invite.dispose();
     this._match.dispose();
     this._newMatch.dispose();
     this._profile.dispose();

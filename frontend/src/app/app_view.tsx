@@ -6,6 +6,7 @@ import { useAppPresenter } from "./app_context.js";
 import type { Route } from "./app_presenter.js";
 import { SignInView } from "../features/auth/sign_in_view.js";
 import { FamilyView } from "../features/families/family_view.js";
+import { InviteView } from "../features/families/invite_view.js";
 import { OnboardingView } from "../features/families/onboarding_view.js";
 import { HeadToHeadView } from "../features/head_to_head/head_to_head_view.js";
 import { MatchView } from "../features/match/match_view.js";
@@ -26,6 +27,7 @@ export function AppView() {
   const familyId = useSignalValue(app.familyIdBroadcast);
   const route = useSignalValue(app.routeBroadcast);
   const error = useSignalValue(app.errorBroadcast);
+  const invite = useSignalValue(app.inviteBroadcast);
 
   if (authStatus === "loading" || bootStatus === Status.PENDING) {
     return <div className="async-loading">Loading…</div>;
@@ -33,6 +35,12 @@ export function AppView() {
 
   if (authStatus === "signed_out") {
     return <SignInView session={app.session} />;
+  }
+
+  // An invite outranks onboarding: someone who followed a link should be asked
+  // about that family, not prompted to start one of their own.
+  if (invite) {
+    return <InviteView app={app} />;
   }
 
   if (families.length === 0) {

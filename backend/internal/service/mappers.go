@@ -213,14 +213,30 @@ func teamPB(t model.MatchTeam) *scoreboardv1.MatchTeam {
 	}
 }
 
+func participantStatusPB(s string) scoreboardv1.ParticipantStatus {
+	switch s {
+	case model.InviteInvited:
+		return scoreboardv1.ParticipantStatus_PARTICIPANT_STATUS_INVITED
+	case model.InviteJoined:
+		return scoreboardv1.ParticipantStatus_PARTICIPANT_STATUS_JOINED
+	case model.InviteDeclined:
+		return scoreboardv1.ParticipantStatus_PARTICIPANT_STATUS_DECLINED
+	default:
+		return scoreboardv1.ParticipantStatus_PARTICIPANT_STATUS_UNSPECIFIED
+	}
+}
+
 func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 	return &scoreboardv1.MatchParticipant{
-		MatchId:    p.MatchID,
-		User:       userPB(p.User),
-		TeamId:     deref(p.TeamID),
-		Result:     resultPB(p.Result),
-		ConcededAt: tsp(p.ConcededAt),
-		DisputedAt: tsp(p.DisputedAt),
+		MatchId:     p.MatchID,
+		User:        userPB(p.User),
+		TeamId:      deref(p.TeamID),
+		Result:      resultPB(p.Result),
+		ConcededAt:  tsp(p.ConcededAt),
+		DisputedAt:  tsp(p.DisputedAt),
+		Status:      participantStatusPB(p.Status),
+		InvitedAt:   ts(p.InvitedAt),
+		RespondedAt: tsp(p.RespondedAt),
 	}
 }
 
@@ -249,6 +265,16 @@ func matchPB(m model.Match, viewerID string) *scoreboardv1.Match {
 	}
 	for _, p := range m.Participants {
 		out.Participants = append(out.Participants, participantPB(p))
+	}
+	// Split rosters so the UI never has to re-derive who is actually playing.
+	for _, p := range m.JoinedParticipants() {
+		out.Joined = append(out.Joined, participantPB(p))
+	}
+	for _, p := range m.PendingInvites() {
+		out.Invited = append(out.Invited, participantPB(p))
+		if p.User.ID == viewerID {
+			out.ViewerIsInvited = true
+		}
 	}
 	for _, p := range m.AwaitingConcession() {
 		out.AwaitingConcession = append(out.AwaitingConcession, userPB(p.User))

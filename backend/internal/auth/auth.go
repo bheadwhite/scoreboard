@@ -143,7 +143,11 @@ type claims struct {
 	UserID   string `json:"uid,omitempty"`
 	Nonce    string `json:"n,omitempty"`
 	Provider string `json:"p,omitempty"`
-	Expires  int64  `json:"exp"`
+	// Where to land after a successful sign-in. Travels inside the signed
+	// state cookie rather than the query string, so it cannot be swapped
+	// between leaving for Google and coming back.
+	Next    string `json:"next,omitempty"`
+	Expires int64  `json:"exp"`
 }
 
 // sign produces "<base64url payload>.<base64url hmac>".
@@ -186,6 +190,28 @@ func (a *Auth) verify(token string) *claims {
 		return nil
 	}
 	return &c
+}
+
+// safeNext sanitizes a post-sign-in destination down to a same-origin path.
+//
+// This value ends up in a Location header, so anything less strict is an open
+// redirect: an attacker sends "sign in and you will be sent to evil.com", the
+// victim sees a genuine Google consent screen, and lands somewhere hostile
+// already trusting the flow. Only a plain absolute path is allowed —
+// protocol-relative ("//evil.com"), scheme-bearing, and backslash forms are all
+// rejected rather than repaired.
+func safeNext(next string) string {
+	const fallback = "/"
+	if next == "" || len(next) > 512 {
+		return fallback
+	}
+	if !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+		return fallback
+	}
+	if strings.ContainsAny(next, "\\\r\n") || strings.Contains(next, "://") {
+		return fallback
+	}
+	return next
 }
 
 func nonce() (string, error) {
@@ -322,7 +348,12 @@ func (a *Auth) start(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, "server_error")
 		return
 	}
-	state, err := a.sign(claims{Nonce: n, Provider: "google", Expires: time.Now().Add(oauthMaxAge).UnixMilli()})
+	state, err := a.sign(claims{
+		Nonce:    n,
+		Provider: "google",
+		Next:     safeNext(r.URL.Query().Get("next")),
+		Expires:  time.Now().Add(oauthMaxAge).UnixMilli(),
+	})
 	if err != nil {
 		a.fail(w, r, "server_error")
 		return
@@ -397,7 +428,7 @@ func (a *Auth) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, a.cfg.AppURL+"/", http.StatusFound)
+	http.Redirect(w, r, a.cfg.AppURL+safeNext(state.Next), http.StatusFound)
 }
 
 func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
@@ -428,7 +459,7 @@ func (a *Auth) devLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not set session", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, a.cfg.AppURL+"/", http.StatusFound)
+	http.Redirect(w, r, a.cfg.AppURL+safeNext(r.URL.Query().Get("next")), http.StatusFound)
 }
 
 // ── Google calls ─────────────────────────────────────────────────────────────
