@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/family.proto.
  */
 export const file_scoreboard_v1_family: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2ZhbWlseS5wcm90bxINc2NvcmVib2FyZC52MSIjChNDcmVhdGVGYW1pbHlSZXF1ZXN0EgwKBG5hbWUYASABKAkiPQoUQ3JlYXRlRmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiKAoRSm9pbkZhbWlseVJlcXVlc3QSEwoLaW52aXRlX2NvZGUYASABKAkiOwoSSm9pbkZhbWlseVJlc3BvbnNlEiUKBmZhbWlseRgBIAEoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IhcKFUxpc3RNeUZhbWlsaWVzUmVxdWVzdCJBChZMaXN0TXlGYW1pbGllc1Jlc3BvbnNlEicKCGZhbWlsaWVzGAEgAygLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJQoQR2V0RmFtaWx5UmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkiOgoRR2V0RmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJwoSTGlzdE1lbWJlcnNSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCSJDChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiwKB21lbWJlcnMYASADKAsyGy5zY29yZWJvYXJkLnYxLkZhbWlseU1lbWJlciInChJMZWF2ZUZhbWlseVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIhUKE0xlYXZlRmFtaWx5UmVzcG9uc2UiOQoTUmVtb3ZlTWVtYmVyUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSIWChRSZW1vdmVNZW1iZXJSZXNwb25zZSIwChtSZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIjMKHFJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2USEwoLaW52aXRlX2NvZGUYASABKAky4AUKDUZhbWlseVNlcnZpY2USVwoMQ3JlYXRlRmFtaWx5EiIuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXNwb25zZRJRCgpKb2luRmFtaWx5EiAuc2NvcmVib2FyZC52MS5Kb2luRmFtaWx5UmVxdWVzdBohLnNjb3JlYm9hcmQudjEuSm9pbkZhbWlseVJlc3BvbnNlEl0KDkxpc3RNeUZhbWlsaWVzEiQuc2NvcmVib2FyZC52MS5MaXN0TXlGYW1pbGllc1JlcXVlc3QaJS5zY29yZWJvYXJkLnYxLkxpc3RNeUZhbWlsaWVzUmVzcG9uc2USTgoJR2V0RmFtaWx5Eh8uc2NvcmVib2FyZC52MS5HZXRGYW1pbHlSZXF1ZXN0GiAuc2NvcmVib2FyZC52MS5HZXRGYW1pbHlSZXNwb25zZRJUCgtMaXN0TWVtYmVycxIhLnNjb3JlYm9hcmQudjEuTGlzdE1lbWJlcnNSZXF1ZXN0GiIuc2NvcmVib2FyZC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElQKC0xlYXZlRmFtaWx5EiEuc2NvcmVib2FyZC52MS5MZWF2ZUZhbWlseVJlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkxlYXZlRmFtaWx5UmVzcG9uc2USVwoMUmVtb3ZlTWVtYmVyEiIuc2NvcmVib2FyZC52MS5SZW1vdmVNZW1iZXJSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5SZW1vdmVNZW1iZXJSZXNwb25zZRJvChRSZWdlbmVyYXRlSW52aXRlQ29kZRIqLnNjb3JlYm9hcmQudjEuUmVnZW5lcmF0ZUludml0ZUNvZGVSZXF1ZXN0Gisuc2NvcmVib2FyZC52MS5SZWdlbmVyYXRlSW52aXRlQ29kZVJlc3BvbnNlQr4BChFjb20uc2NvcmVib2FyZC52MUILRmFtaWx5UHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_scoreboard_v1_common]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2ZhbWlseS5wcm90bxINc2NvcmVib2FyZC52MSIjChNDcmVhdGVGYW1pbHlSZXF1ZXN0EgwKBG5hbWUYASABKAkiPQoUQ3JlYXRlRmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiKAoRSm9pbkZhbWlseVJlcXVlc3QSEwoLaW52aXRlX2NvZGUYASABKAkiOwoSSm9pbkZhbWlseVJlc3BvbnNlEiUKBmZhbWlseRgBIAEoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IisKFFByZXZpZXdJbnZpdGVSZXF1ZXN0EhMKC2ludml0ZV9jb2RlGAEgASgJImcKFVByZXZpZXdJbnZpdGVSZXNwb25zZRIMCgRuYW1lGAEgASgJEhQKDG1lbWJlcl9jb3VudBgCIAEoBRISCgpvd25lcl9uYW1lGAMgASgJEhYKDmFscmVhZHlfbWVtYmVyGAQgASgIIhcKFUxpc3RNeUZhbWlsaWVzUmVxdWVzdCJBChZMaXN0TXlGYW1pbGllc1Jlc3BvbnNlEicKCGZhbWlsaWVzGAEgAygLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJQoQR2V0RmFtaWx5UmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkiOgoRR2V0RmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJwoSTGlzdE1lbWJlcnNSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCSJDChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiwKB21lbWJlcnMYASADKAsyGy5zY29yZWJvYXJkLnYxLkZhbWlseU1lbWJlciInChJMZWF2ZUZhbWlseVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIhUKE0xlYXZlRmFtaWx5UmVzcG9uc2UiOQoTUmVtb3ZlTWVtYmVyUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSIWChRSZW1vdmVNZW1iZXJSZXNwb25zZSIwChtSZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIjMKHFJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2USEwoLaW52aXRlX2NvZGUYASABKAkyvAYKDUZhbWlseVNlcnZpY2USVwoMQ3JlYXRlRmFtaWx5EiIuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXNwb25zZRJRCgpKb2luRmFtaWx5EiAuc2NvcmVib2FyZC52MS5Kb2luRmFtaWx5UmVxdWVzdBohLnNjb3JlYm9hcmQudjEuSm9pbkZhbWlseVJlc3BvbnNlEloKDVByZXZpZXdJbnZpdGUSIy5zY29yZWJvYXJkLnYxLlByZXZpZXdJbnZpdGVSZXF1ZXN0GiQuc2NvcmVib2FyZC52MS5QcmV2aWV3SW52aXRlUmVzcG9uc2USXQoOTGlzdE15RmFtaWxpZXMSJC5zY29yZWJvYXJkLnYxLkxpc3RNeUZhbWlsaWVzUmVxdWVzdBolLnNjb3JlYm9hcmQudjEuTGlzdE15RmFtaWxpZXNSZXNwb25zZRJOCglHZXRGYW1pbHkSHy5zY29yZWJvYXJkLnYxLkdldEZhbWlseVJlcXVlc3QaIC5zY29yZWJvYXJkLnYxLkdldEZhbWlseVJlc3BvbnNlElQKC0xpc3RNZW1iZXJzEiEuc2NvcmVib2FyZC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkxpc3RNZW1iZXJzUmVzcG9uc2USVAoLTGVhdmVGYW1pbHkSIS5zY29yZWJvYXJkLnYxLkxlYXZlRmFtaWx5UmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuTGVhdmVGYW1pbHlSZXNwb25zZRJXCgxSZW1vdmVNZW1iZXISIi5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlcXVlc3QaIy5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlc3BvbnNlEm8KFFJlZ2VuZXJhdGVJbnZpdGVDb2RlEiouc2NvcmVib2FyZC52MS5SZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QaKy5zY29yZWJvYXJkLnYxLlJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2VCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtGYW1pbHlQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
 
 /**
  * @generated from message scoreboard.v1.CreateFamilyRequest
@@ -85,6 +85,63 @@ export const JoinFamilyResponseSchema: GenMessage<JoinFamilyResponse> = /*@__PUR
   messageDesc(file_scoreboard_v1_family, 3);
 
 /**
+ * @generated from message scoreboard.v1.PreviewInviteRequest
+ */
+export type PreviewInviteRequest = Message<"scoreboard.v1.PreviewInviteRequest"> & {
+  /**
+   * @generated from field: string invite_code = 1;
+   */
+  inviteCode: string;
+};
+
+/**
+ * Describes the message scoreboard.v1.PreviewInviteRequest.
+ * Use `create(PreviewInviteRequestSchema)` to create a new message.
+ */
+export const PreviewInviteRequestSchema: GenMessage<PreviewInviteRequest> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_family, 4);
+
+/**
+ * Deliberately narrow: enough to recognise the family, and nothing that would
+ * be worth harvesting by guessing codes. No id, no member list, no invite code
+ * echoed back.
+ *
+ * @generated from message scoreboard.v1.PreviewInviteResponse
+ */
+export type PreviewInviteResponse = Message<"scoreboard.v1.PreviewInviteResponse"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: int32 member_count = 2;
+   */
+  memberCount: number;
+
+  /**
+   * Who runs it, so an invite reads "Dad's family" rather than a bare name.
+   *
+   * @generated from field: string owner_name = 3;
+   */
+  ownerName: string;
+
+  /**
+   * True when the caller is already in — the UI then skips straight in.
+   *
+   * @generated from field: bool already_member = 4;
+   */
+  alreadyMember: boolean;
+};
+
+/**
+ * Describes the message scoreboard.v1.PreviewInviteResponse.
+ * Use `create(PreviewInviteResponseSchema)` to create a new message.
+ */
+export const PreviewInviteResponseSchema: GenMessage<PreviewInviteResponse> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_family, 5);
+
+/**
  * @generated from message scoreboard.v1.ListMyFamiliesRequest
  */
 export type ListMyFamiliesRequest = Message<"scoreboard.v1.ListMyFamiliesRequest"> & {
@@ -95,7 +152,7 @@ export type ListMyFamiliesRequest = Message<"scoreboard.v1.ListMyFamiliesRequest
  * Use `create(ListMyFamiliesRequestSchema)` to create a new message.
  */
 export const ListMyFamiliesRequestSchema: GenMessage<ListMyFamiliesRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 4);
+  messageDesc(file_scoreboard_v1_family, 6);
 
 /**
  * @generated from message scoreboard.v1.ListMyFamiliesResponse
@@ -112,7 +169,7 @@ export type ListMyFamiliesResponse = Message<"scoreboard.v1.ListMyFamiliesRespon
  * Use `create(ListMyFamiliesResponseSchema)` to create a new message.
  */
 export const ListMyFamiliesResponseSchema: GenMessage<ListMyFamiliesResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 5);
+  messageDesc(file_scoreboard_v1_family, 7);
 
 /**
  * @generated from message scoreboard.v1.GetFamilyRequest
@@ -129,7 +186,7 @@ export type GetFamilyRequest = Message<"scoreboard.v1.GetFamilyRequest"> & {
  * Use `create(GetFamilyRequestSchema)` to create a new message.
  */
 export const GetFamilyRequestSchema: GenMessage<GetFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 6);
+  messageDesc(file_scoreboard_v1_family, 8);
 
 /**
  * @generated from message scoreboard.v1.GetFamilyResponse
@@ -146,7 +203,7 @@ export type GetFamilyResponse = Message<"scoreboard.v1.GetFamilyResponse"> & {
  * Use `create(GetFamilyResponseSchema)` to create a new message.
  */
 export const GetFamilyResponseSchema: GenMessage<GetFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 7);
+  messageDesc(file_scoreboard_v1_family, 9);
 
 /**
  * @generated from message scoreboard.v1.ListMembersRequest
@@ -163,7 +220,7 @@ export type ListMembersRequest = Message<"scoreboard.v1.ListMembersRequest"> & {
  * Use `create(ListMembersRequestSchema)` to create a new message.
  */
 export const ListMembersRequestSchema: GenMessage<ListMembersRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 8);
+  messageDesc(file_scoreboard_v1_family, 10);
 
 /**
  * @generated from message scoreboard.v1.ListMembersResponse
@@ -180,7 +237,7 @@ export type ListMembersResponse = Message<"scoreboard.v1.ListMembersResponse"> &
  * Use `create(ListMembersResponseSchema)` to create a new message.
  */
 export const ListMembersResponseSchema: GenMessage<ListMembersResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 9);
+  messageDesc(file_scoreboard_v1_family, 11);
 
 /**
  * @generated from message scoreboard.v1.LeaveFamilyRequest
@@ -197,7 +254,7 @@ export type LeaveFamilyRequest = Message<"scoreboard.v1.LeaveFamilyRequest"> & {
  * Use `create(LeaveFamilyRequestSchema)` to create a new message.
  */
 export const LeaveFamilyRequestSchema: GenMessage<LeaveFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 10);
+  messageDesc(file_scoreboard_v1_family, 12);
 
 /**
  * @generated from message scoreboard.v1.LeaveFamilyResponse
@@ -210,7 +267,7 @@ export type LeaveFamilyResponse = Message<"scoreboard.v1.LeaveFamilyResponse"> &
  * Use `create(LeaveFamilyResponseSchema)` to create a new message.
  */
 export const LeaveFamilyResponseSchema: GenMessage<LeaveFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 11);
+  messageDesc(file_scoreboard_v1_family, 13);
 
 /**
  * @generated from message scoreboard.v1.RemoveMemberRequest
@@ -232,7 +289,7 @@ export type RemoveMemberRequest = Message<"scoreboard.v1.RemoveMemberRequest"> &
  * Use `create(RemoveMemberRequestSchema)` to create a new message.
  */
 export const RemoveMemberRequestSchema: GenMessage<RemoveMemberRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 12);
+  messageDesc(file_scoreboard_v1_family, 14);
 
 /**
  * @generated from message scoreboard.v1.RemoveMemberResponse
@@ -245,7 +302,7 @@ export type RemoveMemberResponse = Message<"scoreboard.v1.RemoveMemberResponse">
  * Use `create(RemoveMemberResponseSchema)` to create a new message.
  */
 export const RemoveMemberResponseSchema: GenMessage<RemoveMemberResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 13);
+  messageDesc(file_scoreboard_v1_family, 15);
 
 /**
  * @generated from message scoreboard.v1.RegenerateInviteCodeRequest
@@ -262,7 +319,7 @@ export type RegenerateInviteCodeRequest = Message<"scoreboard.v1.RegenerateInvit
  * Use `create(RegenerateInviteCodeRequestSchema)` to create a new message.
  */
 export const RegenerateInviteCodeRequestSchema: GenMessage<RegenerateInviteCodeRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 14);
+  messageDesc(file_scoreboard_v1_family, 16);
 
 /**
  * @generated from message scoreboard.v1.RegenerateInviteCodeResponse
@@ -279,7 +336,7 @@ export type RegenerateInviteCodeResponse = Message<"scoreboard.v1.RegenerateInvi
  * Use `create(RegenerateInviteCodeResponseSchema)` to create a new message.
  */
 export const RegenerateInviteCodeResponseSchema: GenMessage<RegenerateInviteCodeResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 15);
+  messageDesc(file_scoreboard_v1_family, 17);
 
 /**
  * FamilyService manages families and their membership. Every other service
@@ -303,6 +360,17 @@ export const FamilyService: GenService<{
     methodKind: "unary";
     input: typeof JoinFamilyRequestSchema;
     output: typeof JoinFamilyResponseSchema;
+  },
+  /**
+   * Look up what a code refers to without joining, so somebody following an
+   * invite link can see what they are being asked to join.
+   *
+   * @generated from rpc scoreboard.v1.FamilyService.PreviewInvite
+   */
+  previewInvite: {
+    methodKind: "unary";
+    input: typeof PreviewInviteRequestSchema;
+    output: typeof PreviewInviteResponseSchema;
   },
   /**
    * @generated from rpc scoreboard.v1.FamilyService.ListMyFamilies

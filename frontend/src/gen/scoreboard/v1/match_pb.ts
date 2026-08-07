@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/match.proto.
  */
 export const file_scoreboard_v1_match: GenFile = /*@__PURE__*/
-  fileDesc("ChlzY29yZWJvYXJkL3YxL21hdGNoLnByb3RvEg1zY29yZWJvYXJkLnYxIlEKEkNyZWF0ZU1hdGNoUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHZ2FtZV9pZBgCIAEoCRIXCg9pbnZpdGVfdXNlcl9pZHMYAyADKAkiOgoTQ3JlYXRlTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giJAoQSm9pbk1hdGNoUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCSI4ChFKb2luTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giJQoRTGVhdmVNYXRjaFJlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkiOQoSTGVhdmVNYXRjaFJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCInChNEZWNsaW5lTWF0Y2hSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjsKFERlY2xpbmVNYXRjaFJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCI6ChRJbnZpdGVQbGF5ZXJzUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIQCgh1c2VyX2lkcxgCIAMoCSI8ChVJbnZpdGVQbGF5ZXJzUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIkEKDlRlYW1Bc3NpZ25tZW50Eg8KB3RlYW1faWQYASABKAkSDAoEbmFtZRgCIAEoCRIQCgh1c2VyX2lkcxgDIAMoCSJRCg9TZXRUZWFtc1JlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkSLAoFdGVhbXMYAiADKAsyHS5zY29yZWJvYXJkLnYxLlRlYW1Bc3NpZ25tZW50IjcKEFNldFRlYW1zUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIlEKElNldENvbnRyYWN0UmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIpCghjb250cmFjdBgCIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QiOgoTU2V0Q29udHJhY3RSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giJQoRU3RhcnRNYXRjaFJlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkiOQoSU3RhcnRNYXRjaFJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCI4ChNDbGFpbVZpY3RvcnlSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJEg8KB3RlYW1faWQYAiABKAkiOwoUQ2xhaW1WaWN0b3J5UmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIiIKDkNvbmNlZGVSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjYKD0NvbmNlZGVSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giNwoTRGlzcHV0ZU1hdGNoUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkiOwoURGlzcHV0ZU1hdGNoUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIlYKFVJlc29sdmVEaXNwdXRlUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIXCg93aW5uaW5nX3RlYW1faWQYAiABKAkSEgoKdm9pZF9tYXRjaBgDIAEoCCI9ChZSZXNvbHZlRGlzcHV0ZVJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCImChJDYW5jZWxNYXRjaFJlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkiOgoTQ2FuY2VsTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giIwoPR2V0TWF0Y2hSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjcKEEdldE1hdGNoUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIoUBChJMaXN0TWF0Y2hlc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEiwKCHN0YXR1c2VzGAIgAygOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIPCgd1c2VyX2lkGAMgASgJEg0KBWxpbWl0GAQgASgFEg4KBm9mZnNldBgFIAEoBSI8ChNMaXN0TWF0Y2hlc1Jlc3BvbnNlEiUKB21hdGNoZXMYASADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoMoYKCgxNYXRjaFNlcnZpY2USVAoLQ3JlYXRlTWF0Y2gSIS5zY29yZWJvYXJkLnYxLkNyZWF0ZU1hdGNoUmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuQ3JlYXRlTWF0Y2hSZXNwb25zZRJOCglKb2luTWF0Y2gSHy5zY29yZWJvYXJkLnYxLkpvaW5NYXRjaFJlcXVlc3QaIC5zY29yZWJvYXJkLnYxLkpvaW5NYXRjaFJlc3BvbnNlElEKCkxlYXZlTWF0Y2gSIC5zY29yZWJvYXJkLnYxLkxlYXZlTWF0Y2hSZXF1ZXN0GiEuc2NvcmVib2FyZC52MS5MZWF2ZU1hdGNoUmVzcG9uc2USVwoMRGVjbGluZU1hdGNoEiIuc2NvcmVib2FyZC52MS5EZWNsaW5lTWF0Y2hSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5EZWNsaW5lTWF0Y2hSZXNwb25zZRJaCg1JbnZpdGVQbGF5ZXJzEiMuc2NvcmVib2FyZC52MS5JbnZpdGVQbGF5ZXJzUmVxdWVzdBokLnNjb3JlYm9hcmQudjEuSW52aXRlUGxheWVyc1Jlc3BvbnNlEksKCFNldFRlYW1zEh4uc2NvcmVib2FyZC52MS5TZXRUZWFtc1JlcXVlc3QaHy5zY29yZWJvYXJkLnYxLlNldFRlYW1zUmVzcG9uc2USVAoLU2V0Q29udHJhY3QSIS5zY29yZWJvYXJkLnYxLlNldENvbnRyYWN0UmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuU2V0Q29udHJhY3RSZXNwb25zZRJRCgpTdGFydE1hdGNoEiAuc2NvcmVib2FyZC52MS5TdGFydE1hdGNoUmVxdWVzdBohLnNjb3JlYm9hcmQudjEuU3RhcnRNYXRjaFJlc3BvbnNlElcKDENsYWltVmljdG9yeRIiLnNjb3JlYm9hcmQudjEuQ2xhaW1WaWN0b3J5UmVxdWVzdBojLnNjb3JlYm9hcmQudjEuQ2xhaW1WaWN0b3J5UmVzcG9uc2USSAoHQ29uY2VkZRIdLnNjb3JlYm9hcmQudjEuQ29uY2VkZVJlcXVlc3QaHi5zY29yZWJvYXJkLnYxLkNvbmNlZGVSZXNwb25zZRJXCgxEaXNwdXRlTWF0Y2gSIi5zY29yZWJvYXJkLnYxLkRpc3B1dGVNYXRjaFJlcXVlc3QaIy5zY29yZWJvYXJkLnYxLkRpc3B1dGVNYXRjaFJlc3BvbnNlEl0KDlJlc29sdmVEaXNwdXRlEiQuc2NvcmVib2FyZC52MS5SZXNvbHZlRGlzcHV0ZVJlcXVlc3QaJS5zY29yZWJvYXJkLnYxLlJlc29sdmVEaXNwdXRlUmVzcG9uc2USVAoLQ2FuY2VsTWF0Y2gSIS5zY29yZWJvYXJkLnYxLkNhbmNlbE1hdGNoUmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuQ2FuY2VsTWF0Y2hSZXNwb25zZRJLCghHZXRNYXRjaBIeLnNjb3JlYm9hcmQudjEuR2V0TWF0Y2hSZXF1ZXN0Gh8uc2NvcmVib2FyZC52MS5HZXRNYXRjaFJlc3BvbnNlElQKC0xpc3RNYXRjaGVzEiEuc2NvcmVib2FyZC52MS5MaXN0TWF0Y2hlc1JlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkxpc3RNYXRjaGVzUmVzcG9uc2VCvQEKEWNvbS5zY29yZWJvYXJkLnYxQgpNYXRjaFByb3RvUAFaR2dpdGh1Yi5jb20vYmhlYWR3aGl0ZS9zY29yZWJvYXJkL2JhY2tlbmQvZ2VuL3Njb3JlYm9hcmQvdjE7c2NvcmVib2FyZHYxogIDU1hYqgINU2NvcmVib2FyZC5WMcoCDVNjb3JlYm9hcmRcVjHiAhlTY29yZWJvYXJkXFYxXEdQQk1ldGFkYXRh6gIOU2NvcmVib2FyZDo6VjFiBnByb3RvMw", [file_scoreboard_v1_common]);
+  fileDesc("ChlzY29yZWJvYXJkL3YxL21hdGNoLnByb3RvEg1zY29yZWJvYXJkLnYxIlEKEkNyZWF0ZU1hdGNoUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHZ2FtZV9pZBgCIAEoCRIXCg9pbnZpdGVfdXNlcl9pZHMYAyADKAkiOgoTQ3JlYXRlTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giJAoQSm9pbk1hdGNoUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCSI4ChFKb2luTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giJQoRTGVhdmVNYXRjaFJlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkiOQoSTGVhdmVNYXRjaFJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCInChNEZWNsaW5lTWF0Y2hSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjsKFERlY2xpbmVNYXRjaFJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCI6ChRJbnZpdGVQbGF5ZXJzUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIQCgh1c2VyX2lkcxgCIAMoCSI8ChVJbnZpdGVQbGF5ZXJzUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIkEKDlRlYW1Bc3NpZ25tZW50Eg8KB3RlYW1faWQYASABKAkSDAoEbmFtZRgCIAEoCRIQCgh1c2VyX2lkcxgDIAMoCSJRCg9TZXRUZWFtc1JlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkSLAoFdGVhbXMYAiADKAsyHS5zY29yZWJvYXJkLnYxLlRlYW1Bc3NpZ25tZW50IjcKEFNldFRlYW1zUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIlEKElNldENvbnRyYWN0UmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIpCghjb250cmFjdBgCIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QiOgoTU2V0Q29udHJhY3RSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giMgoPU2V0UmVhZHlSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJEg0KBXJlYWR5GAIgASgIIjcKEFNldFJlYWR5UmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIiUKEVN0YXJ0TWF0Y2hSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjkKElN0YXJ0TWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giOAoTQ2xhaW1WaWN0b3J5UmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIPCgd0ZWFtX2lkGAIgASgJIjsKFENsYWltVmljdG9yeVJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCIoChRXaXRoZHJhd0NsYWltUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCSI8ChVXaXRoZHJhd0NsYWltUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIiIKDkNvbmNlZGVSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjYKD0NvbmNlZGVSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giNwoTRGlzcHV0ZU1hdGNoUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkiOwoURGlzcHV0ZU1hdGNoUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIlYKFVJlc29sdmVEaXNwdXRlUmVxdWVzdBIQCghtYXRjaF9pZBgBIAEoCRIXCg93aW5uaW5nX3RlYW1faWQYAiABKAkSEgoKdm9pZF9tYXRjaBgDIAEoCCI9ChZSZXNvbHZlRGlzcHV0ZVJlc3BvbnNlEiMKBW1hdGNoGAEgASgLMhQuc2NvcmVib2FyZC52MS5NYXRjaCImChJDYW5jZWxNYXRjaFJlcXVlc3QSEAoIbWF0Y2hfaWQYASABKAkiOgoTQ2FuY2VsTWF0Y2hSZXNwb25zZRIjCgVtYXRjaBgBIAEoCzIULnNjb3JlYm9hcmQudjEuTWF0Y2giIwoPR2V0TWF0Y2hSZXF1ZXN0EhAKCG1hdGNoX2lkGAEgASgJIjcKEEdldE1hdGNoUmVzcG9uc2USIwoFbWF0Y2gYASABKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoIoUBChJMaXN0TWF0Y2hlc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEiwKCHN0YXR1c2VzGAIgAygOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIPCgd1c2VyX2lkGAMgASgJEg0KBWxpbWl0GAQgASgFEg4KBm9mZnNldBgFIAEoBSI8ChNMaXN0TWF0Y2hlc1Jlc3BvbnNlEiUKB21hdGNoZXMYASADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoMq8LCgxNYXRjaFNlcnZpY2USVAoLQ3JlYXRlTWF0Y2gSIS5zY29yZWJvYXJkLnYxLkNyZWF0ZU1hdGNoUmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuQ3JlYXRlTWF0Y2hSZXNwb25zZRJOCglKb2luTWF0Y2gSHy5zY29yZWJvYXJkLnYxLkpvaW5NYXRjaFJlcXVlc3QaIC5zY29yZWJvYXJkLnYxLkpvaW5NYXRjaFJlc3BvbnNlElEKCkxlYXZlTWF0Y2gSIC5zY29yZWJvYXJkLnYxLkxlYXZlTWF0Y2hSZXF1ZXN0GiEuc2NvcmVib2FyZC52MS5MZWF2ZU1hdGNoUmVzcG9uc2USVwoMRGVjbGluZU1hdGNoEiIuc2NvcmVib2FyZC52MS5EZWNsaW5lTWF0Y2hSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5EZWNsaW5lTWF0Y2hSZXNwb25zZRJaCg1JbnZpdGVQbGF5ZXJzEiMuc2NvcmVib2FyZC52MS5JbnZpdGVQbGF5ZXJzUmVxdWVzdBokLnNjb3JlYm9hcmQudjEuSW52aXRlUGxheWVyc1Jlc3BvbnNlEksKCFNldFRlYW1zEh4uc2NvcmVib2FyZC52MS5TZXRUZWFtc1JlcXVlc3QaHy5zY29yZWJvYXJkLnYxLlNldFRlYW1zUmVzcG9uc2USVAoLU2V0Q29udHJhY3QSIS5zY29yZWJvYXJkLnYxLlNldENvbnRyYWN0UmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuU2V0Q29udHJhY3RSZXNwb25zZRJLCghTZXRSZWFkeRIeLnNjb3JlYm9hcmQudjEuU2V0UmVhZHlSZXF1ZXN0Gh8uc2NvcmVib2FyZC52MS5TZXRSZWFkeVJlc3BvbnNlElEKClN0YXJ0TWF0Y2gSIC5zY29yZWJvYXJkLnYxLlN0YXJ0TWF0Y2hSZXF1ZXN0GiEuc2NvcmVib2FyZC52MS5TdGFydE1hdGNoUmVzcG9uc2USVwoMQ2xhaW1WaWN0b3J5EiIuc2NvcmVib2FyZC52MS5DbGFpbVZpY3RvcnlSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5DbGFpbVZpY3RvcnlSZXNwb25zZRJaCg1XaXRoZHJhd0NsYWltEiMuc2NvcmVib2FyZC52MS5XaXRoZHJhd0NsYWltUmVxdWVzdBokLnNjb3JlYm9hcmQudjEuV2l0aGRyYXdDbGFpbVJlc3BvbnNlEkgKB0NvbmNlZGUSHS5zY29yZWJvYXJkLnYxLkNvbmNlZGVSZXF1ZXN0Gh4uc2NvcmVib2FyZC52MS5Db25jZWRlUmVzcG9uc2USVwoMRGlzcHV0ZU1hdGNoEiIuc2NvcmVib2FyZC52MS5EaXNwdXRlTWF0Y2hSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5EaXNwdXRlTWF0Y2hSZXNwb25zZRJdCg5SZXNvbHZlRGlzcHV0ZRIkLnNjb3JlYm9hcmQudjEuUmVzb2x2ZURpc3B1dGVSZXF1ZXN0GiUuc2NvcmVib2FyZC52MS5SZXNvbHZlRGlzcHV0ZVJlc3BvbnNlElQKC0NhbmNlbE1hdGNoEiEuc2NvcmVib2FyZC52MS5DYW5jZWxNYXRjaFJlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkNhbmNlbE1hdGNoUmVzcG9uc2USSwoIR2V0TWF0Y2gSHi5zY29yZWJvYXJkLnYxLkdldE1hdGNoUmVxdWVzdBofLnNjb3JlYm9hcmQudjEuR2V0TWF0Y2hSZXNwb25zZRJUCgtMaXN0TWF0Y2hlcxIhLnNjb3JlYm9hcmQudjEuTGlzdE1hdGNoZXNSZXF1ZXN0GiIuc2NvcmVib2FyZC52MS5MaXN0TWF0Y2hlc1Jlc3BvbnNlQr0BChFjb20uc2NvcmVib2FyZC52MUIKTWF0Y2hQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
 
 /**
  * @generated from message scoreboard.v1.CreateMatchRequest
@@ -312,6 +312,45 @@ export const SetContractResponseSchema: GenMessage<SetContractResponse> = /*@__P
   messageDesc(file_scoreboard_v1_match, 14);
 
 /**
+ * @generated from message scoreboard.v1.SetReadyRequest
+ */
+export type SetReadyRequest = Message<"scoreboard.v1.SetReadyRequest"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: bool ready = 2;
+   */
+  ready: boolean;
+};
+
+/**
+ * Describes the message scoreboard.v1.SetReadyRequest.
+ * Use `create(SetReadyRequestSchema)` to create a new message.
+ */
+export const SetReadyRequestSchema: GenMessage<SetReadyRequest> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_match, 15);
+
+/**
+ * @generated from message scoreboard.v1.SetReadyResponse
+ */
+export type SetReadyResponse = Message<"scoreboard.v1.SetReadyResponse"> & {
+  /**
+   * @generated from field: scoreboard.v1.Match match = 1;
+   */
+  match?: Match | undefined;
+};
+
+/**
+ * Describes the message scoreboard.v1.SetReadyResponse.
+ * Use `create(SetReadyResponseSchema)` to create a new message.
+ */
+export const SetReadyResponseSchema: GenMessage<SetReadyResponse> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_match, 16);
+
+/**
  * @generated from message scoreboard.v1.StartMatchRequest
  */
 export type StartMatchRequest = Message<"scoreboard.v1.StartMatchRequest"> & {
@@ -326,7 +365,7 @@ export type StartMatchRequest = Message<"scoreboard.v1.StartMatchRequest"> & {
  * Use `create(StartMatchRequestSchema)` to create a new message.
  */
 export const StartMatchRequestSchema: GenMessage<StartMatchRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 15);
+  messageDesc(file_scoreboard_v1_match, 17);
 
 /**
  * @generated from message scoreboard.v1.StartMatchResponse
@@ -343,7 +382,7 @@ export type StartMatchResponse = Message<"scoreboard.v1.StartMatchResponse"> & {
  * Use `create(StartMatchResponseSchema)` to create a new message.
  */
 export const StartMatchResponseSchema: GenMessage<StartMatchResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 16);
+  messageDesc(file_scoreboard_v1_match, 18);
 
 /**
  * @generated from message scoreboard.v1.ClaimVictoryRequest
@@ -367,7 +406,7 @@ export type ClaimVictoryRequest = Message<"scoreboard.v1.ClaimVictoryRequest"> &
  * Use `create(ClaimVictoryRequestSchema)` to create a new message.
  */
 export const ClaimVictoryRequestSchema: GenMessage<ClaimVictoryRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 17);
+  messageDesc(file_scoreboard_v1_match, 19);
 
 /**
  * @generated from message scoreboard.v1.ClaimVictoryResponse
@@ -384,7 +423,41 @@ export type ClaimVictoryResponse = Message<"scoreboard.v1.ClaimVictoryResponse">
  * Use `create(ClaimVictoryResponseSchema)` to create a new message.
  */
 export const ClaimVictoryResponseSchema: GenMessage<ClaimVictoryResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 18);
+  messageDesc(file_scoreboard_v1_match, 20);
+
+/**
+ * @generated from message scoreboard.v1.WithdrawClaimRequest
+ */
+export type WithdrawClaimRequest = Message<"scoreboard.v1.WithdrawClaimRequest"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+};
+
+/**
+ * Describes the message scoreboard.v1.WithdrawClaimRequest.
+ * Use `create(WithdrawClaimRequestSchema)` to create a new message.
+ */
+export const WithdrawClaimRequestSchema: GenMessage<WithdrawClaimRequest> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_match, 21);
+
+/**
+ * @generated from message scoreboard.v1.WithdrawClaimResponse
+ */
+export type WithdrawClaimResponse = Message<"scoreboard.v1.WithdrawClaimResponse"> & {
+  /**
+   * @generated from field: scoreboard.v1.Match match = 1;
+   */
+  match?: Match | undefined;
+};
+
+/**
+ * Describes the message scoreboard.v1.WithdrawClaimResponse.
+ * Use `create(WithdrawClaimResponseSchema)` to create a new message.
+ */
+export const WithdrawClaimResponseSchema: GenMessage<WithdrawClaimResponse> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_match, 22);
 
 /**
  * @generated from message scoreboard.v1.ConcedeRequest
@@ -401,7 +474,7 @@ export type ConcedeRequest = Message<"scoreboard.v1.ConcedeRequest"> & {
  * Use `create(ConcedeRequestSchema)` to create a new message.
  */
 export const ConcedeRequestSchema: GenMessage<ConcedeRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 19);
+  messageDesc(file_scoreboard_v1_match, 23);
 
 /**
  * @generated from message scoreboard.v1.ConcedeResponse
@@ -418,7 +491,7 @@ export type ConcedeResponse = Message<"scoreboard.v1.ConcedeResponse"> & {
  * Use `create(ConcedeResponseSchema)` to create a new message.
  */
 export const ConcedeResponseSchema: GenMessage<ConcedeResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 20);
+  messageDesc(file_scoreboard_v1_match, 24);
 
 /**
  * @generated from message scoreboard.v1.DisputeMatchRequest
@@ -442,7 +515,7 @@ export type DisputeMatchRequest = Message<"scoreboard.v1.DisputeMatchRequest"> &
  * Use `create(DisputeMatchRequestSchema)` to create a new message.
  */
 export const DisputeMatchRequestSchema: GenMessage<DisputeMatchRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 21);
+  messageDesc(file_scoreboard_v1_match, 25);
 
 /**
  * @generated from message scoreboard.v1.DisputeMatchResponse
@@ -459,7 +532,7 @@ export type DisputeMatchResponse = Message<"scoreboard.v1.DisputeMatchResponse">
  * Use `create(DisputeMatchResponseSchema)` to create a new message.
  */
 export const DisputeMatchResponseSchema: GenMessage<DisputeMatchResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 22);
+  messageDesc(file_scoreboard_v1_match, 26);
 
 /**
  * @generated from message scoreboard.v1.ResolveDisputeRequest
@@ -488,7 +561,7 @@ export type ResolveDisputeRequest = Message<"scoreboard.v1.ResolveDisputeRequest
  * Use `create(ResolveDisputeRequestSchema)` to create a new message.
  */
 export const ResolveDisputeRequestSchema: GenMessage<ResolveDisputeRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 23);
+  messageDesc(file_scoreboard_v1_match, 27);
 
 /**
  * @generated from message scoreboard.v1.ResolveDisputeResponse
@@ -505,7 +578,7 @@ export type ResolveDisputeResponse = Message<"scoreboard.v1.ResolveDisputeRespon
  * Use `create(ResolveDisputeResponseSchema)` to create a new message.
  */
 export const ResolveDisputeResponseSchema: GenMessage<ResolveDisputeResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 24);
+  messageDesc(file_scoreboard_v1_match, 28);
 
 /**
  * @generated from message scoreboard.v1.CancelMatchRequest
@@ -522,7 +595,7 @@ export type CancelMatchRequest = Message<"scoreboard.v1.CancelMatchRequest"> & {
  * Use `create(CancelMatchRequestSchema)` to create a new message.
  */
 export const CancelMatchRequestSchema: GenMessage<CancelMatchRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 25);
+  messageDesc(file_scoreboard_v1_match, 29);
 
 /**
  * @generated from message scoreboard.v1.CancelMatchResponse
@@ -539,7 +612,7 @@ export type CancelMatchResponse = Message<"scoreboard.v1.CancelMatchResponse"> &
  * Use `create(CancelMatchResponseSchema)` to create a new message.
  */
 export const CancelMatchResponseSchema: GenMessage<CancelMatchResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 26);
+  messageDesc(file_scoreboard_v1_match, 30);
 
 /**
  * @generated from message scoreboard.v1.GetMatchRequest
@@ -556,7 +629,7 @@ export type GetMatchRequest = Message<"scoreboard.v1.GetMatchRequest"> & {
  * Use `create(GetMatchRequestSchema)` to create a new message.
  */
 export const GetMatchRequestSchema: GenMessage<GetMatchRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 27);
+  messageDesc(file_scoreboard_v1_match, 31);
 
 /**
  * @generated from message scoreboard.v1.GetMatchResponse
@@ -573,7 +646,7 @@ export type GetMatchResponse = Message<"scoreboard.v1.GetMatchResponse"> & {
  * Use `create(GetMatchResponseSchema)` to create a new message.
  */
 export const GetMatchResponseSchema: GenMessage<GetMatchResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 28);
+  messageDesc(file_scoreboard_v1_match, 32);
 
 /**
  * @generated from message scoreboard.v1.ListMatchesRequest
@@ -614,7 +687,7 @@ export type ListMatchesRequest = Message<"scoreboard.v1.ListMatchesRequest"> & {
  * Use `create(ListMatchesRequestSchema)` to create a new message.
  */
 export const ListMatchesRequestSchema: GenMessage<ListMatchesRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 29);
+  messageDesc(file_scoreboard_v1_match, 33);
 
 /**
  * @generated from message scoreboard.v1.ListMatchesResponse
@@ -631,17 +704,24 @@ export type ListMatchesResponse = Message<"scoreboard.v1.ListMatchesResponse"> &
  * Use `create(ListMatchesResponseSchema)` to create a new message.
  */
 export const ListMatchesResponseSchema: GenMessage<ListMatchesResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_match, 30);
+  messageDesc(file_scoreboard_v1_match, 34);
 
 /**
  * MatchService runs the match lifecycle, including the concession protocol that
  * is the whole point of this app:
  *
  *   LOBBY -> IN_PROGRESS -> CLAIMED -> FINAL       (all opponents concede, or timeout)
- *                              \
- *                               -> DISPUTED -> FINAL | CANCELED  (owner resolves)
+ *                              ^  \
+ *                              |   -> DISPUTED -> FINAL | CANCELED  (owner resolves)
+ *                              |        |
+ *                              +--------+   (the last objection is withdrawn)
  *
- * Only FINAL matches count toward the scoreboard.
+ * CLAIMED and DISPUTED are two readings of the same situation — a claim on the
+ * table and a set of answers to it — rather than two destinations. Nobody is
+ * held to the answer they first gave: an opponent can move between conceding
+ * and objecting for as long as the match is open, and WithdrawClaim takes the
+ * whole thing back to IN_PROGRESS. Only FINAL is a one-way door, and only FINAL
+ * matches count toward the scoreboard.
  *
  * @generated from service scoreboard.v1.MatchService
  */
@@ -709,7 +789,19 @@ export const MatchService: GenService<{
     output: typeof SetContractResponseSchema;
   },
   /**
-   * Locks the contract and begins play.
+   * Affirm, or withdraw, that you are ready to play under the current
+   * contract. Changing the contract or the teams clears everyone's.
+   *
+   * @generated from rpc scoreboard.v1.MatchService.SetReady
+   */
+  setReady: {
+    methodKind: "unary";
+    input: typeof SetReadyRequestSchema;
+    output: typeof SetReadyResponseSchema;
+  },
+  /**
+   * Locks the contract and begins play. Creator only, and only once every
+   * joined player is ready.
    *
    * @generated from rpc scoreboard.v1.MatchService.StartMatch
    */
@@ -730,7 +822,21 @@ export const MatchService: GenService<{
     output: typeof ClaimVictoryResponseSchema;
   },
   /**
-   * Acknowledge someone else's claim. Idempotent.
+   * Take back a claim your own team made. The match returns to IN_PROGRESS with
+   * no winner and every answer cleared — this is "never mind", not "you won".
+   * Anyone on the claiming team may do it, and only until the match finalizes.
+   *
+   * @generated from rpc scoreboard.v1.MatchService.WithdrawClaim
+   */
+  withdrawClaim: {
+    methodKind: "unary";
+    input: typeof WithdrawClaimRequestSchema;
+    output: typeof WithdrawClaimResponseSchema;
+  },
+  /**
+   * Acknowledge the standing claim. Idempotent, and reversible: this also
+   * withdraws an objection you made earlier. Taking back the last objection
+   * returns the match to CLAIMED and restarts its clock.
    *
    * @generated from rpc scoreboard.v1.MatchService.Concede
    */
@@ -740,7 +846,8 @@ export const MatchService: GenService<{
     output: typeof ConcedeResponseSchema;
   },
   /**
-   * Reject a claim. Stops the concession clock and requires an owner to resolve.
+   * Reject the standing claim, or take back a concession you already gave.
+   * Stops the concession clock for as long as the objection stands.
    *
    * @generated from rpc scoreboard.v1.MatchService.DisputeMatch
    */
@@ -750,7 +857,9 @@ export const MatchService: GenService<{
     output: typeof DisputeMatchResponseSchema;
   },
   /**
-   * Owner only: settle a disputed match by naming the winning team, or void it.
+   * Owner only, and only once the match is genuinely stuck — see
+   * Match.organizer_may_resolve. Settles it by naming the winning team, or
+   * voids it.
    *
    * @generated from rpc scoreboard.v1.MatchService.ResolveDispute
    */

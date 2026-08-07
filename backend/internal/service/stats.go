@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/stats"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
@@ -16,8 +18,8 @@ type StatsService struct {
 	base
 }
 
-func NewStatsService(s *store.Store) *StatsService {
-	return &StatsService{base: base{store: s}}
+func NewStatsService(s *store.Store, hub *events.Hub) *StatsService {
+	return &StatsService{base: base{store: s, hub: hub}}
 }
 
 // How many recent meetings the head-to-head screen shows.
@@ -35,9 +37,27 @@ func (svc *StatsService) GetStandings(
 		return nil, err
 	}
 
-	ps, users, err := svc.history(ctx, familyID, req.Msg.GetGameId(), req.Msg.GetRange())
+	// Loaded across every game, then narrowed in memory. The filter list has to
+	// come from the unnarrowed set — asking the database for one game's history
+	// would make the chip row collapse to whichever chip you just tapped.
+	all, users, err := svc.history(ctx, familyID, "", req.Msg.GetRange())
 	if err != nil {
 		return nil, err
+	}
+
+	played, err := svc.playedGames(ctx, familyID, all)
+	if err != nil {
+		return nil, err
+	}
+
+	ps := all
+	if gameID := req.Msg.GetGameId(); gameID != "" {
+		ps = nil
+		for _, p := range all {
+			if p.GameID == gameID {
+				ps = append(ps, p)
+			}
+		}
 	}
 
 	rows := stats.Standings(ps)
@@ -67,7 +87,64 @@ func (svc *StatsService) GetStandings(
 	return connect.NewResponse(&scoreboardv1.GetStandingsResponse{
 		Rows:         out,
 		TotalMatches: int32(len(seen)),
+		PlayedGames:  played,
 	}), nil
+}
+
+// playedGames returns the games that appear in this history, most-played first,
+// so the filter offers only what somebody has actually finished a match of.
+func (svc *StatsService) playedGames(
+	ctx context.Context, familyID string, ps []stats.Participation,
+) ([]*scoreboardv1.Game, error) {
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	// One entry per game, counted by distinct match so a four-player game does
+	// not outrank a two-player one that was played more often.
+	matchesPerGame := map[string]map[string]struct{}{}
+	for _, p := range ps {
+		set, ok := matchesPerGame[p.GameID]
+		if !ok {
+			set = map[string]struct{}{}
+			matchesPerGame[p.GameID] = set
+		}
+		set[p.MatchID] = struct{}{}
+	}
+
+	games, err := svc.store.ListGames(ctx, familyID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	byID := make(map[string]model.Game, len(games))
+	for _, g := range games {
+		byID[g.ID] = g
+	}
+
+	type ranked struct {
+		game  model.Game
+		count int
+	}
+	list := make([]ranked, 0, len(matchesPerGame))
+	for id, set := range matchesPerGame {
+		g, ok := byID[id]
+		if !ok {
+			continue // deleted since it was played
+		}
+		list = append(list, ranked{game: g, count: len(set)})
+	}
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].count != list[j].count {
+			return list[i].count > list[j].count
+		}
+		return list[i].game.Name < list[j].game.Name
+	})
+
+	out := make([]*scoreboardv1.Game, 0, len(list))
+	for _, r := range list {
+		out = append(out, gamePB(r.game))
+	}
+	return out, nil
 }
 
 func (svc *StatsService) GetHeadToHead(
@@ -78,9 +155,11 @@ func (svc *StatsService) GetHeadToHead(
 		return nil, err
 	}
 	familyID := req.Msg.GetFamilyId()
-	if _, err := svc.requireMember(ctx, familyID, uid); err != nil {
+	role, err := svc.requireMember(ctx, familyID, uid)
+	if err != nil {
 		return nil, err
 	}
+	org := role == model.RoleOwner
 
 	subject := req.Msg.GetUserId()
 	if subject == "" {
@@ -123,7 +202,7 @@ func (svc *StatsService) GetHeadToHead(
 		TogetherWins:   h.TogetherWins,
 		TogetherLosses: h.TogetherLosses,
 		Games:          games,
-		RecentMatches:  matchesPB(recent, uid),
+		RecentMatches:  svc.matchesPB(recent, uid, org),
 		Streak:         h.Streak,
 	}), nil
 }

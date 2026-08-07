@@ -198,6 +198,123 @@ func (x *JoinFamilyResponse) GetFamily() *Family {
 	return nil
 }
 
+type PreviewInviteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InviteCode    string                 `protobuf:"bytes,1,opt,name=invite_code,json=inviteCode,proto3" json:"invite_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PreviewInviteRequest) Reset() {
+	*x = PreviewInviteRequest{}
+	mi := &file_scoreboard_v1_family_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewInviteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewInviteRequest) ProtoMessage() {}
+
+func (x *PreviewInviteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_family_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewInviteRequest.ProtoReflect.Descriptor instead.
+func (*PreviewInviteRequest) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PreviewInviteRequest) GetInviteCode() string {
+	if x != nil {
+		return x.InviteCode
+	}
+	return ""
+}
+
+// Deliberately narrow: enough to recognise the family, and nothing that would
+// be worth harvesting by guessing codes. No id, no member list, no invite code
+// echoed back.
+type PreviewInviteResponse struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Name        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	MemberCount int32                  `protobuf:"varint,2,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
+	// Who runs it, so an invite reads "Dad's family" rather than a bare name.
+	OwnerName string `protobuf:"bytes,3,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
+	// True when the caller is already in — the UI then skips straight in.
+	AlreadyMember bool `protobuf:"varint,4,opt,name=already_member,json=alreadyMember,proto3" json:"already_member,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PreviewInviteResponse) Reset() {
+	*x = PreviewInviteResponse{}
+	mi := &file_scoreboard_v1_family_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewInviteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewInviteResponse) ProtoMessage() {}
+
+func (x *PreviewInviteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_family_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewInviteResponse.ProtoReflect.Descriptor instead.
+func (*PreviewInviteResponse) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PreviewInviteResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PreviewInviteResponse) GetMemberCount() int32 {
+	if x != nil {
+		return x.MemberCount
+	}
+	return 0
+}
+
+func (x *PreviewInviteResponse) GetOwnerName() string {
+	if x != nil {
+		return x.OwnerName
+	}
+	return ""
+}
+
+func (x *PreviewInviteResponse) GetAlreadyMember() bool {
+	if x != nil {
+		return x.AlreadyMember
+	}
+	return false
+}
+
 type ListMyFamiliesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -206,7 +323,7 @@ type ListMyFamiliesRequest struct {
 
 func (x *ListMyFamiliesRequest) Reset() {
 	*x = ListMyFamiliesRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[4]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -218,7 +335,7 @@ func (x *ListMyFamiliesRequest) String() string {
 func (*ListMyFamiliesRequest) ProtoMessage() {}
 
 func (x *ListMyFamiliesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[4]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -231,7 +348,7 @@ func (x *ListMyFamiliesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMyFamiliesRequest.ProtoReflect.Descriptor instead.
 func (*ListMyFamiliesRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{4}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{6}
 }
 
 type ListMyFamiliesResponse struct {
@@ -243,7 +360,7 @@ type ListMyFamiliesResponse struct {
 
 func (x *ListMyFamiliesResponse) Reset() {
 	*x = ListMyFamiliesResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[5]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +372,7 @@ func (x *ListMyFamiliesResponse) String() string {
 func (*ListMyFamiliesResponse) ProtoMessage() {}
 
 func (x *ListMyFamiliesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[5]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,7 +385,7 @@ func (x *ListMyFamiliesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMyFamiliesResponse.ProtoReflect.Descriptor instead.
 func (*ListMyFamiliesResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{5}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListMyFamiliesResponse) GetFamilies() []*Family {
@@ -287,7 +404,7 @@ type GetFamilyRequest struct {
 
 func (x *GetFamilyRequest) Reset() {
 	*x = GetFamilyRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[6]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +416,7 @@ func (x *GetFamilyRequest) String() string {
 func (*GetFamilyRequest) ProtoMessage() {}
 
 func (x *GetFamilyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[6]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +429,7 @@ func (x *GetFamilyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFamilyRequest.ProtoReflect.Descriptor instead.
 func (*GetFamilyRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{6}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetFamilyRequest) GetFamilyId() string {
@@ -331,7 +448,7 @@ type GetFamilyResponse struct {
 
 func (x *GetFamilyResponse) Reset() {
 	*x = GetFamilyResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[7]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +460,7 @@ func (x *GetFamilyResponse) String() string {
 func (*GetFamilyResponse) ProtoMessage() {}
 
 func (x *GetFamilyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[7]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +473,7 @@ func (x *GetFamilyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFamilyResponse.ProtoReflect.Descriptor instead.
 func (*GetFamilyResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{7}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetFamilyResponse) GetFamily() *Family {
@@ -375,7 +492,7 @@ type ListMembersRequest struct {
 
 func (x *ListMembersRequest) Reset() {
 	*x = ListMembersRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[8]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -387,7 +504,7 @@ func (x *ListMembersRequest) String() string {
 func (*ListMembersRequest) ProtoMessage() {}
 
 func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[8]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -400,7 +517,7 @@ func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersRequest.ProtoReflect.Descriptor instead.
 func (*ListMembersRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{8}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListMembersRequest) GetFamilyId() string {
@@ -419,7 +536,7 @@ type ListMembersResponse struct {
 
 func (x *ListMembersResponse) Reset() {
 	*x = ListMembersResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[9]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +548,7 @@ func (x *ListMembersResponse) String() string {
 func (*ListMembersResponse) ProtoMessage() {}
 
 func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[9]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +561,7 @@ func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersResponse.ProtoReflect.Descriptor instead.
 func (*ListMembersResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{9}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListMembersResponse) GetMembers() []*FamilyMember {
@@ -463,7 +580,7 @@ type LeaveFamilyRequest struct {
 
 func (x *LeaveFamilyRequest) Reset() {
 	*x = LeaveFamilyRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[10]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +592,7 @@ func (x *LeaveFamilyRequest) String() string {
 func (*LeaveFamilyRequest) ProtoMessage() {}
 
 func (x *LeaveFamilyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[10]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +605,7 @@ func (x *LeaveFamilyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveFamilyRequest.ProtoReflect.Descriptor instead.
 func (*LeaveFamilyRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{10}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *LeaveFamilyRequest) GetFamilyId() string {
@@ -506,7 +623,7 @@ type LeaveFamilyResponse struct {
 
 func (x *LeaveFamilyResponse) Reset() {
 	*x = LeaveFamilyResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[11]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -518,7 +635,7 @@ func (x *LeaveFamilyResponse) String() string {
 func (*LeaveFamilyResponse) ProtoMessage() {}
 
 func (x *LeaveFamilyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[11]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -531,7 +648,7 @@ func (x *LeaveFamilyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveFamilyResponse.ProtoReflect.Descriptor instead.
 func (*LeaveFamilyResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{11}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{13}
 }
 
 type RemoveMemberRequest struct {
@@ -544,7 +661,7 @@ type RemoveMemberRequest struct {
 
 func (x *RemoveMemberRequest) Reset() {
 	*x = RemoveMemberRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[12]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +673,7 @@ func (x *RemoveMemberRequest) String() string {
 func (*RemoveMemberRequest) ProtoMessage() {}
 
 func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[12]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +686,7 @@ func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveMemberRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{12}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RemoveMemberRequest) GetFamilyId() string {
@@ -594,7 +711,7 @@ type RemoveMemberResponse struct {
 
 func (x *RemoveMemberResponse) Reset() {
 	*x = RemoveMemberResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[13]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -606,7 +723,7 @@ func (x *RemoveMemberResponse) String() string {
 func (*RemoveMemberResponse) ProtoMessage() {}
 
 func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[13]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +736,7 @@ func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveMemberResponse.ProtoReflect.Descriptor instead.
 func (*RemoveMemberResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{13}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{15}
 }
 
 type RegenerateInviteCodeRequest struct {
@@ -631,7 +748,7 @@ type RegenerateInviteCodeRequest struct {
 
 func (x *RegenerateInviteCodeRequest) Reset() {
 	*x = RegenerateInviteCodeRequest{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[14]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -643,7 +760,7 @@ func (x *RegenerateInviteCodeRequest) String() string {
 func (*RegenerateInviteCodeRequest) ProtoMessage() {}
 
 func (x *RegenerateInviteCodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[14]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -656,7 +773,7 @@ func (x *RegenerateInviteCodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegenerateInviteCodeRequest.ProtoReflect.Descriptor instead.
 func (*RegenerateInviteCodeRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{14}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RegenerateInviteCodeRequest) GetFamilyId() string {
@@ -675,7 +792,7 @@ type RegenerateInviteCodeResponse struct {
 
 func (x *RegenerateInviteCodeResponse) Reset() {
 	*x = RegenerateInviteCodeResponse{}
-	mi := &file_scoreboard_v1_family_proto_msgTypes[15]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -687,7 +804,7 @@ func (x *RegenerateInviteCodeResponse) String() string {
 func (*RegenerateInviteCodeResponse) ProtoMessage() {}
 
 func (x *RegenerateInviteCodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_family_proto_msgTypes[15]
+	mi := &file_scoreboard_v1_family_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -700,7 +817,7 @@ func (x *RegenerateInviteCodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegenerateInviteCodeResponse.ProtoReflect.Descriptor instead.
 func (*RegenerateInviteCodeResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{15}
+	return file_scoreboard_v1_family_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RegenerateInviteCodeResponse) GetInviteCode() string {
@@ -723,7 +840,16 @@ const file_scoreboard_v1_family_proto_rawDesc = "" +
 	"\vinvite_code\x18\x01 \x01(\tR\n" +
 	"inviteCode\"C\n" +
 	"\x12JoinFamilyResponse\x12-\n" +
-	"\x06family\x18\x01 \x01(\v2\x15.scoreboard.v1.FamilyR\x06family\"\x17\n" +
+	"\x06family\x18\x01 \x01(\v2\x15.scoreboard.v1.FamilyR\x06family\"7\n" +
+	"\x14PreviewInviteRequest\x12\x1f\n" +
+	"\vinvite_code\x18\x01 \x01(\tR\n" +
+	"inviteCode\"\x94\x01\n" +
+	"\x15PreviewInviteResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
+	"\fmember_count\x18\x02 \x01(\x05R\vmemberCount\x12\x1d\n" +
+	"\n" +
+	"owner_name\x18\x03 \x01(\tR\townerName\x12%\n" +
+	"\x0ealready_member\x18\x04 \x01(\bR\ralreadyMember\"\x17\n" +
 	"\x15ListMyFamiliesRequest\"K\n" +
 	"\x16ListMyFamiliesResponse\x121\n" +
 	"\bfamilies\x18\x01 \x03(\v2\x15.scoreboard.v1.FamilyR\bfamilies\"/\n" +
@@ -746,11 +872,12 @@ const file_scoreboard_v1_family_proto_rawDesc = "" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\"?\n" +
 	"\x1cRegenerateInviteCodeResponse\x12\x1f\n" +
 	"\vinvite_code\x18\x01 \x01(\tR\n" +
-	"inviteCode2\xe0\x05\n" +
+	"inviteCode2\xbc\x06\n" +
 	"\rFamilyService\x12W\n" +
 	"\fCreateFamily\x12\".scoreboard.v1.CreateFamilyRequest\x1a#.scoreboard.v1.CreateFamilyResponse\x12Q\n" +
 	"\n" +
-	"JoinFamily\x12 .scoreboard.v1.JoinFamilyRequest\x1a!.scoreboard.v1.JoinFamilyResponse\x12]\n" +
+	"JoinFamily\x12 .scoreboard.v1.JoinFamilyRequest\x1a!.scoreboard.v1.JoinFamilyResponse\x12Z\n" +
+	"\rPreviewInvite\x12#.scoreboard.v1.PreviewInviteRequest\x1a$.scoreboard.v1.PreviewInviteResponse\x12]\n" +
 	"\x0eListMyFamilies\x12$.scoreboard.v1.ListMyFamiliesRequest\x1a%.scoreboard.v1.ListMyFamiliesResponse\x12N\n" +
 	"\tGetFamily\x12\x1f.scoreboard.v1.GetFamilyRequest\x1a .scoreboard.v1.GetFamilyResponse\x12T\n" +
 	"\vListMembers\x12!.scoreboard.v1.ListMembersRequest\x1a\".scoreboard.v1.ListMembersResponse\x12T\n" +
@@ -771,51 +898,55 @@ func file_scoreboard_v1_family_proto_rawDescGZIP() []byte {
 	return file_scoreboard_v1_family_proto_rawDescData
 }
 
-var file_scoreboard_v1_family_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_scoreboard_v1_family_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_scoreboard_v1_family_proto_goTypes = []any{
 	(*CreateFamilyRequest)(nil),          // 0: scoreboard.v1.CreateFamilyRequest
 	(*CreateFamilyResponse)(nil),         // 1: scoreboard.v1.CreateFamilyResponse
 	(*JoinFamilyRequest)(nil),            // 2: scoreboard.v1.JoinFamilyRequest
 	(*JoinFamilyResponse)(nil),           // 3: scoreboard.v1.JoinFamilyResponse
-	(*ListMyFamiliesRequest)(nil),        // 4: scoreboard.v1.ListMyFamiliesRequest
-	(*ListMyFamiliesResponse)(nil),       // 5: scoreboard.v1.ListMyFamiliesResponse
-	(*GetFamilyRequest)(nil),             // 6: scoreboard.v1.GetFamilyRequest
-	(*GetFamilyResponse)(nil),            // 7: scoreboard.v1.GetFamilyResponse
-	(*ListMembersRequest)(nil),           // 8: scoreboard.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),          // 9: scoreboard.v1.ListMembersResponse
-	(*LeaveFamilyRequest)(nil),           // 10: scoreboard.v1.LeaveFamilyRequest
-	(*LeaveFamilyResponse)(nil),          // 11: scoreboard.v1.LeaveFamilyResponse
-	(*RemoveMemberRequest)(nil),          // 12: scoreboard.v1.RemoveMemberRequest
-	(*RemoveMemberResponse)(nil),         // 13: scoreboard.v1.RemoveMemberResponse
-	(*RegenerateInviteCodeRequest)(nil),  // 14: scoreboard.v1.RegenerateInviteCodeRequest
-	(*RegenerateInviteCodeResponse)(nil), // 15: scoreboard.v1.RegenerateInviteCodeResponse
-	(*Family)(nil),                       // 16: scoreboard.v1.Family
-	(*FamilyMember)(nil),                 // 17: scoreboard.v1.FamilyMember
+	(*PreviewInviteRequest)(nil),         // 4: scoreboard.v1.PreviewInviteRequest
+	(*PreviewInviteResponse)(nil),        // 5: scoreboard.v1.PreviewInviteResponse
+	(*ListMyFamiliesRequest)(nil),        // 6: scoreboard.v1.ListMyFamiliesRequest
+	(*ListMyFamiliesResponse)(nil),       // 7: scoreboard.v1.ListMyFamiliesResponse
+	(*GetFamilyRequest)(nil),             // 8: scoreboard.v1.GetFamilyRequest
+	(*GetFamilyResponse)(nil),            // 9: scoreboard.v1.GetFamilyResponse
+	(*ListMembersRequest)(nil),           // 10: scoreboard.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),          // 11: scoreboard.v1.ListMembersResponse
+	(*LeaveFamilyRequest)(nil),           // 12: scoreboard.v1.LeaveFamilyRequest
+	(*LeaveFamilyResponse)(nil),          // 13: scoreboard.v1.LeaveFamilyResponse
+	(*RemoveMemberRequest)(nil),          // 14: scoreboard.v1.RemoveMemberRequest
+	(*RemoveMemberResponse)(nil),         // 15: scoreboard.v1.RemoveMemberResponse
+	(*RegenerateInviteCodeRequest)(nil),  // 16: scoreboard.v1.RegenerateInviteCodeRequest
+	(*RegenerateInviteCodeResponse)(nil), // 17: scoreboard.v1.RegenerateInviteCodeResponse
+	(*Family)(nil),                       // 18: scoreboard.v1.Family
+	(*FamilyMember)(nil),                 // 19: scoreboard.v1.FamilyMember
 }
 var file_scoreboard_v1_family_proto_depIdxs = []int32{
-	16, // 0: scoreboard.v1.CreateFamilyResponse.family:type_name -> scoreboard.v1.Family
-	16, // 1: scoreboard.v1.JoinFamilyResponse.family:type_name -> scoreboard.v1.Family
-	16, // 2: scoreboard.v1.ListMyFamiliesResponse.families:type_name -> scoreboard.v1.Family
-	16, // 3: scoreboard.v1.GetFamilyResponse.family:type_name -> scoreboard.v1.Family
-	17, // 4: scoreboard.v1.ListMembersResponse.members:type_name -> scoreboard.v1.FamilyMember
+	18, // 0: scoreboard.v1.CreateFamilyResponse.family:type_name -> scoreboard.v1.Family
+	18, // 1: scoreboard.v1.JoinFamilyResponse.family:type_name -> scoreboard.v1.Family
+	18, // 2: scoreboard.v1.ListMyFamiliesResponse.families:type_name -> scoreboard.v1.Family
+	18, // 3: scoreboard.v1.GetFamilyResponse.family:type_name -> scoreboard.v1.Family
+	19, // 4: scoreboard.v1.ListMembersResponse.members:type_name -> scoreboard.v1.FamilyMember
 	0,  // 5: scoreboard.v1.FamilyService.CreateFamily:input_type -> scoreboard.v1.CreateFamilyRequest
 	2,  // 6: scoreboard.v1.FamilyService.JoinFamily:input_type -> scoreboard.v1.JoinFamilyRequest
-	4,  // 7: scoreboard.v1.FamilyService.ListMyFamilies:input_type -> scoreboard.v1.ListMyFamiliesRequest
-	6,  // 8: scoreboard.v1.FamilyService.GetFamily:input_type -> scoreboard.v1.GetFamilyRequest
-	8,  // 9: scoreboard.v1.FamilyService.ListMembers:input_type -> scoreboard.v1.ListMembersRequest
-	10, // 10: scoreboard.v1.FamilyService.LeaveFamily:input_type -> scoreboard.v1.LeaveFamilyRequest
-	12, // 11: scoreboard.v1.FamilyService.RemoveMember:input_type -> scoreboard.v1.RemoveMemberRequest
-	14, // 12: scoreboard.v1.FamilyService.RegenerateInviteCode:input_type -> scoreboard.v1.RegenerateInviteCodeRequest
-	1,  // 13: scoreboard.v1.FamilyService.CreateFamily:output_type -> scoreboard.v1.CreateFamilyResponse
-	3,  // 14: scoreboard.v1.FamilyService.JoinFamily:output_type -> scoreboard.v1.JoinFamilyResponse
-	5,  // 15: scoreboard.v1.FamilyService.ListMyFamilies:output_type -> scoreboard.v1.ListMyFamiliesResponse
-	7,  // 16: scoreboard.v1.FamilyService.GetFamily:output_type -> scoreboard.v1.GetFamilyResponse
-	9,  // 17: scoreboard.v1.FamilyService.ListMembers:output_type -> scoreboard.v1.ListMembersResponse
-	11, // 18: scoreboard.v1.FamilyService.LeaveFamily:output_type -> scoreboard.v1.LeaveFamilyResponse
-	13, // 19: scoreboard.v1.FamilyService.RemoveMember:output_type -> scoreboard.v1.RemoveMemberResponse
-	15, // 20: scoreboard.v1.FamilyService.RegenerateInviteCode:output_type -> scoreboard.v1.RegenerateInviteCodeResponse
-	13, // [13:21] is the sub-list for method output_type
-	5,  // [5:13] is the sub-list for method input_type
+	4,  // 7: scoreboard.v1.FamilyService.PreviewInvite:input_type -> scoreboard.v1.PreviewInviteRequest
+	6,  // 8: scoreboard.v1.FamilyService.ListMyFamilies:input_type -> scoreboard.v1.ListMyFamiliesRequest
+	8,  // 9: scoreboard.v1.FamilyService.GetFamily:input_type -> scoreboard.v1.GetFamilyRequest
+	10, // 10: scoreboard.v1.FamilyService.ListMembers:input_type -> scoreboard.v1.ListMembersRequest
+	12, // 11: scoreboard.v1.FamilyService.LeaveFamily:input_type -> scoreboard.v1.LeaveFamilyRequest
+	14, // 12: scoreboard.v1.FamilyService.RemoveMember:input_type -> scoreboard.v1.RemoveMemberRequest
+	16, // 13: scoreboard.v1.FamilyService.RegenerateInviteCode:input_type -> scoreboard.v1.RegenerateInviteCodeRequest
+	1,  // 14: scoreboard.v1.FamilyService.CreateFamily:output_type -> scoreboard.v1.CreateFamilyResponse
+	3,  // 15: scoreboard.v1.FamilyService.JoinFamily:output_type -> scoreboard.v1.JoinFamilyResponse
+	5,  // 16: scoreboard.v1.FamilyService.PreviewInvite:output_type -> scoreboard.v1.PreviewInviteResponse
+	7,  // 17: scoreboard.v1.FamilyService.ListMyFamilies:output_type -> scoreboard.v1.ListMyFamiliesResponse
+	9,  // 18: scoreboard.v1.FamilyService.GetFamily:output_type -> scoreboard.v1.GetFamilyResponse
+	11, // 19: scoreboard.v1.FamilyService.ListMembers:output_type -> scoreboard.v1.ListMembersResponse
+	13, // 20: scoreboard.v1.FamilyService.LeaveFamily:output_type -> scoreboard.v1.LeaveFamilyResponse
+	15, // 21: scoreboard.v1.FamilyService.RemoveMember:output_type -> scoreboard.v1.RemoveMemberResponse
+	17, // 22: scoreboard.v1.FamilyService.RegenerateInviteCode:output_type -> scoreboard.v1.RegenerateInviteCodeResponse
+	14, // [14:23] is the sub-list for method output_type
+	5,  // [5:14] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
 	5,  // [5:5] is the sub-list for extension extendee
 	0,  // [0:5] is the sub-list for field type_name
@@ -833,7 +964,7 @@ func file_scoreboard_v1_family_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scoreboard_v1_family_proto_rawDesc), len(file_scoreboard_v1_family_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

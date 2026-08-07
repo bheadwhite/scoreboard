@@ -25,6 +25,11 @@ export function ProfileView({
     void presenter.load();
   }, [presenter]);
 
+  const who = profile?.user ? displayName(profile.user) : "";
+  useEffect(() => {
+    if (who) app.setScreenTitle(who);
+  }, [app, who]);
+
   const others = members.filter((m) => m.user?.id !== presenter.userId);
 
   return (

@@ -21,9 +21,10 @@ help: ## Show this help
 setup: tools install db ## One-time setup: tools, deps, and a local database
 
 .PHONY: tools
-tools: ## Install the Go protobuf plugins
+tools: ## Install the Go protobuf plugins and the live-reload runner
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.19.1
+	go install github.com/air-verse/air@latest
 
 .PHONY: install
 install: ## Install JS dependencies
@@ -39,8 +40,14 @@ generate: ## Regenerate Go + TypeScript from the protos
 	PATH="$(PATH):$(GOBIN)" $(BUF) generate
 
 .PHONY: dev-api
-dev-api: ## Run the backend (applies migrations on start)
-	cd backend && go run ./cmd/server
+dev-api: ## Run the backend with live reload (applies migrations on start)
+	@cd backend && if [ -x "$(GOBIN)/air" ]; then \
+		echo "▸ live reload on — Go changes rebuild automatically"; \
+		"$(GOBIN)/air"; \
+	else \
+		echo "▸ no live reload (run 'make tools' to install air); restart after Go changes"; \
+		go run ./cmd/server; \
+	fi
 
 .PHONY: dev-web
 dev-web: ## Run the Vite dev server, proxying /api to the backend

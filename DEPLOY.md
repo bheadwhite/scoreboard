@@ -48,7 +48,7 @@ redirect URIs**:
 
 ```
 https://YOUR-SERVICE-URL/auth/google/callback
-http://localhost:5173/auth/google/callback     # for local development
+http://localhost:3000/auth/google/callback     # for local development
 ```
 
 That URI is derived from `APP_URL`, so the two must agree exactly — a mismatch
@@ -135,9 +135,17 @@ connections at 16. `--min-instances 0` means scale to zero, so a cold start cost
 a second or two on the first request after a quiet spell. That is the right trade
 for a family app. Consider a billing budget alert.
 
-**Changing the concession window.** `CONCEDE_WINDOW` is a Go duration (`24h`,
-`30m`). It applies to newly claimed matches; already-claimed matches keep the
-deadline they were given.
+**Changing the concession window.** `CONCEDE_WINDOW` is a Go duration (`168h`,
+`30m`), defaulting to a week. It is a backstop for a match everybody walked away
+from, not a deadline players are meant to race: an unanswered claim stays on
+everyone's list the whole time, and any player can change their answer until it
+finalizes. Shortening it to a day makes an ordinary weekend away ripen into a
+concession nobody gave.
+
+It applies to newly claimed matches; already-claimed matches keep the deadline
+they were given. Withdrawing the last dispute on a match restarts the clock with
+a full window, because the players who were still silent had nothing to answer
+while the argument was live.
 
 **Rollback.**
 

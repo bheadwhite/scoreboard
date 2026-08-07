@@ -1,4 +1,5 @@
 import { createClients, type Clients } from "../clients.js";
+import { Realtime } from "./realtime.js";
 import { Session } from "./session.js";
 import { Store } from "./store.js";
 
@@ -10,13 +11,16 @@ import { Store } from "./store.js";
  *   presenter → domain.store.<collection>   cached, shared, invalidatable reads
  *   presenter → domain.api.<service>.<rpc>  writes, and one-off reads
  *   presenter → domain.session              who is signed in
+ *   presenter → domain.realtime             what just changed elsewhere
  */
 export interface Domain {
   readonly api: Clients;
   readonly store: Store;
   readonly session: Session;
+  /** Live changes for the family on screen. */
+  readonly realtime: Realtime;
 }
 
 export function createDomain(api: Clients = createClients()): Domain {
-  return { api, store: new Store(api), session: new Session() };
+  return { api, store: new Store(api), session: new Session(), realtime: new Realtime() };
 }

@@ -228,22 +228,35 @@ func participantStatusPB(s string) scoreboardv1.ParticipantStatus {
 
 func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 	return &scoreboardv1.MatchParticipant{
-		MatchId:     p.MatchID,
-		User:        userPB(p.User),
-		TeamId:      deref(p.TeamID),
-		Result:      resultPB(p.Result),
-		ConcededAt:  tsp(p.ConcededAt),
-		DisputedAt:  tsp(p.DisputedAt),
-		Status:      participantStatusPB(p.Status),
-		InvitedAt:   ts(p.InvitedAt),
-		RespondedAt: tsp(p.RespondedAt),
+		MatchId:       p.MatchID,
+		User:          userPB(p.User),
+		TeamId:        deref(p.TeamID),
+		Result:        resultPB(p.Result),
+		ConcededAt:    tsp(p.ConcededAt),
+		DisputedAt:    tsp(p.DisputedAt),
+		Status:        participantStatusPB(p.Status),
+		InvitedAt:     ts(p.InvitedAt),
+		RespondedAt:   tsp(p.RespondedAt),
+		ReadyAt:       tsp(p.ReadyAt),
+		DisputeReason: p.DisputeReason,
 	}
 }
 
-// matchPB converts a match for viewerID, filling in the two convenience fields
-// the UI needs: who still owes a concession, and whether the viewer is one of
-// them.
-func matchPB(m model.Match, viewerID string) *scoreboardv1.Match {
+// matchPB converts a match for viewerID, filling in the convenience fields the
+// UI needs: who still owes a concession, and whether the viewer is one of them.
+//
+// viewerIsOrganizer controls one piece of redaction. Who disputed a result is
+// only sent to the family organizer, because they are the person who has to
+// settle it. Everyone else sees that the match is disputed without seeing which
+// relative called foul — the app already asks people to concede to each other's
+// faces, and naming the objector turns a paused game into a grudge. Redacted
+// here rather than hidden in the UI, so the name is not merely off-screen while
+// still sitting in the response.
+//
+// A method rather than a function because whether the organizer may step in
+// depends on the concession window, which lives on base. A service constructed
+// without one still maps correctly — see Match.Deadlocked.
+func (b base) matchPB(m model.Match, viewerID string, viewerIsOrganizer bool) *scoreboardv1.Match {
 	out := &scoreboardv1.Match{
 		Id:              m.ID,
 		FamilyId:        m.FamilyID,
@@ -264,16 +277,27 @@ func matchPB(m model.Match, viewerID string) *scoreboardv1.Match {
 		out.Teams = append(out.Teams, teamPB(t))
 	}
 	for _, p := range m.Participants {
-		out.Participants = append(out.Participants, participantPB(p))
+		out.Participants = append(out.Participants, redactDispute(participantPB(p), p, viewerID, viewerIsOrganizer))
 	}
 	// Split rosters so the UI never has to re-derive who is actually playing.
 	for _, p := range m.JoinedParticipants() {
-		out.Joined = append(out.Joined, participantPB(p))
+		out.Joined = append(out.Joined, redactDispute(participantPB(p), p, viewerID, viewerIsOrganizer))
 	}
 	for _, p := range m.PendingInvites() {
 		out.Invited = append(out.Invited, participantPB(p))
 		if p.User.ID == viewerID {
 			out.ViewerIsInvited = true
+		}
+	}
+
+	out.AllReady = m.AllReady()
+	out.ViewerIsCreator = m.CreatedBy == viewerID
+	for _, p := range m.AwaitingReady() {
+		out.AwaitingReady = append(out.AwaitingReady, userPB(p.User))
+	}
+	for _, p := range m.JoinedParticipants() {
+		if p.User.ID == viewerID && p.ReadyAt != nil {
+			out.ViewerIsReady = true
 		}
 	}
 	for _, p := range m.AwaitingConcession() {
@@ -282,13 +306,29 @@ func matchPB(m model.Match, viewerID string) *scoreboardv1.Match {
 			out.ViewerOwesConcession = true
 		}
 	}
+
+	out.ViewerIsClaimant = m.OnClaimingTeam(viewerID)
+	out.OrganizerMayResolve = m.Deadlocked(b.concedeWindow)
 	return out
 }
 
-func matchesPB(ms []model.Match, viewerID string) []*scoreboardv1.Match {
+// redactDispute strips who objected unless the viewer is the organizer, or it
+// is their own objection — you always know what you did.
+func redactDispute(
+	pb *scoreboardv1.MatchParticipant, p model.MatchParticipant, viewerID string, organizer bool,
+) *scoreboardv1.MatchParticipant {
+	if organizer || p.User.ID == viewerID {
+		return pb
+	}
+	pb.DisputedAt = nil
+	pb.DisputeReason = ""
+	return pb
+}
+
+func (b base) matchesPB(ms []model.Match, viewerID string, viewerIsOrganizer bool) []*scoreboardv1.Match {
 	out := make([]*scoreboardv1.Match, 0, len(ms))
 	for _, m := range ms {
-		out = append(out, matchPB(m, viewerID))
+		out = append(out, b.matchPB(m, viewerID, viewerIsOrganizer))
 	}
 	return out
 }

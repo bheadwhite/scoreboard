@@ -8,10 +8,17 @@ import "scoreboard/v1/common.proto";
 // is the whole point of this app:
 //
 //   LOBBY -> IN_PROGRESS -> CLAIMED -> FINAL       (all opponents concede, or timeout)
-//                              \
-//                               -> DISPUTED -> FINAL | CANCELED  (owner resolves)
+//                              ^  \
+//                              |   -> DISPUTED -> FINAL | CANCELED  (owner resolves)
+//                              |        |
+//                              +--------+   (the last objection is withdrawn)
 //
-// Only FINAL matches count toward the scoreboard.
+// CLAIMED and DISPUTED are two readings of the same situation — a claim on the
+// table and a set of answers to it — rather than two destinations. Nobody is
+// held to the answer they first gave: an opponent can move between conceding
+// and objecting for as long as the match is open, and WithdrawClaim takes the
+// whole thing back to IN_PROGRESS. Only FINAL is a one-way door, and only FINAL
+// matches count toward the scoreboard.
 service MatchService {
   rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
   rpc JoinMatch(JoinMatchRequest) returns (JoinMatchResponse);
@@ -23,17 +30,30 @@ service MatchService {
   // Replaces the whole team layout while still in the lobby.
   rpc SetTeams(SetTeamsRequest) returns (SetTeamsResponse);
   rpc SetContract(SetContractRequest) returns (SetContractResponse);
-  // Locks the contract and begins play.
+  // Affirm, or withdraw, that you are ready to play under the current
+  // contract. Changing the contract or the teams clears everyone's.
+  rpc SetReady(SetReadyRequest) returns (SetReadyResponse);
+  // Locks the contract and begins play. Creator only, and only once every
+  // joined player is ready.
   rpc StartMatch(StartMatchRequest) returns (StartMatchResponse);
 
   // Claim victory for the caller's team. Starts the concession clock.
   // Idempotent: re-claiming by the same team is a no-op.
   rpc ClaimVictory(ClaimVictoryRequest) returns (ClaimVictoryResponse);
-  // Acknowledge someone else's claim. Idempotent.
+  // Take back a claim your own team made. The match returns to IN_PROGRESS with
+  // no winner and every answer cleared — this is "never mind", not "you won".
+  // Anyone on the claiming team may do it, and only until the match finalizes.
+  rpc WithdrawClaim(WithdrawClaimRequest) returns (WithdrawClaimResponse);
+  // Acknowledge the standing claim. Idempotent, and reversible: this also
+  // withdraws an objection you made earlier. Taking back the last objection
+  // returns the match to CLAIMED and restarts its clock.
   rpc Concede(ConcedeRequest) returns (ConcedeResponse);
-  // Reject a claim. Stops the concession clock and requires an owner to resolve.
+  // Reject the standing claim, or take back a concession you already gave.
+  // Stops the concession clock for as long as the objection stands.
   rpc DisputeMatch(DisputeMatchRequest) returns (DisputeMatchResponse);
-  // Owner only: settle a disputed match by naming the winning team, or void it.
+  // Owner only, and only once the match is genuinely stuck — see
+  // Match.organizer_may_resolve. Settles it by naming the winning team, or
+  // voids it.
   rpc ResolveDispute(ResolveDisputeRequest) returns (ResolveDisputeResponse);
 
   rpc CancelMatch(CancelMatchRequest) returns (CancelMatchResponse);
@@ -113,6 +133,15 @@ message SetContractResponse {
   Match match = 1;
 }
 
+message SetReadyRequest {
+  string match_id = 1;
+  bool ready = 2;
+}
+
+message SetReadyResponse {
+  Match match = 1;
+}
+
 message StartMatchRequest {
   string match_id = 1;
 }
@@ -128,6 +157,14 @@ message ClaimVictoryRequest {
 }
 
 message ClaimVictoryResponse {
+  Match match = 1;
+}
+
+message WithdrawClaimRequest {
+  string match_id = 1;
+}
+
+message WithdrawClaimResponse {
   Match match = 1;
 }
 

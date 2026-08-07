@@ -222,9 +222,17 @@ func (x *GetStandingsRequest) GetRange() StatsRange {
 }
 
 type GetStandingsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Rows          []*StandingsRow        `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
-	TotalMatches  int32                  `protobuf:"varint,2,opt,name=total_matches,json=totalMatches,proto3" json:"total_matches,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Rows         []*StandingsRow        `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
+	TotalMatches int32                  `protobuf:"varint,2,opt,name=total_matches,json=totalMatches,proto3" json:"total_matches,omitempty"`
+	// Games this family has actually finished at least one match of, within the
+	// requested range. This is what the filter should offer — the full catalog
+	// includes a dozen games nobody here has played, and every one of those
+	// filters to an empty table.
+	//
+	// Not narrowed by game_id: selecting a filter must not collapse the list of
+	// filters to the one already chosen.
+	PlayedGames   []*Game `protobuf:"bytes,3,rep,name=played_games,json=playedGames,proto3" json:"played_games,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -271,6 +279,13 @@ func (x *GetStandingsResponse) GetTotalMatches() int32 {
 		return x.TotalMatches
 	}
 	return 0
+}
+
+func (x *GetStandingsResponse) GetPlayedGames() []*Game {
+	if x != nil {
+		return x.PlayedGames
+	}
+	return nil
 }
 
 // One game's slice of a head-to-head record.
@@ -743,10 +758,11 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x13GetStandingsRequest\x12\x1b\n" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\x12\x17\n" +
 	"\agame_id\x18\x02 \x01(\tR\x06gameId\x12/\n" +
-	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"l\n" +
+	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xa4\x01\n" +
 	"\x14GetStandingsResponse\x12/\n" +
 	"\x04rows\x18\x01 \x03(\v2\x1b.scoreboard.v1.StandingsRowR\x04rows\x12#\n" +
-	"\rtotal_matches\x18\x02 \x01(\x05R\ftotalMatches\"e\n" +
+	"\rtotal_matches\x18\x02 \x01(\x05R\ftotalMatches\x126\n" +
+	"\fplayed_games\x18\x03 \x03(\v2\x13.scoreboard.v1.GameR\vplayedGames\"e\n" +
 	"\x0eHeadToHeadGame\x12'\n" +
 	"\x04game\x18\x01 \x01(\v2\x13.scoreboard.v1.GameR\x04game\x12\x12\n" +
 	"\x04wins\x18\x02 \x01(\x05R\x04wins\x12\x16\n" +
@@ -833,28 +849,29 @@ var file_scoreboard_v1_stats_proto_depIdxs = []int32{
 	9,  // 0: scoreboard.v1.StandingsRow.user:type_name -> scoreboard.v1.User
 	0,  // 1: scoreboard.v1.GetStandingsRequest.range:type_name -> scoreboard.v1.StatsRange
 	1,  // 2: scoreboard.v1.GetStandingsResponse.rows:type_name -> scoreboard.v1.StandingsRow
-	10, // 3: scoreboard.v1.HeadToHeadGame.game:type_name -> scoreboard.v1.Game
-	0,  // 4: scoreboard.v1.GetHeadToHeadRequest.range:type_name -> scoreboard.v1.StatsRange
-	9,  // 5: scoreboard.v1.GetHeadToHeadResponse.user:type_name -> scoreboard.v1.User
-	9,  // 6: scoreboard.v1.GetHeadToHeadResponse.opponent:type_name -> scoreboard.v1.User
-	4,  // 7: scoreboard.v1.GetHeadToHeadResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
-	11, // 8: scoreboard.v1.GetHeadToHeadResponse.recent_matches:type_name -> scoreboard.v1.Match
-	0,  // 9: scoreboard.v1.GetPlayerProfileRequest.range:type_name -> scoreboard.v1.StatsRange
-	9,  // 10: scoreboard.v1.GetPlayerProfileResponse.user:type_name -> scoreboard.v1.User
-	9,  // 11: scoreboard.v1.GetPlayerProfileResponse.nemesis:type_name -> scoreboard.v1.User
-	9,  // 12: scoreboard.v1.GetPlayerProfileResponse.favorite_victim:type_name -> scoreboard.v1.User
-	4,  // 13: scoreboard.v1.GetPlayerProfileResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
-	2,  // 14: scoreboard.v1.StatsService.GetStandings:input_type -> scoreboard.v1.GetStandingsRequest
-	5,  // 15: scoreboard.v1.StatsService.GetHeadToHead:input_type -> scoreboard.v1.GetHeadToHeadRequest
-	7,  // 16: scoreboard.v1.StatsService.GetPlayerProfile:input_type -> scoreboard.v1.GetPlayerProfileRequest
-	3,  // 17: scoreboard.v1.StatsService.GetStandings:output_type -> scoreboard.v1.GetStandingsResponse
-	6,  // 18: scoreboard.v1.StatsService.GetHeadToHead:output_type -> scoreboard.v1.GetHeadToHeadResponse
-	8,  // 19: scoreboard.v1.StatsService.GetPlayerProfile:output_type -> scoreboard.v1.GetPlayerProfileResponse
-	17, // [17:20] is the sub-list for method output_type
-	14, // [14:17] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	10, // 3: scoreboard.v1.GetStandingsResponse.played_games:type_name -> scoreboard.v1.Game
+	10, // 4: scoreboard.v1.HeadToHeadGame.game:type_name -> scoreboard.v1.Game
+	0,  // 5: scoreboard.v1.GetHeadToHeadRequest.range:type_name -> scoreboard.v1.StatsRange
+	9,  // 6: scoreboard.v1.GetHeadToHeadResponse.user:type_name -> scoreboard.v1.User
+	9,  // 7: scoreboard.v1.GetHeadToHeadResponse.opponent:type_name -> scoreboard.v1.User
+	4,  // 8: scoreboard.v1.GetHeadToHeadResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
+	11, // 9: scoreboard.v1.GetHeadToHeadResponse.recent_matches:type_name -> scoreboard.v1.Match
+	0,  // 10: scoreboard.v1.GetPlayerProfileRequest.range:type_name -> scoreboard.v1.StatsRange
+	9,  // 11: scoreboard.v1.GetPlayerProfileResponse.user:type_name -> scoreboard.v1.User
+	9,  // 12: scoreboard.v1.GetPlayerProfileResponse.nemesis:type_name -> scoreboard.v1.User
+	9,  // 13: scoreboard.v1.GetPlayerProfileResponse.favorite_victim:type_name -> scoreboard.v1.User
+	4,  // 14: scoreboard.v1.GetPlayerProfileResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
+	2,  // 15: scoreboard.v1.StatsService.GetStandings:input_type -> scoreboard.v1.GetStandingsRequest
+	5,  // 16: scoreboard.v1.StatsService.GetHeadToHead:input_type -> scoreboard.v1.GetHeadToHeadRequest
+	7,  // 17: scoreboard.v1.StatsService.GetPlayerProfile:input_type -> scoreboard.v1.GetPlayerProfileRequest
+	3,  // 18: scoreboard.v1.StatsService.GetStandings:output_type -> scoreboard.v1.GetStandingsResponse
+	6,  // 19: scoreboard.v1.StatsService.GetHeadToHead:output_type -> scoreboard.v1.GetHeadToHeadResponse
+	8,  // 20: scoreboard.v1.StatsService.GetPlayerProfile:output_type -> scoreboard.v1.GetPlayerProfileResponse
+	18, // [18:21] is the sub-list for method output_type
+	15, // [15:18] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_scoreboard_v1_stats_proto_init() }

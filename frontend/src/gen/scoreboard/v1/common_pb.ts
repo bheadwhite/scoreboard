@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/common.proto.
  */
 export const file_scoreboard_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSJsCgRVc2VyEgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRISCgphdmF0YXJfdXJsGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIr8BCgZGYW1pbHkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtpbnZpdGVfY29kZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIuCgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgt2aWV3ZXJfcm9sZRgGIAEoDjIZLnNjb3JlYm9hcmQudjEuRmFtaWx5Um9sZRIUCgxtZW1iZXJfY291bnQYByABKAUiiQEKDEZhbWlseU1lbWJlchIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEicKBHJvbGUYAiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSLQoJam9pbmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKwAQoER2FtZRIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRINCgVlbW9qaRgEIAEoCRISCgp0ZWFtX2Jhc2VkGAUgASgIEhMKC21pbl9wbGF5ZXJzGAYgASgFEhMKC21heF9wbGF5ZXJzGAcgASgFEi4KCmNyZWF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKCENvbnRyYWN0EikKBGtpbmQYASABKA4yGy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0S2luZBIOCgZ0YXJnZXQYAiABKAUSDgoGZGV0YWlsGAMgASgJIkgKCU1hdGNoVGVhbRIKCgJpZBgBIAEoCRIQCghtYXRjaF9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB29yZGluYWwYBCABKAUigAMKEE1hdGNoUGFydGljaXBhbnQSEAoIbWF0Y2hfaWQYASABKAkSIQoEdXNlchgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIPCgd0ZWFtX2lkGAMgASgJEjAKBnJlc3VsdBgEIAEoDjIgLnNjb3JlYm9hcmQudjEuUGFydGljaXBhbnRSZXN1bHQSLwoLY29uY2VkZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2Rpc3B1dGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgZzdGF0dXMYByABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50U3RhdHVzEi4KCmludml0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDHJlc3BvbmRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi+AUKBU1hdGNoEgoKAmlkGAEgASgJEhEKCWZhbWlseV9pZBgCIAEoCRIhCgRnYW1lGAMgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEioKBnN0YXR1cxgEIAEoDjIaLnNjb3JlYm9hcmQudjEuTWF0Y2hTdGF0dXMSKQoIY29udHJhY3QYBSABKAsyFy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0EhIKCmNyZWF0ZWRfYnkYBiABKAkSJwoFdGVhbXMYByADKAsyGC5zY29yZWJvYXJkLnYxLk1hdGNoVGVhbRI1CgxwYXJ0aWNpcGFudHMYCCADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKc3RhcnRlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2xhaW1lZF9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSY2xhaW1lZF9ieV90ZWFtX2lkGAwgASgJEjQKEGNvbmNlZGVfZGVhZGxpbmUYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGZpbmFsaXplZF9hdBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoTYXdhaXRpbmdfY29uY2Vzc2lvbhgPIAMoCzITLnNjb3JlYm9hcmQudjEuVXNlchIeChZ2aWV3ZXJfb3dlc19jb25jZXNzaW9uGBAgASgIEi8KBmpvaW5lZBgRIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIwCgdpbnZpdGVkGBIgAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50EhkKEXZpZXdlcl9pc19pbnZpdGVkGBMgASgIKlgKCkZhbWlseVJvbGUSGwoXRkFNSUxZX1JPTEVfVU5TUEVDSUZJRUQQABIWChJGQU1JTFlfUk9MRV9NRU1CRVIQARIVChFGQU1JTFlfUk9MRV9PV05FUhACKsQBCgxDb250cmFjdEtpbmQSHQoZQ09OVFJBQ1RfS0lORF9VTlNQRUNJRklFRBAAEiAKHENPTlRSQUNUX0tJTkRfRklSU1RfVE9fU0NPUkUQARIZChVDT05UUkFDVF9LSU5EX0JFU1RfT0YQAhIfChtDT05UUkFDVF9LSU5EX0xBU1RfU1RBTkRJTkcQAxIdChlDT05UUkFDVF9LSU5EX1NJTkdMRV9HQU1FEAQSGAoUQ09OVFJBQ1RfS0lORF9DVVNUT00QBSrJAQoLTWF0Y2hTdGF0dXMSHAoYTUFUQ0hfU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSTUFUQ0hfU1RBVFVTX0xPQkJZEAESHAoYTUFUQ0hfU1RBVFVTX0lOX1BST0dSRVNTEAISGAoUTUFUQ0hfU1RBVFVTX0NMQUlNRUQQAxIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfRElTUFVURUQQBRIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiqXAQoRUGFydGljaXBhbnRTdGF0dXMSIgoeUEFSVElDSVBBTlRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHgoaUEFSVElDSVBBTlRfU1RBVFVTX0lOVklURUQQARIdChlQQVJUSUNJUEFOVF9TVEFUVVNfSk9JTkVEEAISHwobUEFSVElDSVBBTlRfU1RBVFVTX0RFQ0xJTkVEEAMqkAEKEVBhcnRpY2lwYW50UmVzdWx0EiIKHlBBUlRJQ0lQQU5UX1JFU1VMVF9VTlNQRUNJRklFRBAAEh4KGlBBUlRJQ0lQQU5UX1JFU1VMVF9QRU5ESU5HEAESGgoWUEFSVElDSVBBTlRfUkVTVUxUX1dJThACEhsKF1BBUlRJQ0lQQU5UX1JFU1VMVF9MT1NTEANCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtDb21tb25Qcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSJsCgRVc2VyEgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRISCgphdmF0YXJfdXJsGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIr8BCgZGYW1pbHkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtpbnZpdGVfY29kZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIuCgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgt2aWV3ZXJfcm9sZRgGIAEoDjIZLnNjb3JlYm9hcmQudjEuRmFtaWx5Um9sZRIUCgxtZW1iZXJfY291bnQYByABKAUiiQEKDEZhbWlseU1lbWJlchIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEicKBHJvbGUYAiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSLQoJam9pbmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKwAQoER2FtZRIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRINCgVlbW9qaRgEIAEoCRISCgp0ZWFtX2Jhc2VkGAUgASgIEhMKC21pbl9wbGF5ZXJzGAYgASgFEhMKC21heF9wbGF5ZXJzGAcgASgFEi4KCmNyZWF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKCENvbnRyYWN0EikKBGtpbmQYASABKA4yGy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0S2luZBIOCgZ0YXJnZXQYAiABKAUSDgoGZGV0YWlsGAMgASgJIkgKCU1hdGNoVGVhbRIKCgJpZBgBIAEoCRIQCghtYXRjaF9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB29yZGluYWwYBCABKAUixgMKEE1hdGNoUGFydGljaXBhbnQSEAoIbWF0Y2hfaWQYASABKAkSIQoEdXNlchgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIPCgd0ZWFtX2lkGAMgASgJEjAKBnJlc3VsdBgEIAEoDjIgLnNjb3JlYm9hcmQudjEuUGFydGljaXBhbnRSZXN1bHQSLwoLY29uY2VkZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2Rpc3B1dGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgZzdGF0dXMYByABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50U3RhdHVzEi4KCmludml0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDHJlc3BvbmRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIcmVhZHlfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRpc3B1dGVfcmVhc29uGAsgASgJIqcHCgVNYXRjaBIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSIQoEZ2FtZRgDIAEoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIqCgZzdGF0dXMYBCABKA4yGi5zY29yZWJvYXJkLnYxLk1hdGNoU3RhdHVzEikKCGNvbnRyYWN0GAUgASgLMhcuc2NvcmVib2FyZC52MS5Db250cmFjdBISCgpjcmVhdGVkX2J5GAYgASgJEicKBXRlYW1zGAcgAygLMhguc2NvcmVib2FyZC52MS5NYXRjaFRlYW0SNQoMcGFydGljaXBhbnRzGAggAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50Ei4KCmNyZWF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnN0YXJ0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsYWltZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmNsYWltZWRfYnlfdGVhbV9pZBgMIAEoCRI0ChBjb25jZWRlX2RlYWRsaW5lGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxmaW5hbGl6ZWRfYXQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKE2F3YWl0aW5nX2NvbmNlc3Npb24YDyADKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISHgoWdmlld2VyX293ZXNfY29uY2Vzc2lvbhgQIAEoCBIvCgZqb2luZWQYESADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSMAoHaW52aXRlZBgSIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIZChF2aWV3ZXJfaXNfaW52aXRlZBgTIAEoCBIXCg92aWV3ZXJfaXNfcmVhZHkYFCABKAgSEQoJYWxsX3JlYWR5GBUgASgIEisKDmF3YWl0aW5nX3JlYWR5GBYgAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEhkKEXZpZXdlcl9pc19jcmVhdG9yGBcgASgIEh0KFW9yZ2FuaXplcl9tYXlfcmVzb2x2ZRgYIAEoCBIaChJ2aWV3ZXJfaXNfY2xhaW1hbnQYGSABKAgqWAoKRmFtaWx5Um9sZRIbChdGQU1JTFlfUk9MRV9VTlNQRUNJRklFRBAAEhYKEkZBTUlMWV9ST0xFX01FTUJFUhABEhUKEUZBTUlMWV9ST0xFX09XTkVSEAIqxAEKDENvbnRyYWN0S2luZBIdChlDT05UUkFDVF9LSU5EX1VOU1BFQ0lGSUVEEAASIAocQ09OVFJBQ1RfS0lORF9GSVJTVF9UT19TQ09SRRABEhkKFUNPTlRSQUNUX0tJTkRfQkVTVF9PRhACEh8KG0NPTlRSQUNUX0tJTkRfTEFTVF9TVEFORElORxADEh0KGUNPTlRSQUNUX0tJTkRfU0lOR0xFX0dBTUUQBBIYChRDT05UUkFDVF9LSU5EX0NVU1RPTRAFKskBCgtNYXRjaFN0YXR1cxIcChhNQVRDSF9TVEFUVVNfVU5TUEVDSUZJRUQQABIWChJNQVRDSF9TVEFUVVNfTE9CQlkQARIcChhNQVRDSF9TVEFUVVNfSU5fUFJPR1JFU1MQAhIYChRNQVRDSF9TVEFUVVNfQ0xBSU1FRBADEhYKEk1BVENIX1NUQVRVU19GSU5BTBAEEhkKFU1BVENIX1NUQVRVU19ESVNQVVRFRBAFEhkKFU1BVENIX1NUQVRVU19DQU5DRUxFRBAGKpcBChFQYXJ0aWNpcGFudFN0YXR1cxIiCh5QQVJUSUNJUEFOVF9TVEFUVVNfVU5TUEVDSUZJRUQQABIeChpQQVJUSUNJUEFOVF9TVEFUVVNfSU5WSVRFRBABEh0KGVBBUlRJQ0lQQU5UX1NUQVRVU19KT0lORUQQAhIfChtQQVJUSUNJUEFOVF9TVEFUVVNfREVDTElORUQQAyqQAQoRUGFydGljaXBhbnRSZXN1bHQSIgoeUEFSVElDSVBBTlRfUkVTVUxUX1VOU1BFQ0lGSUVEEAASHgoaUEFSVElDSVBBTlRfUkVTVUxUX1BFTkRJTkcQARIaChZQQVJUSUNJUEFOVF9SRVNVTFRfV0lOEAISGwoXUEFSVElDSVBBTlRfUkVTVUxUX0xPU1MQA0K+AQoRY29tLnNjb3JlYm9hcmQudjFCC0NvbW1vblByb3RvUAFaR2dpdGh1Yi5jb20vYmhlYWR3aGl0ZS9zY29yZWJvYXJkL2JhY2tlbmQvZ2VuL3Njb3JlYm9hcmQvdjE7c2NvcmVib2FyZHYxogIDU1hYqgINU2NvcmVib2FyZC5WMcoCDVNjb3JlYm9hcmRcVjHiAhlTY29yZWJvYXJkXFYxXEdQQk1ldGFkYXRh6gIOU2NvcmVib2FyZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * A player. Mirrors a Supabase auth user; the id is the Supabase user id.
@@ -308,6 +308,24 @@ export type MatchParticipant = Message<"scoreboard.v1.MatchParticipant"> & {
    * @generated from field: google.protobuf.Timestamp responded_at = 9;
    */
   respondedAt?: Timestamp | undefined;
+
+  /**
+   * When this player affirmed they are ready to play under the contract as it
+   * then stood. Cleared whenever the contract or the teams change, so it always
+   * refers to the terms currently on screen.
+   *
+   * @generated from field: google.protobuf.Timestamp ready_at = 10;
+   */
+  readyAt?: Timestamp | undefined;
+
+  /**
+   * Why this player objected to the claim. Sent only to the family organizer,
+   * who has to settle it, and back to the player who wrote it. Everyone else
+   * gets an empty string — see the note on matchPB.
+   *
+   * @generated from field: string dispute_reason = 11;
+   */
+  disputeReason: string;
 };
 
 /**
@@ -387,6 +405,10 @@ export type Match = Message<"scoreboard.v1.Match"> & {
    * After this instant, outstanding concessions are assumed and the match
    * finalizes on its own. A dispute clears this and stops the clock.
    *
+   * This is a backstop for a match everyone abandoned, not a countdown anybody
+   * is meant to race — it is a week by default, and the claim sits on every
+   * player's list for all of it.
+   *
    * @generated from field: google.protobuf.Timestamp concede_deadline = 13;
    */
   concedeDeadline?: Timestamp | undefined;
@@ -431,6 +453,55 @@ export type Match = Message<"scoreboard.v1.Match"> & {
    * @generated from field: bool viewer_is_invited = 19;
    */
   viewerIsInvited: boolean;
+
+  /**
+   * Whether the caller has affirmed the current contract.
+   *
+   * @generated from field: bool viewer_is_ready = 20;
+   */
+  viewerIsReady: boolean;
+
+  /**
+   * Whether every joined player has. Until this is true, nobody can start.
+   *
+   * @generated from field: bool all_ready = 21;
+   */
+  allReady: boolean;
+
+  /**
+   * Joined players who have not affirmed the current contract yet.
+   *
+   * @generated from field: repeated scoreboard.v1.User awaiting_ready = 22;
+   */
+  awaitingReady: User[];
+
+  /**
+   * Whether the caller set this match up. Only they may start it.
+   *
+   * @generated from field: bool viewer_is_creator = 23;
+   */
+  viewerIsCreator: boolean;
+
+  /**
+   * Whether the family organizer may step in and settle this match now.
+   *
+   * Deliberately not "is this disputed". An organizer ruling on a disagreement
+   * the players are still having takes the argument away from them, and the
+   * argument is the point. It only opens once the match is genuinely stuck:
+   * everybody has had their say and they still disagree, or the claim has stood
+   * unanswered for longer than the concession window.
+   *
+   * @generated from field: bool organizer_may_resolve = 24;
+   */
+  organizerMayResolve: boolean;
+
+  /**
+   * Whether the caller is on the team that claimed the win, and so answers for
+   * the claim itself rather than owing a concession to it.
+   *
+   * @generated from field: bool viewer_is_claimant = 25;
+   */
+  viewerIsClaimant: boolean;
 };
 
 /**
@@ -553,7 +624,9 @@ export enum MatchStatus {
   IN_PROGRESS = 2,
 
   /**
-   * Someone claimed victory; opponents owe a concession.
+   * Someone claimed victory; opponents owe a concession. Nobody is locked into
+   * the answer they gave — an answer stands until its author changes it, and
+   * the claimant can withdraw the claim outright.
    *
    * @generated from enum value: MATCH_STATUS_CLAIMED = 3;
    */
@@ -567,8 +640,9 @@ export enum MatchStatus {
   FINAL = 4,
 
   /**
-   * An opponent disputed the claim. The clock is stopped and only the family
-   * owner can resolve it.
+   * At least one opponent is rejecting the claim. The clock is stopped, and it
+   * stays stopped until either the objection is withdrawn — which puts the
+   * match back to CLAIMED — or the family owner settles a genuine deadlock.
    *
    * @generated from enum value: MATCH_STATUS_DISPUTED = 5;
    */

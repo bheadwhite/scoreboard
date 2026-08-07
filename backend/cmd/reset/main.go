@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -35,6 +36,8 @@ func main() {
 		all    = flag.Bool("all", false, "clear every family, match and player")
 		users  = flag.Bool("users", false, "with -family, also delete players left in no family")
 		yes    = flag.Bool("yes", false, "actually delete; without this it is a dry run")
+		prod   = flag.Bool("i-know-this-is-production", false,
+			"required to delete anything from a non-local database")
 	)
 	flag.Parse()
 
@@ -56,6 +59,20 @@ func main() {
 
 	log.Printf("database: %s\n", config.Redact(databaseURL))
 
+	// A local Postgres is a scratch database. Anything else is somebody's real
+	// record of who beat whom, and "clear my test fixtures" must never quietly
+	// mean that. This tool once wiped a live family because one .env pointed at
+	// production; the extra flag exists so that can only happen on purpose.
+	if !isLocal(databaseURL) && (*all || *family != "") && *yes && !*prod {
+		log.Fatalf(`refusing to delete from a remote database.
+
+  %s
+
+This does not look like a local database. If you really mean to delete from it,
+re-run with -i-know-this-is-production. Otherwise point DATABASE_URL at a local
+Postgres first.`, config.Redact(databaseURL))
+	}
+
 	switch {
 	case *all:
 		if err := clearAll(ctx, st, *yes); err != nil {
@@ -71,6 +88,17 @@ func main() {
 		}
 		fmt.Println("\nNothing was changed. Pass -family <name> or -all to target something.")
 	}
+}
+
+// isLocal reports whether the URL points at a developer's own machine. Only
+// loopback counts — a hostname that merely looks harmless is still remote.
+func isLocal(databaseURL string) bool {
+	u, err := url.Parse(databaseURL)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	return host == "localhost" || host == "127.0.0.1" || host == "::1" || host == ""
 }
 
 // list prints what is currently in the database.

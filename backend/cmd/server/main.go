@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	"github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1/scoreboardv1connect"
 	"github.com/bheadwhite/scoreboard/backend/internal/auth"
 	"github.com/bheadwhite/scoreboard/backend/internal/config"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/service"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 	"github.com/bheadwhite/scoreboard/backend/migrations"
@@ -55,7 +57,7 @@ func main() {
 		ClientID:      config.Env("GOOGLE_CLIENT_ID", config.Env("GCP_OAUTH_CLIENT", "")),
 		ClientSecret:  config.Env("GOOGLE_CLIENT_SECRET", config.Env("GCP_OAUTH_SECRET", "")),
 		SessionSecret: config.Env("SESSION_SECRET", ""),
-		AppURL:        config.Env("APP_URL", "http://localhost:5173"),
+		AppURL:        config.Env("APP_URL", "http://localhost:3000"),
 		Production:    production,
 		DevLogin:      config.Env("AUTH_DEV_LOGIN", "") == "true",
 	}, func(ctx context.Context, provider, providerID, email, name, avatarURL string) (auth.Identity, error) {
@@ -69,25 +71,27 @@ func main() {
 		log.Fatalf("auth: %v", err)
 	}
 
-	concedeWindow := config.Duration("CONCEDE_WINDOW", 24*time.Hour)
+	// Where mutations announce themselves and open browsers listen. In process
+	// on purpose — see internal/events.
+	hub := events.NewHub()
+
+	// A week, not a day. The window exists to stop a match hanging around
+	// forever because somebody stopped caring — it is not a deadline anyone is
+	// meant to hit. A day is short enough that ordinary life (a weekend away, a
+	// phone left on the charger) ripens a claim nobody actually answered, which
+	// is the one outcome the concession rule exists to prevent.
+	concedeWindow := config.Duration("CONCEDE_WINDOW", 7*24*time.Hour)
 	log.Printf("concession window: %s", concedeWindow)
 
 	opts := []connect.HandlerOption{connect.WithInterceptors(authn.Interceptor())}
 
 	api := http.NewServeMux()
-	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st), opts...))
-	api.Handle(scoreboardv1connect.NewFamilyServiceHandler(service.NewFamilyService(st), opts...))
-	api.Handle(scoreboardv1connect.NewGameServiceHandler(service.NewGameService(st), opts...))
-	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, concedeWindow), opts...))
-	api.Handle(scoreboardv1connect.NewStatsServiceHandler(service.NewStatsService(st), opts...))
+	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st, hub), opts...))
+	api.Handle(scoreboardv1connect.NewFamilyServiceHandler(service.NewFamilyService(st, hub), opts...))
+	api.Handle(scoreboardv1connect.NewGameServiceHandler(service.NewGameService(st, hub), opts...))
+	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, concedeWindow), opts...))
+	api.Handle(scoreboardv1connect.NewStatsServiceHandler(service.NewStatsService(st, hub), opts...))
 
-	// Runtime configuration for the browser, substituted into index.html. The
-	// frontend holds no credentials of its own now — sign-in is a redirect to
-	// this server — so all it needs to know is which options to offer.
-	frontendConfig := map[string]string{
-		"__GOOGLE_ENABLED__": boolString(authn.Configured()),
-		"__DEV_LOGIN__":      boolString(config.Env("AUTH_DEV_LOGIN", "") == "true"),
-	}
 	if !authn.Configured() {
 		log.Println("warning: Google sign-in is not configured — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET")
 	}
@@ -102,8 +106,15 @@ func main() {
 	root.HandleFunc("/health", health(st))
 	root.HandleFunc("/healthz", health(st))
 	root.HandleFunc("/tasks/sweep", sweep(st, config.Env("SWEEP_TOKEN", "")))
+	// Not a Connect route: the browser consumes this with EventSource, which
+	// needs a plain streaming HTTP response.
+	root.HandleFunc("/events", service.Events(st, hub, authn))
+	root.HandleFunc("/config.json", frontendConfig(
+		authn.Configured(),
+		config.Env("AUTH_DEV_LOGIN", "") == "true",
+	))
 	authn.Routes(root)
-	root.Handle("/", spaHandler(config.Env("STATIC_DIR", "../frontend/dist"), frontendConfig))
+	root.Handle("/", spaHandler(config.Env("STATIC_DIR", "../frontend/dist")))
 
 	port := config.Env("PORT", "8080")
 	srv := &http.Server{
@@ -176,28 +187,40 @@ func sweep(st *store.Store, token string) http.HandlerFunc {
 	}
 }
 
+// frontendConfig tells the browser which sign-in options actually work.
+//
+// An endpoint rather than a value templated into index.html: under the Vite dev
+// server the Go binary never touches index.html, so a templated value is absent
+// exactly when a developer is looking at it, and the frontend has to guess.
+// Guessing produced a sign-in screen offering a Google button next to an error
+// saying Google was not configured. Asking the server is right everywhere.
+//
+// These are capability flags, not credentials, so no authentication is needed.
+func frontendConfig(googleEnabled, devLogin bool) http.HandlerFunc {
+	body, _ := json.Marshal(map[string]bool{
+		"googleEnabled": googleEnabled,
+		"devLogin":      devLogin,
+	})
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		_, _ = w.Write(body)
+	}
+}
+
 // spaHandler serves the built frontend, falling back to index.html so client
 // routes deep-link correctly. Hashed assets are cached hard; index.html never
 // is, or a deploy would not take effect until caches expired.
-//
-// subs are placeholder replacements applied to index.html, which is how runtime
-// configuration reaches the browser without being compiled into the bundle.
-func spaHandler(dir string, subs map[string]string) http.Handler {
+func spaHandler(dir string) http.Handler {
 	fs := http.FileServer(http.Dir(dir))
 	index := filepath.Join(dir, "index.html")
 
-	// Read and substitute once at startup: index.html is small, it never
-	// changes while the process is alive, and doing it per request would put
-	// a file read in front of every page load.
-	var page []byte
-	if raw, err := os.ReadFile(index); err != nil {
+	// Read once at startup: index.html is small and never changes while the
+	// process is alive, so a file read per page load would be wasted work.
+	page, err := os.ReadFile(index)
+	if err != nil {
 		log.Printf("warning: could not read %s: %v", index, err)
-	} else {
-		out := string(raw)
-		for placeholder, value := range subs {
-			out = strings.ReplaceAll(out, placeholder, jsStringEscape(value))
-		}
-		page = []byte(out)
+		page = nil
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -220,30 +243,4 @@ func spaHandler(dir string, subs map[string]string) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_, _ = w.Write(page)
 	})
-}
-
-// jsStringEscape makes a value safe to drop inside a double-quoted JavaScript
-// string literal. These values are operator-supplied rather than user-supplied,
-// but injecting unescaped text into a <script> block is not a habit worth
-// having.
-func jsStringEscape(s string) string {
-	r := strings.NewReplacer(
-		`\`, `\\`,
-		`"`, `\"`,
-		"\n", `\n`,
-		"\r", `\r`,
-		// Escaped as unicode so a stray "</script>" cannot close the block.
-		"<", "\\u003C",
-		">", "\\u003E",
-		"&", "\\u0026",
-	)
-	return r.Replace(s)
-}
-
-// boolString renders a Go bool as a JavaScript literal for the injected config.
-func boolString(v bool) string {
-	if v {
-		return "true"
-	}
-	return "false"
 }

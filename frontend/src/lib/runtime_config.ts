@@ -1,41 +1,29 @@
-interface RuntimeConfig {
+export interface Capabilities {
   googleEnabled: boolean;
   devLogin: boolean;
 }
 
-declare global {
-  interface Window {
-    __SCOREBOARD_CONFIG__?: Partial<Record<keyof RuntimeConfig, unknown>>;
+/**
+ * Which sign-in options actually work, according to the server.
+ *
+ * This is fetched rather than compiled in or templated into index.html. Under
+ * the Vite dev server the Go binary never touches index.html, so a templated
+ * value is missing exactly when a developer is looking at it and the frontend
+ * has to guess — which produced a sign-in screen offering a Google button
+ * directly above an error saying Google was not configured.
+ */
+export async function fetchCapabilities(): Promise<Capabilities> {
+  try {
+    const res = await fetch("/config.json", { credentials: "same-origin" });
+    if (!res.ok) throw new Error(String(res.status));
+    const body = (await res.json()) as Partial<Capabilities>;
+    return {
+      googleEnabled: body.googleEnabled === true,
+      devLogin: body.devLogin === true,
+    };
+  } catch {
+    // Unreachable server: offer nothing rather than a button that cannot work.
+    // The sign-in screen says so explicitly.
+    return { googleEnabled: false, devLogin: false };
   }
 }
-
-/**
- * Reads a value the Go server substituted into index.html.
- *
- * Under the Vite dev server the file is served verbatim, so the placeholders
- * survive as literal `__NAME__` strings — that is the signal to fall back to a
- * development default rather than trust the value.
- */
-function flag(value: unknown, fallback: boolean): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    if (value.startsWith("__") && value.endsWith("__")) return fallback;
-    return value === "true";
-  }
-  return fallback;
-}
-
-const injected = typeof window !== "undefined" ? window.__SCOREBOARD_CONFIG__ : undefined;
-
-/**
- * What the browser is allowed to know about the server's configuration: which
- * sign-in options to offer, and nothing else. There are no credentials here —
- * authentication happens entirely server-side behind an HttpOnly cookie.
- *
- * The dev-server fallbacks assume a local backend with both options wired up,
- * which is what `make dev-api` gives you.
- */
-export const runtimeConfig: RuntimeConfig = {
-  googleEnabled: flag(injected?.googleEnabled, true),
-  devLogin: flag(injected?.devLogin, true),
-};

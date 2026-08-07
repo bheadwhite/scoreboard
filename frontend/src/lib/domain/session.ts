@@ -1,7 +1,7 @@
 import { Signal } from "@tcn/state/core";
 
 import type { User } from "../../gen/scoreboard/v1/common_pb.js";
-import { runtimeConfig } from "../runtime_config.js";
+import { fetchCapabilities, type Capabilities } from "../runtime_config.js";
 
 export type AuthStatus = "loading" | "signed_out" | "signed_in";
 
@@ -39,6 +39,8 @@ export class Session {
   private readonly _status = new Signal<AuthStatus>("loading");
   private readonly _user = new Signal<User | null>(null);
   private readonly _error = new Signal<string | null>(null);
+  /** What the server says it supports. Unknown until init() has run. */
+  private readonly _capabilities = new Signal<Capabilities | null>(null);
 
   get statusBroadcast() {
     return this._status.broadcast;
@@ -61,14 +63,18 @@ export class Session {
     return this._user.get();
   }
 
+  get capabilitiesBroadcast() {
+    return this._capabilities.broadcast;
+  }
+
   /** Whether the server has Google OAuth credentials configured. */
   get googleEnabled(): boolean {
-    return runtimeConfig.googleEnabled;
+    return this._capabilities.get()?.googleEnabled ?? false;
   }
 
   /** Whether the server exposes the local development login. */
   get devLoginEnabled(): boolean {
-    return runtimeConfig.devLogin;
+    return this._capabilities.get()?.devLogin ?? false;
   }
 
   get configured(): boolean {
@@ -93,7 +99,9 @@ export class Session {
    * Picks up an `?auth_error=` left by a failed callback and clears it from the
    * address bar, so a refresh does not re-show a stale message.
    */
-  init(): void {
+  async init(): Promise<void> {
+    this._capabilities.set(await fetchCapabilities());
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get("auth_error");
     if (!code) return;
@@ -138,5 +146,6 @@ export class Session {
     this._status.dispose();
     this._user.dispose();
     this._error.dispose();
+    this._capabilities.dispose();
   }
 }

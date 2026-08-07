@@ -79,7 +79,7 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 
 	partRows, err := q.Query(ctx, `
 		SELECT p.match_id, p.team_id, p.result, p.conceded_at, p.disputed_at,
-		       p.status, p.invited_at, p.responded_at,
+		       p.status, p.invited_at, p.responded_at, p.ready_at, p.dispute_reason,
 		       u.id, u.display_name, u.avatar_url, u.created_at
 		FROM match_participants p
 		JOIN users u ON u.id = p.user_id
@@ -94,7 +94,7 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 	for partRows.Next() {
 		var p model.MatchParticipant
 		if err := partRows.Scan(&p.MatchID, &p.TeamID, &p.Result, &p.ConcededAt, &p.DisputedAt,
-			&p.Status, &p.InvitedAt, &p.RespondedAt,
+			&p.Status, &p.InvitedAt, &p.RespondedAt, &p.ReadyAt, &p.DisputeReason,
 			&p.User.ID, &p.User.DisplayName, &p.User.AvatarURL, &p.User.CreatedAt); err != nil {
 			return err
 		}
@@ -409,11 +409,59 @@ func (s *Store) SetTeams(ctx context.Context, matchID string, teams []TeamAssign
 			}
 		}
 
+		// Who you are playing with is part of what you agreed to.
+		if err := clearReady(ctx, tx, matchID); err != nil {
+			return err
+		}
+
 		out, err = loadMatch(ctx, tx, matchID)
 		return err
 	})
 
 	return out, err
+}
+
+// SetReady records, or withdraws, a player's affirmation of the current
+// contract.
+func (s *Store) SetReady(ctx context.Context, matchID, userID string, ready bool) (model.Match, error) {
+	var out model.Match
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		m, err := loadMatch(ctx, tx, matchID)
+		if err != nil {
+			return err
+		}
+		if m.Status != model.StatusLobby {
+			return fmt.Errorf("%w: this match has already started", ErrConflict)
+		}
+		if m.Contract.Kind == "" || m.Contract.Kind == model.ContractUnspecified {
+			return fmt.Errorf("%w: agree on the winning contract first", ErrConflict)
+		}
+		if _, ok := participant(m, userID); !ok {
+			return fmt.Errorf("%w: join the match before saying you are ready", ErrConflict)
+		}
+
+		var value any
+		if ready {
+			value = time.Now()
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE match_participants SET ready_at = $3 WHERE match_id = $1 AND user_id = $2`,
+			matchID, userID, value); err != nil {
+			return err
+		}
+
+		out, err = loadMatch(ctx, tx, matchID)
+		return err
+	})
+
+	return out, err
+}
+
+// clearReady withdraws every affirmation, used whenever the terms change.
+func clearReady(ctx context.Context, tx pgx.Tx, matchID string) error {
+	_, err := tx.Exec(ctx, `UPDATE match_participants SET ready_at = NULL WHERE match_id = $1`, matchID)
+	return err
 }
 
 func (s *Store) SetContract(ctx context.Context, matchID string, c model.Contract) (model.Match, error) {
@@ -430,6 +478,11 @@ func (s *Store) SetContract(ctx context.Context, matchID string, c model.Contrac
 		if _, err := tx.Exec(ctx,
 			`UPDATE matches SET contract_kind = $2, contract_target = $3, contract_detail = $4 WHERE id = $1`,
 			matchID, c.Kind, c.Target, c.Detail); err != nil {
+			return err
+		}
+		// Everyone affirmed the previous terms, not these. Making them say so
+		// again is the whole point of the ready check.
+		if err := clearReady(ctx, tx, matchID); err != nil {
 			return err
 		}
 		out, err = loadMatch(ctx, tx, matchID)
@@ -470,6 +523,14 @@ func (s *Store) StartMatch(ctx context.Context, matchID string) (model.Match, er
 		}
 		if m.Contract.Kind == "" || m.Contract.Kind == model.ContractUnspecified {
 			return fmt.Errorf("%w: set the winning contract before starting", ErrConflict)
+		}
+		if waiting := m.AwaitingReady(); len(waiting) > 0 {
+			names := make([]string, 0, len(waiting))
+			for _, p := range waiting {
+				names = append(names, p.User.DisplayName)
+			}
+			return fmt.Errorf("%w: still waiting on %s to say they are ready",
+				ErrConflict, strings.Join(names, ", "))
 		}
 
 		if _, err := tx.Exec(ctx,
@@ -522,9 +583,10 @@ func (s *Store) ClaimVictory(ctx context.Context, matchID, userID, teamID string
 			return fmt.Errorf("%w: this match is not in play", ErrConflict)
 		}
 
-		if _, err := tx.Exec(ctx,
-			`UPDATE match_participants SET conceded_at = NULL, disputed_at = NULL WHERE match_id = $1`,
-			matchID); err != nil {
+		if _, err := tx.Exec(ctx, `
+			UPDATE match_participants
+			SET conceded_at = NULL, disputed_at = NULL, dispute_reason = ''
+			WHERE match_id = $1`, matchID); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `
@@ -548,10 +610,32 @@ func (s *Store) ClaimVictory(ctx context.Context, matchID, userID, teamID string
 	return out, err
 }
 
-// Concede records that userID accepts the standing claim. Idempotent. When the
-// last outstanding opponent concedes, the match finalizes in the same
-// transaction.
-func (s *Store) Concede(ctx context.Context, matchID, userID string) (model.Match, error) {
+// answerable checks that userID is entitled to answer the claim standing on
+// this match, and that there is still a claim to answer.
+//
+// CLAIMED and DISPUTED are both open for answers. They are not two stages — they
+// are what the same set of answers looks like with and without an objection in
+// it — so anything a player may do to one, they may do to the other. That is
+// what lets somebody move from objecting back to conceding without an organizer
+// unpicking it for them.
+func answerable(m model.Match, userID string) error {
+	if m.Status != model.StatusClaimed && m.Status != model.StatusDisputed {
+		return fmt.Errorf("%w: there is no claim to answer", ErrConflict)
+	}
+	p, ok := participant(m, userID)
+	if !ok {
+		return fmt.Errorf("%w: you are not in this match", ErrConflict)
+	}
+	if m.ClaimedByTeamID != nil && p.TeamID != nil && *p.TeamID == *m.ClaimedByTeamID {
+		return fmt.Errorf("%w: you are on the claiming team", ErrConflict)
+	}
+	return nil
+}
+
+// Concede records that userID accepts the standing claim, withdrawing any
+// objection they had made. Idempotent. When the last outstanding opponent
+// concedes, the match finalizes in the same transaction.
+func (s *Store) Concede(ctx context.Context, matchID, userID string, window time.Duration) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -563,26 +647,20 @@ func (s *Store) Concede(ctx context.Context, matchID, userID string) (model.Matc
 			out = m // already settled; nothing to do
 			return nil
 		}
-		if m.Status != model.StatusClaimed {
-			return fmt.Errorf("%w: there is no claim to concede to", ErrConflict)
-		}
-
-		p, ok := participant(m, userID)
-		if !ok {
-			return fmt.Errorf("%w: you are not in this match", ErrConflict)
-		}
-		if m.ClaimedByTeamID != nil && p.TeamID != nil && *p.TeamID == *m.ClaimedByTeamID {
-			return fmt.Errorf("%w: you are on the claiming team", ErrConflict)
+		if err := answerable(m, userID); err != nil {
+			return err
 		}
 
 		if _, err := tx.Exec(ctx, `
 			UPDATE match_participants
-			SET conceded_at = coalesce(conceded_at, now()), disputed_at = NULL
+			SET conceded_at = coalesce(conceded_at, now()),
+			    disputed_at = NULL,
+			    dispute_reason = ''
 			WHERE match_id = $1 AND user_id = $2`, matchID, userID); err != nil {
 			return err
 		}
 
-		if err := finalizeIfRatified(ctx, tx, matchID); err != nil {
+		if err := settleAnswers(ctx, tx, matchID, window); err != nil {
 			return err
 		}
 
@@ -593,10 +671,11 @@ func (s *Store) Concede(ctx context.Context, matchID, userID string) (model.Matc
 	return out, err
 }
 
-// Dispute rejects a standing claim. This clears the concede deadline, which is
-// what distinguishes disagreement from silence: silence times out into a
-// concession, a dispute waits for the family owner.
-func (s *Store) Dispute(ctx context.Context, matchID, userID, reason string) (model.Match, error) {
+// Dispute rejects the standing claim, withdrawing any concession userID had
+// already given. This clears the concede deadline, which is what distinguishes
+// disagreement from silence: silence eventually times out into a concession, an
+// objection stops the clock for as long as it stands.
+func (s *Store) Dispute(ctx context.Context, matchID, userID, reason string, window time.Duration) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -604,27 +683,26 @@ func (s *Store) Dispute(ctx context.Context, matchID, userID, reason string) (mo
 		if err != nil {
 			return err
 		}
-		if m.Status != model.StatusClaimed && m.Status != model.StatusDisputed {
-			return fmt.Errorf("%w: there is no claim to dispute", ErrConflict)
-		}
-
-		p, ok := participant(m, userID)
-		if !ok {
-			return fmt.Errorf("%w: you are not in this match", ErrConflict)
-		}
-		if m.ClaimedByTeamID != nil && p.TeamID != nil && *p.TeamID == *m.ClaimedByTeamID {
-			return fmt.Errorf("%w: you are on the claiming team", ErrConflict)
+		if err := answerable(m, userID); err != nil {
+			return err
 		}
 
 		if _, err := tx.Exec(ctx, `
 			UPDATE match_participants
-			SET disputed_at = coalesce(disputed_at, now()), conceded_at = NULL
-			WHERE match_id = $1 AND user_id = $2`, matchID, userID); err != nil {
+			SET disputed_at = coalesce(disputed_at, now()),
+			    conceded_at = NULL,
+			    dispute_reason = $3
+			WHERE match_id = $1 AND user_id = $2`,
+			matchID, userID, strings.TrimSpace(reason)); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `
-			UPDATE matches SET status = 'disputed', concede_deadline = NULL, dispute_reason = $2
-			WHERE id = $1`, matchID, strings.TrimSpace(reason)); err != nil {
+			UPDATE matches SET dispute_reason = $2 WHERE id = $1`,
+			matchID, strings.TrimSpace(reason)); err != nil {
+			return err
+		}
+
+		if err := settleAnswers(ctx, tx, matchID, window); err != nil {
 			return err
 		}
 
@@ -633,6 +711,97 @@ func (s *Store) Dispute(ctx context.Context, matchID, userID, reason string) (mo
 	})
 
 	return out, err
+}
+
+// WithdrawClaim takes back a claim the caller's own team made. The match goes
+// back to being in play with nothing claimed and every answer wiped.
+//
+// This is "never mind", not "you won". A claimant who has decided the other
+// side actually won cannot hand them the win from here — only they can claim
+// it, which keeps the rule that no result reaches the record without the
+// winner asserting it and the loser accepting it.
+func (s *Store) WithdrawClaim(ctx context.Context, matchID, userID string) (model.Match, error) {
+	var out model.Match
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		m, err := loadMatch(ctx, tx, matchID)
+		if err != nil {
+			return err
+		}
+		if m.Status == model.StatusInProgress {
+			out = m // nothing claimed; already where this would leave it
+			return nil
+		}
+		if m.Status != model.StatusClaimed && m.Status != model.StatusDisputed {
+			return fmt.Errorf("%w: there is no claim to withdraw", ErrConflict)
+		}
+		if _, ok := participant(m, userID); !ok {
+			return fmt.Errorf("%w: you are not in this match", ErrConflict)
+		}
+		if !m.OnClaimingTeam(userID) {
+			return fmt.Errorf("%w: only the team that claimed the win can take it back", ErrConflict)
+		}
+
+		if _, err := tx.Exec(ctx, `
+			UPDATE match_participants
+			SET conceded_at = NULL, disputed_at = NULL, dispute_reason = ''
+			WHERE match_id = $1`, matchID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE matches
+			SET status = 'in_progress', claimed_at = NULL, claimed_by_team_id = NULL,
+			    concede_deadline = NULL, dispute_reason = ''
+			WHERE id = $1`, matchID); err != nil {
+			return err
+		}
+
+		out, err = loadMatch(ctx, tx, matchID)
+		return err
+	})
+
+	return out, err
+}
+
+// settleAnswers brings the match's status and clock back in line with the
+// answers now on it, and finalizes if they are unanimous.
+//
+// Every answer is reversible, so status has to be derived from the answers each
+// time rather than latched the first time somebody objects. Otherwise a match
+// stays DISPUTED after the only objection is withdrawn, with its clock stopped
+// forever and nothing but an organizer able to end it.
+//
+// Withdrawing the last objection restarts the clock with a full window rather
+// than resuming the old one. The players who had said nothing were watching an
+// argument, not sitting on an unanswered claim, and it is not fair to finalize
+// against them for silence they kept while the claim was not actually standing.
+func settleAnswers(ctx context.Context, tx pgx.Tx, matchID string, window time.Duration) error {
+	m, err := loadMatch(ctx, tx, matchID)
+	if err != nil {
+		return err
+	}
+	if m.Status != model.StatusClaimed && m.Status != model.StatusDisputed {
+		return nil
+	}
+
+	if len(m.Objectors()) > 0 {
+		_, err := tx.Exec(ctx, `
+			UPDATE matches SET status = 'disputed', concede_deadline = NULL
+			WHERE id = $1`, matchID)
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, `
+		UPDATE matches
+		SET status = 'claimed',
+		    concede_deadline = CASE WHEN status = 'disputed'
+		                            THEN now() + $2::interval
+		                            ELSE concede_deadline END,
+		    dispute_reason = ''
+		WHERE id = $1`, matchID, intervalArg(window)); err != nil {
+		return err
+	}
+	return finalizeIfRatified(ctx, tx, matchID)
 }
 
 // ResolveDispute settles a disputed match: either the named team wins, or the

@@ -7,10 +7,18 @@ Rook 14 times and he has beaten you 3 times."
 
 **The mechanic that defines the app: nobody can declare their own win.** You
 claim victory, and the claim sits publicly pending until every opponent
-concedes. Silence times out into a concession after 24 hours; an explicit
-dispute stops the clock and waits for the family organizer. Only ratified
-matches touch the scoreboard, and that is what makes the numbers worth arguing
-about.
+concedes. Only ratified matches touch the scoreboard, and that is what makes the
+numbers worth arguing about.
+
+Nothing about a pending claim is a one-way door. Every answer is a *position
+held*, not an event logged: an opponent can move between conceding and objecting
+for as long as the match is open, a claimant can withdraw the claim outright, and
+the match sits on every player's list showing what they currently say. Silence
+eventually reads as a concession, but the window is a week — a backstop for a
+match everybody walked away from, not a countdown anyone is meant to race. An
+objection stops even that. The family organizer can break a deadlock, but only
+once the players genuinely cannot move it themselves; they are a last resort, not
+a referee.
 
 ## Stack
 
@@ -44,7 +52,7 @@ frontend/src/
 make setup       tools, deps, local database
 make generate    regenerate Go + TS from the protos
 make dev-api     backend on :8080
-make dev-web     Vite on :5173, proxying /api to :8080
+make dev-web     Vite on :3000, proxying /api to :8080
 make check       typecheck + test everything
 make deploy      Cloud Run (see DEPLOY.md)
 
@@ -122,14 +130,36 @@ either will produce "prepared statement does not exist" under load.
 each player gets a team of one. This collapses "concede to a player" and
 "concede to a team" into one code path. Do not add a parallel non-team path.
 
-**A dispute clears `concede_deadline`.** That is the whole mechanism separating
-disagreement from silence. If you ever set the deadline on a disputed match, a
-false claim will silently become true after 24 hours.
+**A standing objection clears `concede_deadline`.** That is the whole mechanism
+separating disagreement from silence. If you ever leave the deadline set on a
+disputed match, a false claim will silently become true once the window runs out.
+
+**`CLAIMED` and `DISPUTED` are derived, not latched.** They are the same
+situation — a claim on the table, a set of answers to it — read with and without
+an objection in the pile, so `settleAnswers()` recomputes the status from the
+answers after every change rather than flipping it one way when somebody first
+objects. Withdrawing the last objection therefore returns the match to `claimed`
+and restarts the clock with a *full* window: the players who had said nothing
+were watching an argument, not sitting on an unanswered claim. Write a status
+directly in a handler and a match will get stuck disputed with its clock stopped
+forever.
+
+**`Concede` accepts a disputed match on purpose.** That is how somebody takes
+their own objection back. Narrow it to `claimed` and the only way out of a
+dispute becomes the organizer.
+
+**The organizer is gated on `Match.Deadlocked(window)`**, not on "is this
+disputed" — everyone has answered and they still disagree, or the claim has
+outlived its window. The second test is not optional: an objection stops the
+clock, so a disputer who goes quiet would otherwise freeze the match with no way
+to finish it. `ResolveDispute` enforces this server-side; the proto field
+`organizer_may_resolve` is only how the UI knows.
 
 **Finalization happens in two places** — `finalizeIfRatified` (last concession
 lands) and `finalizeIfExpired` (clock ran out, checked lazily on read *and* by
 the sweeper). Both funnel through `finalize()`, which is the only place a match
-enters the permanent record.
+enters the permanent record, and finalizing is the *only* irreversible step in
+the whole protocol.
 
 **`POST /tasks/sweep` does double duty**: it finalizes timed-out claims and the
 request itself keeps a free-tier Supabase project from being paused for

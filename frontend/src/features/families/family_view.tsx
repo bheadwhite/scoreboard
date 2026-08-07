@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useSignalValue } from "@tcn/state/react";
 import { useCollection } from "../../lib/domain/use_collection.js";
 
@@ -24,11 +25,23 @@ export function FamilyView({
   const copied = useSignalValue(presenter.copiedBroadcast);
   const error = useSignalValue(presenter.errorBroadcast);
   const code = useSignalValue(presenter.codeBroadcast);
+  const newName = useSignalValue(presenter.nameBroadcast);
   const members = useCollection(presenter.members(familyId));
 
   const family = families.find((f) => f.id === familyId);
   const isOwner = family?.viewerRole === FamilyRole.OWNER;
   const meId = app.domain.session.user?.id;
+
+  const familyName = family?.name ?? "";
+  useEffect(() => {
+    if (familyName) app.setScreenTitle(familyName);
+  }, [app, familyName]);
+
+  useEffect(() => {
+    if (!familyId) return;
+    presenter.start(familyId);
+    return () => presenter.stop();
+  }, [presenter, familyId]);
 
   if (!family) {
     return <Empty emoji="👋">Pick a family to get started.</Empty>;
@@ -131,7 +144,7 @@ export function FamilyView({
 
       {families.length > 1 && (
         <section className="stack">
-          <span className="section-label">Your families</span>
+          <span className="section-label">Switch family</span>
           <div className="card card--flush">
             {families.map((f) => (
               <button
@@ -151,6 +164,9 @@ export function FamilyView({
         </section>
       )}
 
+      {/* Both routes into another family. Creating one used to be reachable
+          only during onboarding, so anyone who already had a family could never
+          start a second one. */}
       <section className="stack">
         <span className="section-label">Join another family</span>
         <div className="card stack">
@@ -163,9 +179,36 @@ export function FamilyView({
             value={code}
             onChange={(e) => presenter.setCode(e.target.value)}
           />
-          <button className="btn btn--block" onClick={() => void presenter.join()}>
-            Join
+          <button
+            className="btn btn--block"
+            disabled={code.trim().length < 4}
+            onClick={() => void presenter.join()}
+          >
+            Join with this code
           </button>
+        </div>
+      </section>
+
+      <section className="stack">
+        <span className="section-label">Start another family</span>
+        <div className="card stack">
+          <input
+            className="input"
+            placeholder="The Cousins"
+            value={newName}
+            onChange={(e) => presenter.setName(e.target.value)}
+          />
+          <button
+            className="btn btn--block"
+            disabled={newName.trim().length === 0}
+            onClick={() => void presenter.create()}
+          >
+            Create family
+          </button>
+          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-faint)" }}>
+            A separate scoreboard with its own members and record. You can belong to as many as you
+            like and switch between them here.
+          </p>
         </div>
       </section>
 

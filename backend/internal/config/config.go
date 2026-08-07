@@ -50,11 +50,27 @@ func loadFile(path string) {
 }
 
 // Env returns an environment variable, or def when it is unset or empty.
+//
+// Surrounding quotes are stripped. They are always an artifact rather than part
+// of the value: `make` exports an included `KEY="value"` with the quotes still
+// attached, and because a value already in the environment wins over the dotenv
+// file, a quoted APP_URL silently produced redirect targets like
+// `"http://localhost:3000"/` — which reads as an auth bug and is not one.
 func Env(key, def string) string {
-	if v := os.Getenv(key); v != "" {
+	if v := unquote(os.Getenv(key)); v != "" {
 		return v
 	}
 	return def
+}
+
+// unquote removes one matching pair of surrounding quotes.
+func unquote(v string) string {
+	if len(v) >= 2 {
+		if (v[0] == '"' && v[len(v)-1] == '"') || (v[0] == '\'' && v[len(v)-1] == '\'') {
+			return v[1 : len(v)-1]
+		}
+	}
+	return v
 }
 
 // Duration parses an environment variable as a Go duration, falling back to def

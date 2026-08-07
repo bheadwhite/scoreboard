@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bheadwhite/scoreboard/backend/internal/auth"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
@@ -16,6 +17,9 @@ import (
 // base carries the dependencies every service shares.
 type base struct {
 	store *store.Store
+	// Where handlers announce that something changed, so open browsers can
+	// re-read. Nil is allowed: publishing becomes a no-op.
+	hub *events.Hub
 	// How long a claim stands before outstanding concessions are assumed.
 	concedeWindow time.Duration
 }

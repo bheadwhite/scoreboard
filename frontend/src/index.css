@@ -142,7 +142,9 @@ button {
 .app {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0 16px calc(96px + env(safe-area-inset-bottom));
+  /* Enough to clear the tallest .bottombar — two stacked buttons plus its own
+     padding — so the last card on a page is never left under it. */
+  padding: 0 16px calc(140px + env(safe-area-inset-bottom));
 }
 
 .topbar {
@@ -413,6 +415,41 @@ button {
   font-weight: 750;
 }
 
+/* ── Emoji picker ─────────────────────────────────────────────────────────── */
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.emoji-grid__item {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.emoji-grid__item:active {
+  transform: scale(0.94);
+}
+
+.emoji-grid__item[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: rgba(224, 164, 34, 0.16);
+}
+
 /* ── Avatars ──────────────────────────────────────────────────────────────── */
 
 .avatar {
@@ -494,20 +531,36 @@ button {
   color: var(--gold);
 }
 
+/*
+ * A column, so the name and the meta line stack. Without this they are two
+ * inline spans inside one block and run together — "Catan1 playing" — which is
+ * wrong in every row in the app, not just the obvious ones.
+ */
 .rowbtn__main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
 }
 
 .rowbtn__name {
+  display: block;
+  max-width: 100%;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Block, not flex: the meta line mixes text, separators and inline badges, and
+   flex would put gaps around every one of them. */
 .rowbtn__meta {
+  display: block;
+  max-width: 100%;
   font-size: 0.8rem;
+  line-height: 1.35;
   color: var(--ink-faint);
 }
 

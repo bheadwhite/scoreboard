@@ -41,6 +41,14 @@ message GetStandingsRequest {
 message GetStandingsResponse {
   repeated StandingsRow rows = 1;
   int32 total_matches = 2;
+  // Games this family has actually finished at least one match of, within the
+  // requested range. This is what the filter should offer — the full catalog
+  // includes a dozen games nobody here has played, and every one of those
+  // filters to an empty table.
+  //
+  // Not narrowed by game_id: selecting a filter must not collapse the list of
+  // filters to the one already chosen.
+  repeated Game played_games = 3;
 }
 
 // One game's slice of a head-to-head record.

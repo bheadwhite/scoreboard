@@ -35,6 +35,14 @@ export function HeadToHeadView({
     void presenter.load();
   }, [presenter]);
 
+  const versus =
+    record?.user && record?.opponent
+      ? `${displayName(record.user)} vs ${displayName(record.opponent)}`
+      : "";
+  useEffect(() => {
+    if (versus) app.setScreenTitle(versus);
+  }, [app, versus]);
+
   return (
     <AsyncBoundary runner={presenter.record.broadcast} hideChildrenWhilePending={!record}>
       {record && (

@@ -11,16 +11,26 @@ The point is bragging rights. The headline stat is not "your win rate" — it is
 **Nobody can declare their own win.**
 
 You claim victory, and the claim sits publicly pending until every opponent
-concedes. Silence times out into a concession after 24 hours. An explicit
-dispute stops the clock and waits for the family organizer.
+concedes. Only ratified matches touch the scoreboard — which is what makes the
+numbers worth arguing about.
 
-Only ratified matches touch the scoreboard — which is what makes the numbers
-worth arguing about.
+Nothing about a pending claim is a one-way door. What each player says is a
+position they are holding, not a vote they have spent: concede and you can still
+object, object and you can still concede, and whoever claimed can take the claim
+back and put the game back in play. The match stays on everyone's list, showing
+where they each stand, until it settles.
+
+Silence eventually reads as a concession, but the window is a week — that is a
+backstop for a game everybody walked away from, not a countdown to race. Any
+standing objection stops even that. The family organizer can break a deadlock,
+but only once the players genuinely cannot move it themselves.
 
 ```
 LOBBY → IN_PROGRESS → CLAIMED → FINAL        all opponents concede, or timeout
-                         ↓
-                     DISPUTED → FINAL | VOID  organizer resolves
+             ↑           ↓
+             │       DISPUTED → FINAL | VOID  organizer breaks a real deadlock
+             │           │
+             └───────────┴──  claim withdrawn / last objection taken back
 ```
 
 ## Stack
@@ -37,7 +47,7 @@ token ever reaches JavaScript.
 ```bash
 make setup      # tools, dependencies, local database
 make dev-api    # backend on :8080
-make dev-web    # Vite on :5173
+make dev-web    # Vite on :3000
 ```
 
 Local development needs no Google credentials: set `AUTH_DEV_LOGIN=true` in

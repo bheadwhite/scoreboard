@@ -13,51 +13,68 @@ import { Alert } from "../../components/ui.js";
  */
 export function InviteView({ app }: { app: AppPresenter }) {
   const code = useSignalValue(app.inviteBroadcast);
+  const preview = useSignalValue(app.invitePreviewBroadcast);
   const error = useSignalValue(app.families.errorBroadcast);
   const status = useRunnerStatus(app.families.actionBroadcast);
   const busy = status === Status.PENDING;
+
+  // A code that resolved to nothing is a dead link, not an invitation.
+  const dead = !preview;
 
   return (
     <div className="app">
       <div className="hero">
         <span className="hero__mark" aria-hidden="true">
-          ✉️
+          {dead ? "🤷" : "✉️"}
         </span>
-        <h1 className="hero__title">You are invited</h1>
-        <p className="hero__tag">Someone shared their family scoreboard with you.</p>
+        <h1 className="hero__title">{dead ? "That link is dead" : "You are invited"}</h1>
+        {preview ? (
+          <p className="hero__tag">
+            {preview.ownerName ? `${preview.ownerName} wants you on` : "You have been invited to"}{" "}
+            their family scoreboard.
+          </p>
+        ) : (
+          <p className="hero__tag">
+            No family is using the code <strong>{code}</strong>. It may have been changed since the
+            link was shared — ask for a new one.
+          </p>
+        )}
       </div>
 
       <div className="stack stack--lg">
-        <div className="card" style={{ textAlign: "center" }}>
-          <span className="section-label">Invite code</span>
-          <div
-            className="num"
-            style={{
-              marginTop: 8,
-              fontFamily: "var(--font-mono)",
-              fontSize: "2.2rem",
-              fontWeight: 800,
-              letterSpacing: "0.3em",
-              textIndent: "0.3em",
-              color: "var(--gold)",
-            }}
-          >
-            {code}
+        {preview && (
+          <div className="card" style={{ textAlign: "center" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "2rem",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {preview.name}
+            </div>
+            <p style={{ margin: "6px 0 0", color: "var(--ink-dim)", fontSize: "0.9rem" }}>
+              <span className="num">{preview.memberCount}</span>{" "}
+              {preview.memberCount === 1 ? "member" : "members"}
+            </p>
           </div>
-        </div>
+        )}
 
         {error && <Alert message={error} />}
 
-        <button
-          className="btn btn--primary btn--block btn--claim"
-          disabled={busy}
-          onClick={() => void app.acceptInvite()}
-        >
-          {busy ? "Joining…" : "Join this family"}
-        </button>
+        {preview && (
+          <button
+            className="btn btn--primary btn--block btn--claim"
+            disabled={busy}
+            onClick={() => void app.acceptInvite()}
+          >
+            {busy ? "Joining…" : `Join ${preview.name}`}
+          </button>
+        )}
 
         <button className="btn btn--ghost btn--block" onClick={app.dismissInvite} disabled={busy}>
-          Not now
+          {dead ? "Continue" : "Not now"}
         </button>
       </div>
     </div>

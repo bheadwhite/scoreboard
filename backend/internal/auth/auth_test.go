@@ -15,7 +15,7 @@ func testAuth(t *testing.T) *Auth {
 		ClientID:      "client",
 		ClientSecret:  "secret",
 		SessionSecret: "test-session-secret",
-		AppURL:        "http://localhost:5173",
+		AppURL:        "http://localhost:3000",
 	}, func(context.Context, string, string, string, string, string) (Identity, error) {
 		return Identity{ID: "user-1"}, nil
 	})
@@ -83,7 +83,7 @@ func TestTokenSignedWithAnotherSecretIsRejected(t *testing.T) {
 	other, err := New(Config{
 		ClientID: "c", ClientSecret: "s",
 		SessionSecret: "a-completely-different-secret",
-		AppURL:        "http://localhost:5173",
+		AppURL:        "http://localhost:3000",
 	}, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
@@ -193,7 +193,7 @@ func TestCallbackRejectsAMissingState(t *testing.T) {
 
 func TestRedirectURIMatchesTheRegisteredShape(t *testing.T) {
 	a := testAuth(t)
-	if got := a.redirectURI(); got != "http://localhost:5173/auth/google/callback" {
+	if got := a.redirectURI(); got != "http://localhost:3000/auth/google/callback" {
 		t.Errorf("unexpected redirect URI: %s", got)
 	}
 }
@@ -217,7 +217,7 @@ func TestUnregisteredAuthPathsAre404(t *testing.T) {
 func TestDevLoginRouteExistsWhenEnabled(t *testing.T) {
 	a, err := New(Config{
 		ClientID: "c", ClientSecret: "s", SessionSecret: "x",
-		AppURL: "http://localhost:5173", DevLogin: true,
+		AppURL: "http://localhost:3000", DevLogin: true,
 	}, func(context.Context, string, string, string, string, string) (Identity, error) {
 		return Identity{ID: "user-1"}, nil
 	})

@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
 
@@ -14,8 +15,8 @@ type UserService struct {
 	base
 }
 
-func NewUserService(s *store.Store) *UserService {
-	return &UserService{base: base{store: s}}
+func NewUserService(s *store.Store, hub *events.Hub) *UserService {
+	return &UserService{base: base{store: s, hub: hub}}
 }
 
 func (svc *UserService) GetMe(

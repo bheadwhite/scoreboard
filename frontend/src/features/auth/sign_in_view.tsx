@@ -10,7 +10,20 @@ import { Alert } from "../../components/ui.js";
  */
 export function SignInView({ session }: { session: Session }) {
   const error = useSignalValue(session.errorBroadcast);
+  const capabilities = useSignalValue(session.capabilitiesBroadcast);
   const [devName, setDevName] = useState("Dev Player");
+
+  // Until the server has answered, offer nothing. A moment of "checking" beats
+  // a button that turns out not to work.
+  if (!capabilities) {
+    return (
+      <div className="app">
+        <div className="async-loading">Checking sign-in options…</div>
+      </div>
+    );
+  }
+
+  const nothingWorks = !capabilities.googleEnabled && !capabilities.devLogin;
 
   return (
     <div className="app">
@@ -28,21 +41,23 @@ export function SignInView({ session }: { session: Session }) {
       <div className="stack stack--lg">
         {error && <Alert message={error} />}
 
-        {session.googleEnabled ? (
+        {capabilities.googleEnabled && (
           <button
             className="btn btn--primary btn--block btn--claim"
             onClick={() => session.signInWithGoogle()}
           >
             Continue with Google
           </button>
-        ) : (
+        )}
+
+        {nothingWorks && (
           <Alert
             tone="info"
-            message="Google sign-in is not configured on this server. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET."
+            message="This server has no way to sign in. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, or AUTH_DEV_LOGIN=true for local development."
           />
         )}
 
-        {session.devLoginEnabled && (
+        {capabilities.devLogin && (
           <div className="card stack">
             <span className="section-label">Local development</span>
             <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-faint)" }}>

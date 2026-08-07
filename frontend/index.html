@@ -12,21 +12,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!--
-      Runtime configuration. The Go server substitutes these placeholders when it
-      serves index.html. Under the Vite dev server the file is served untouched
-      and the placeholders stay literal, which is the signal to fall back to
-      development defaults. See lib/runtime_config.ts.
-
-      These are capability flags, not credentials — authentication lives entirely
-      server-side behind an HttpOnly cookie.
-    -->
-    <script>
-      window.__SCOREBOARD_CONFIG__ = {
-        googleEnabled: "__GOOGLE_ENABLED__",
-        devLogin: "__DEV_LOGIN__",
-      };
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

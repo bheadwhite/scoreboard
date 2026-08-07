@@ -9,6 +9,9 @@ import "scoreboard/v1/common.proto";
 service FamilyService {
   rpc CreateFamily(CreateFamilyRequest) returns (CreateFamilyResponse);
   rpc JoinFamily(JoinFamilyRequest) returns (JoinFamilyResponse);
+  // Look up what a code refers to without joining, so somebody following an
+  // invite link can see what they are being asked to join.
+  rpc PreviewInvite(PreviewInviteRequest) returns (PreviewInviteResponse);
   rpc ListMyFamilies(ListMyFamiliesRequest) returns (ListMyFamiliesResponse);
   rpc GetFamily(GetFamilyRequest) returns (GetFamilyResponse);
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
@@ -34,6 +37,22 @@ message JoinFamilyRequest {
 
 message JoinFamilyResponse {
   Family family = 1;
+}
+
+message PreviewInviteRequest {
+  string invite_code = 1;
+}
+
+// Deliberately narrow: enough to recognise the family, and nothing that would
+// be worth harvesting by guessing codes. No id, no member list, no invite code
+// echoed back.
+message PreviewInviteResponse {
+  string name = 1;
+  int32 member_count = 2;
+  // Who runs it, so an invite reads "Dad's family" rather than a bare name.
+  string owner_name = 3;
+  // True when the caller is already in — the UI then skips straight in.
+  bool already_member = 4;
 }
 
 message ListMyFamiliesRequest {}

@@ -134,10 +134,16 @@ deploy_args=(
   --region "$GCP_REGION"
   --allow-unauthenticated
   --port 8080
-  # Supabase's free tier has a modest connection ceiling and each instance keeps
-  # its own pool, so instance count is capped rather than left unbounded.
-  --max-instances 4
+  # One instance, deliberately. The live change stream fans out in process, so
+  # a second instance would have its own set of connections and neither would
+  # see the other's events. containerConcurrency is 80, which is far more open
+  # streams than a family will ever have — when that stops being true, the seam
+  # to replace is internal/events, not this flag.
+  --max-instances 1
   --min-instances 0
+  # Streams are held open, and Cloud Run cuts a request at this deadline. The
+  # server closes each stream a little earlier so reconnects are tidy.
+  --timeout 600
   --cpu 1
   --memory 512Mi
 )

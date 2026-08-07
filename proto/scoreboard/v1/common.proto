@@ -88,12 +88,15 @@ enum MatchStatus {
   MATCH_STATUS_LOBBY = 1;
   // Contract locked, play underway.
   MATCH_STATUS_IN_PROGRESS = 2;
-  // Someone claimed victory; opponents owe a concession.
+  // Someone claimed victory; opponents owe a concession. Nobody is locked into
+  // the answer they gave — an answer stands until its author changes it, and
+  // the claimant can withdraw the claim outright.
   MATCH_STATUS_CLAIMED = 3;
   // Ratified. Counts on the scoreboard.
   MATCH_STATUS_FINAL = 4;
-  // An opponent disputed the claim. The clock is stopped and only the family
-  // owner can resolve it.
+  // At least one opponent is rejecting the claim. The clock is stopped, and it
+  // stays stopped until either the objection is withdrawn — which puts the
+  // match back to CLAIMED — or the family owner settles a genuine deadlock.
   MATCH_STATUS_DISPUTED = 5;
   // Abandoned before finalizing. Never counts.
   MATCH_STATUS_CANCELED = 6;
@@ -144,6 +147,16 @@ message MatchParticipant {
   ParticipantStatus status = 7;
   google.protobuf.Timestamp invited_at = 8;
   google.protobuf.Timestamp responded_at = 9;
+
+  // When this player affirmed they are ready to play under the contract as it
+  // then stood. Cleared whenever the contract or the teams change, so it always
+  // refers to the terms currently on screen.
+  google.protobuf.Timestamp ready_at = 10;
+
+  // Why this player objected to the claim. Sent only to the family organizer,
+  // who has to settle it, and back to the player who wrote it. Everyone else
+  // gets an empty string — see the note on matchPB.
+  string dispute_reason = 11;
 }
 
 message Match {
@@ -165,6 +178,10 @@ message Match {
   string claimed_by_team_id = 12;
   // After this instant, outstanding concessions are assumed and the match
   // finalizes on its own. A dispute clears this and stops the clock.
+  //
+  // This is a backstop for a match everyone abandoned, not a countdown anybody
+  // is meant to race — it is a week by default, and the claim sits on every
+  // player's list for all of it.
   google.protobuf.Timestamp concede_deadline = 13;
 
   google.protobuf.Timestamp finalized_at = 14;
@@ -181,4 +198,26 @@ message Match {
   repeated MatchParticipant invited = 18;
   // Whether the caller has an unanswered invitation to this match.
   bool viewer_is_invited = 19;
+
+  // Whether the caller has affirmed the current contract.
+  bool viewer_is_ready = 20;
+  // Whether every joined player has. Until this is true, nobody can start.
+  bool all_ready = 21;
+  // Joined players who have not affirmed the current contract yet.
+  repeated User awaiting_ready = 22;
+  // Whether the caller set this match up. Only they may start it.
+  bool viewer_is_creator = 23;
+
+  // Whether the family organizer may step in and settle this match now.
+  //
+  // Deliberately not "is this disputed". An organizer ruling on a disagreement
+  // the players are still having takes the argument away from them, and the
+  // argument is the point. It only opens once the match is genuinely stuck:
+  // everybody has had their say and they still disagree, or the claim has stood
+  // unanswered for longer than the concession window.
+  bool organizer_may_resolve = 24;
+
+  // Whether the caller is on the team that claimed the win, and so answers for
+  // the claim itself rather than owing a concession to it.
+  bool viewer_is_claimant = 25;
 }

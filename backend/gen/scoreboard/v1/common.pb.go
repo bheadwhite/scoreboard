@@ -149,12 +149,15 @@ const (
 	MatchStatus_MATCH_STATUS_LOBBY MatchStatus = 1
 	// Contract locked, play underway.
 	MatchStatus_MATCH_STATUS_IN_PROGRESS MatchStatus = 2
-	// Someone claimed victory; opponents owe a concession.
+	// Someone claimed victory; opponents owe a concession. Nobody is locked into
+	// the answer they gave — an answer stands until its author changes it, and
+	// the claimant can withdraw the claim outright.
 	MatchStatus_MATCH_STATUS_CLAIMED MatchStatus = 3
 	// Ratified. Counts on the scoreboard.
 	MatchStatus_MATCH_STATUS_FINAL MatchStatus = 4
-	// An opponent disputed the claim. The clock is stopped and only the family
-	// owner can resolve it.
+	// At least one opponent is rejecting the claim. The clock is stopped, and it
+	// stays stopped until either the objection is withdrawn — which puts the
+	// match back to CLAIMED — or the family owner settles a genuine deadlock.
 	MatchStatus_MATCH_STATUS_DISPUTED MatchStatus = 5
 	// Abandoned before finalizing. Never counts.
 	MatchStatus_MATCH_STATUS_CANCELED MatchStatus = 6
@@ -792,10 +795,18 @@ type MatchParticipant struct {
 	// When this player acknowledged the claim. Unset if they have not.
 	ConcededAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=conceded_at,json=concededAt,proto3" json:"conceded_at,omitempty"`
 	// When this player disputed the claim. Unset if they have not.
-	DisputedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=disputed_at,json=disputedAt,proto3" json:"disputed_at,omitempty"`
-	Status        ParticipantStatus      `protobuf:"varint,7,opt,name=status,proto3,enum=scoreboard.v1.ParticipantStatus" json:"status,omitempty"`
-	InvitedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=invited_at,json=invitedAt,proto3" json:"invited_at,omitempty"`
-	RespondedAt   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
+	DisputedAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=disputed_at,json=disputedAt,proto3" json:"disputed_at,omitempty"`
+	Status      ParticipantStatus      `protobuf:"varint,7,opt,name=status,proto3,enum=scoreboard.v1.ParticipantStatus" json:"status,omitempty"`
+	InvitedAt   *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=invited_at,json=invitedAt,proto3" json:"invited_at,omitempty"`
+	RespondedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
+	// When this player affirmed they are ready to play under the contract as it
+	// then stood. Cleared whenever the contract or the teams change, so it always
+	// refers to the terms currently on screen.
+	ReadyAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=ready_at,json=readyAt,proto3" json:"ready_at,omitempty"`
+	// Why this player objected to the claim. Sent only to the family organizer,
+	// who has to settle it, and back to the player who wrote it. Everyone else
+	// gets an empty string — see the note on matchPB.
+	DisputeReason string `protobuf:"bytes,11,opt,name=dispute_reason,json=disputeReason,proto3" json:"dispute_reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -893,6 +904,20 @@ func (x *MatchParticipant) GetRespondedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *MatchParticipant) GetReadyAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ReadyAt
+	}
+	return nil
+}
+
+func (x *MatchParticipant) GetDisputeReason() string {
+	if x != nil {
+		return x.DisputeReason
+	}
+	return ""
+}
+
 type Match struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -910,6 +935,10 @@ type Match struct {
 	ClaimedByTeamId string                 `protobuf:"bytes,12,opt,name=claimed_by_team_id,json=claimedByTeamId,proto3" json:"claimed_by_team_id,omitempty"`
 	// After this instant, outstanding concessions are assumed and the match
 	// finalizes on its own. A dispute clears this and stops the clock.
+	//
+	// This is a backstop for a match everyone abandoned, not a countdown anybody
+	// is meant to race — it is a week by default, and the claim sits on every
+	// player's list for all of it.
 	ConcedeDeadline *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=concede_deadline,json=concedeDeadline,proto3" json:"concede_deadline,omitempty"`
 	FinalizedAt     *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=finalized_at,json=finalizedAt,proto3" json:"finalized_at,omitempty"`
 	// Convenience for the UI: opponents of the claiming team who have not yet
@@ -923,8 +952,27 @@ type Match struct {
 	Invited []*MatchParticipant `protobuf:"bytes,18,rep,name=invited,proto3" json:"invited,omitempty"`
 	// Whether the caller has an unanswered invitation to this match.
 	ViewerIsInvited bool `protobuf:"varint,19,opt,name=viewer_is_invited,json=viewerIsInvited,proto3" json:"viewer_is_invited,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Whether the caller has affirmed the current contract.
+	ViewerIsReady bool `protobuf:"varint,20,opt,name=viewer_is_ready,json=viewerIsReady,proto3" json:"viewer_is_ready,omitempty"`
+	// Whether every joined player has. Until this is true, nobody can start.
+	AllReady bool `protobuf:"varint,21,opt,name=all_ready,json=allReady,proto3" json:"all_ready,omitempty"`
+	// Joined players who have not affirmed the current contract yet.
+	AwaitingReady []*User `protobuf:"bytes,22,rep,name=awaiting_ready,json=awaitingReady,proto3" json:"awaiting_ready,omitempty"`
+	// Whether the caller set this match up. Only they may start it.
+	ViewerIsCreator bool `protobuf:"varint,23,opt,name=viewer_is_creator,json=viewerIsCreator,proto3" json:"viewer_is_creator,omitempty"`
+	// Whether the family organizer may step in and settle this match now.
+	//
+	// Deliberately not "is this disputed". An organizer ruling on a disagreement
+	// the players are still having takes the argument away from them, and the
+	// argument is the point. It only opens once the match is genuinely stuck:
+	// everybody has had their say and they still disagree, or the claim has stood
+	// unanswered for longer than the concession window.
+	OrganizerMayResolve bool `protobuf:"varint,24,opt,name=organizer_may_resolve,json=organizerMayResolve,proto3" json:"organizer_may_resolve,omitempty"`
+	// Whether the caller is on the team that claimed the win, and so answers for
+	// the claim itself rather than owing a concession to it.
+	ViewerIsClaimant bool `protobuf:"varint,25,opt,name=viewer_is_claimant,json=viewerIsClaimant,proto3" json:"viewer_is_claimant,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Match) Reset() {
@@ -1090,6 +1138,48 @@ func (x *Match) GetViewerIsInvited() bool {
 	return false
 }
 
+func (x *Match) GetViewerIsReady() bool {
+	if x != nil {
+		return x.ViewerIsReady
+	}
+	return false
+}
+
+func (x *Match) GetAllReady() bool {
+	if x != nil {
+		return x.AllReady
+	}
+	return false
+}
+
+func (x *Match) GetAwaitingReady() []*User {
+	if x != nil {
+		return x.AwaitingReady
+	}
+	return nil
+}
+
+func (x *Match) GetViewerIsCreator() bool {
+	if x != nil {
+		return x.ViewerIsCreator
+	}
+	return false
+}
+
+func (x *Match) GetOrganizerMayResolve() bool {
+	if x != nil {
+		return x.OrganizerMayResolve
+	}
+	return false
+}
+
+func (x *Match) GetViewerIsClaimant() bool {
+	if x != nil {
+		return x.ViewerIsClaimant
+	}
+	return false
+}
+
 var File_scoreboard_v1_common_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_common_proto_rawDesc = "" +
@@ -1138,7 +1228,7 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bmatch_id\x18\x02 \x01(\tR\amatchId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
-	"\aordinal\x18\x04 \x01(\x05R\aordinal\"\xd7\x03\n" +
+	"\aordinal\x18\x04 \x01(\x05R\aordinal\"\xb5\x04\n" +
 	"\x10MatchParticipant\x12\x19\n" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12'\n" +
 	"\x04user\x18\x02 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x17\n" +
@@ -1151,7 +1241,10 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x06status\x18\a \x01(\x0e2 .scoreboard.v1.ParticipantStatusR\x06status\x129\n" +
 	"\n" +
 	"invited_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tinvitedAt\x12=\n" +
-	"\fresponded_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vrespondedAt\"\xda\a\n" +
+	"\fresponded_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vrespondedAt\x125\n" +
+	"\bready_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\areadyAt\x12%\n" +
+	"\x0edispute_reason\x18\v \x01(\tR\rdisputeReason\"\xe9\t\n" +
 	"\x05Match\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12'\n" +
@@ -1176,7 +1269,13 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x16viewer_owes_concession\x18\x10 \x01(\bR\x14viewerOwesConcession\x127\n" +
 	"\x06joined\x18\x11 \x03(\v2\x1f.scoreboard.v1.MatchParticipantR\x06joined\x129\n" +
 	"\ainvited\x18\x12 \x03(\v2\x1f.scoreboard.v1.MatchParticipantR\ainvited\x12*\n" +
-	"\x11viewer_is_invited\x18\x13 \x01(\bR\x0fviewerIsInvited*X\n" +
+	"\x11viewer_is_invited\x18\x13 \x01(\bR\x0fviewerIsInvited\x12&\n" +
+	"\x0fviewer_is_ready\x18\x14 \x01(\bR\rviewerIsReady\x12\x1b\n" +
+	"\tall_ready\x18\x15 \x01(\bR\ballReady\x12:\n" +
+	"\x0eawaiting_ready\x18\x16 \x03(\v2\x13.scoreboard.v1.UserR\rawaitingReady\x12*\n" +
+	"\x11viewer_is_creator\x18\x17 \x01(\bR\x0fviewerIsCreator\x122\n" +
+	"\x15organizer_may_resolve\x18\x18 \x01(\bR\x13organizerMayResolve\x12,\n" +
+	"\x12viewer_is_claimant\x18\x19 \x01(\bR\x10viewerIsClaimant*X\n" +
 	"\n" +
 	"FamilyRole\x12\x1b\n" +
 	"\x17FAMILY_ROLE_UNSPECIFIED\x10\x00\x12\x16\n" +
@@ -1255,24 +1354,26 @@ var file_scoreboard_v1_common_proto_depIdxs = []int32{
 	3,  // 12: scoreboard.v1.MatchParticipant.status:type_name -> scoreboard.v1.ParticipantStatus
 	13, // 13: scoreboard.v1.MatchParticipant.invited_at:type_name -> google.protobuf.Timestamp
 	13, // 14: scoreboard.v1.MatchParticipant.responded_at:type_name -> google.protobuf.Timestamp
-	8,  // 15: scoreboard.v1.Match.game:type_name -> scoreboard.v1.Game
-	2,  // 16: scoreboard.v1.Match.status:type_name -> scoreboard.v1.MatchStatus
-	9,  // 17: scoreboard.v1.Match.contract:type_name -> scoreboard.v1.Contract
-	10, // 18: scoreboard.v1.Match.teams:type_name -> scoreboard.v1.MatchTeam
-	11, // 19: scoreboard.v1.Match.participants:type_name -> scoreboard.v1.MatchParticipant
-	13, // 20: scoreboard.v1.Match.created_at:type_name -> google.protobuf.Timestamp
-	13, // 21: scoreboard.v1.Match.started_at:type_name -> google.protobuf.Timestamp
-	13, // 22: scoreboard.v1.Match.claimed_at:type_name -> google.protobuf.Timestamp
-	13, // 23: scoreboard.v1.Match.concede_deadline:type_name -> google.protobuf.Timestamp
-	13, // 24: scoreboard.v1.Match.finalized_at:type_name -> google.protobuf.Timestamp
-	5,  // 25: scoreboard.v1.Match.awaiting_concession:type_name -> scoreboard.v1.User
-	11, // 26: scoreboard.v1.Match.joined:type_name -> scoreboard.v1.MatchParticipant
-	11, // 27: scoreboard.v1.Match.invited:type_name -> scoreboard.v1.MatchParticipant
-	28, // [28:28] is the sub-list for method output_type
-	28, // [28:28] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	13, // 15: scoreboard.v1.MatchParticipant.ready_at:type_name -> google.protobuf.Timestamp
+	8,  // 16: scoreboard.v1.Match.game:type_name -> scoreboard.v1.Game
+	2,  // 17: scoreboard.v1.Match.status:type_name -> scoreboard.v1.MatchStatus
+	9,  // 18: scoreboard.v1.Match.contract:type_name -> scoreboard.v1.Contract
+	10, // 19: scoreboard.v1.Match.teams:type_name -> scoreboard.v1.MatchTeam
+	11, // 20: scoreboard.v1.Match.participants:type_name -> scoreboard.v1.MatchParticipant
+	13, // 21: scoreboard.v1.Match.created_at:type_name -> google.protobuf.Timestamp
+	13, // 22: scoreboard.v1.Match.started_at:type_name -> google.protobuf.Timestamp
+	13, // 23: scoreboard.v1.Match.claimed_at:type_name -> google.protobuf.Timestamp
+	13, // 24: scoreboard.v1.Match.concede_deadline:type_name -> google.protobuf.Timestamp
+	13, // 25: scoreboard.v1.Match.finalized_at:type_name -> google.protobuf.Timestamp
+	5,  // 26: scoreboard.v1.Match.awaiting_concession:type_name -> scoreboard.v1.User
+	11, // 27: scoreboard.v1.Match.joined:type_name -> scoreboard.v1.MatchParticipant
+	11, // 28: scoreboard.v1.Match.invited:type_name -> scoreboard.v1.MatchParticipant
+	5,  // 29: scoreboard.v1.Match.awaiting_ready:type_name -> scoreboard.v1.User
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_scoreboard_v1_common_proto_init() }

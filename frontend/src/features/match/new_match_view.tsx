@@ -138,6 +138,20 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
 }
 
 /**
+ * Icons families are actually likely to want, arranged roughly by kind: cards,
+ * board and tile games, then things played standing up. A grid rather than a
+ * text field because typing an emoji means hunting for the system picker on a
+ * desktop, and this is the one purely decorative field in the app.
+ */
+const GAME_EMOJI = [
+  "🎲", "🃏", "♠️", "♥️", "♦️", "♣️", "🀄", "🎴",
+  "♟️", "🧩", "🔤", "🎩", "🚂", "🌾", "🏰", "🗺️",
+  "🎯", "🎱", "🎳", "🏓", "🏸", "🥍", "⛳", "🥏",
+  "🏀", "⚽", "🏈", "⚾", "🎾", "🏐", "🏒", "🥊",
+  "🌽", "🥒", "🪁", "🛶", "🎮", "🕹️", "🎪", "🏆",
+];
+
+/**
  * Adds a game to this family's own list. The built-in catalog is a starting
  * point, not a constraint — every family plays something nobody seeded.
  */
@@ -149,12 +163,21 @@ function AddGameSheet({ presenter }: { presenter: NewMatchPresenter }) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [teamBased, setTeamBased] = useState(false);
-  const [minPlayers, setMinPlayers] = useState(2);
-  const [maxPlayers, setMaxPlayers] = useState(8);
+  // Text rather than numbers, so the field can actually be emptied — see the
+  // note in ContractPicker.
+  const [minPlayers, setMinPlayers] = useState("2");
+  const [maxPlayers, setMaxPlayers] = useState("8");
+  const min = Number(minPlayers);
+  const max = Number(maxPlayers);
 
   if (!open) return null;
 
-  const valid = name.trim().length > 0 && minPlayers >= 2 && maxPlayers >= minPlayers;
+  const valid =
+    name.trim().length > 0 &&
+    Number.isFinite(min) &&
+    Number.isFinite(max) &&
+    min >= 2 &&
+    max >= min;
 
   return (
     <Sheet title="Add a game" onDismiss={presenter.cancelAddGame}>
@@ -164,33 +187,38 @@ function AddGameSheet({ presenter }: { presenter: NewMatchPresenter }) {
       </p>
 
       <div className="stack">
-        <div className="row" style={{ alignItems: "flex-end" }}>
-          <div className="field" style={{ width: 84 }}>
-            <label className="field__label" htmlFor="game-emoji">
-              Icon
-            </label>
-            <input
-              id="game-emoji"
-              className="input"
-              style={{ textAlign: "center", fontSize: "1.4rem" }}
-              maxLength={4}
-              placeholder="🎲"
-              value={emoji}
-              onChange={(e) => setEmoji(e.target.value)}
-            />
+        <div className="field">
+          <label className="field__label" htmlFor="game-name">
+            Name
+          </label>
+          <input
+            id="game-name"
+            className="input"
+            placeholder="Nertz"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <span className="field__label">Icon {emoji && <span aria-hidden="true">{emoji}</span>}</span>
+          <div className="emoji-grid" role="group" aria-label="Pick an icon">
+            {GAME_EMOJI.map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                className="emoji-grid__item"
+                aria-label={`Icon ${choice}`}
+                aria-pressed={emoji === choice}
+                onClick={() => setEmoji(emoji === choice ? "" : choice)}
+              >
+                {choice}
+              </button>
+            ))}
           </div>
-          <div className="field" style={{ flex: 1 }}>
-            <label className="field__label" htmlFor="game-name">
-              Name
-            </label>
-            <input
-              id="game-name"
-              className="input"
-              placeholder="Nertz"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--ink-faint)" }}>
+            Optional — a game with no icon gets 🎲. Tap again to clear.
+          </p>
         </div>
 
         <div className="row">
@@ -205,7 +233,8 @@ function AddGameSheet({ presenter }: { presenter: NewMatchPresenter }) {
               inputMode="numeric"
               min={2}
               value={minPlayers}
-              onChange={(e) => setMinPlayers(Number(e.target.value))}
+              onChange={(e) => setMinPlayers(e.target.value)}
+              onFocus={(e) => e.target.select()}
             />
           </div>
           <div className="field" style={{ flex: 1 }}>
@@ -219,7 +248,8 @@ function AddGameSheet({ presenter }: { presenter: NewMatchPresenter }) {
               inputMode="numeric"
               min={2}
               value={maxPlayers}
-              onChange={(e) => setMaxPlayers(Number(e.target.value))}
+              onChange={(e) => setMaxPlayers(e.target.value)}
+              onFocus={(e) => e.target.select()}
             />
           </div>
         </div>
@@ -241,8 +271,8 @@ function AddGameSheet({ presenter }: { presenter: NewMatchPresenter }) {
               name: name.trim(),
               emoji: emoji.trim(),
               teamBased,
-              minPlayers,
-              maxPlayers,
+              minPlayers: min,
+              maxPlayers: max,
             })
           }
         >

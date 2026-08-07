@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
@@ -15,8 +16,8 @@ type GameService struct {
 	base
 }
 
-func NewGameService(s *store.Store) *GameService {
-	return &GameService{base: base{store: s}}
+func NewGameService(s *store.Store, hub *events.Hub) *GameService {
+	return &GameService{base: base{store: s, hub: hub}}
 }
 
 func (svc *GameService) ListGames(
@@ -89,5 +90,6 @@ func (svc *GameService) CreateGame(
 	if err != nil {
 		return nil, wrapErr(err)
 	}
+	svc.publish(familyID, events.KindGames, "")
 	return connect.NewResponse(&scoreboardv1.CreateGameResponse{Game: gamePB(g)}), nil
 }

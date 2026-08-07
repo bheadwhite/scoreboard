@@ -39,6 +39,9 @@ const (
 	// FamilyServiceJoinFamilyProcedure is the fully-qualified name of the FamilyService's JoinFamily
 	// RPC.
 	FamilyServiceJoinFamilyProcedure = "/scoreboard.v1.FamilyService/JoinFamily"
+	// FamilyServicePreviewInviteProcedure is the fully-qualified name of the FamilyService's
+	// PreviewInvite RPC.
+	FamilyServicePreviewInviteProcedure = "/scoreboard.v1.FamilyService/PreviewInvite"
 	// FamilyServiceListMyFamiliesProcedure is the fully-qualified name of the FamilyService's
 	// ListMyFamilies RPC.
 	FamilyServiceListMyFamiliesProcedure = "/scoreboard.v1.FamilyService/ListMyFamilies"
@@ -62,6 +65,9 @@ const (
 type FamilyServiceClient interface {
 	CreateFamily(context.Context, *connect.Request[v1.CreateFamilyRequest]) (*connect.Response[v1.CreateFamilyResponse], error)
 	JoinFamily(context.Context, *connect.Request[v1.JoinFamilyRequest]) (*connect.Response[v1.JoinFamilyResponse], error)
+	// Look up what a code refers to without joining, so somebody following an
+	// invite link can see what they are being asked to join.
+	PreviewInvite(context.Context, *connect.Request[v1.PreviewInviteRequest]) (*connect.Response[v1.PreviewInviteResponse], error)
 	ListMyFamilies(context.Context, *connect.Request[v1.ListMyFamiliesRequest]) (*connect.Response[v1.ListMyFamiliesResponse], error)
 	GetFamily(context.Context, *connect.Request[v1.GetFamilyRequest]) (*connect.Response[v1.GetFamilyResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
@@ -92,6 +98,12 @@ func NewFamilyServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+FamilyServiceJoinFamilyProcedure,
 			connect.WithSchema(familyServiceMethods.ByName("JoinFamily")),
+			connect.WithClientOptions(opts...),
+		),
+		previewInvite: connect.NewClient[v1.PreviewInviteRequest, v1.PreviewInviteResponse](
+			httpClient,
+			baseURL+FamilyServicePreviewInviteProcedure,
+			connect.WithSchema(familyServiceMethods.ByName("PreviewInvite")),
 			connect.WithClientOptions(opts...),
 		),
 		listMyFamilies: connect.NewClient[v1.ListMyFamiliesRequest, v1.ListMyFamiliesResponse](
@@ -137,6 +149,7 @@ func NewFamilyServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 type familyServiceClient struct {
 	createFamily         *connect.Client[v1.CreateFamilyRequest, v1.CreateFamilyResponse]
 	joinFamily           *connect.Client[v1.JoinFamilyRequest, v1.JoinFamilyResponse]
+	previewInvite        *connect.Client[v1.PreviewInviteRequest, v1.PreviewInviteResponse]
 	listMyFamilies       *connect.Client[v1.ListMyFamiliesRequest, v1.ListMyFamiliesResponse]
 	getFamily            *connect.Client[v1.GetFamilyRequest, v1.GetFamilyResponse]
 	listMembers          *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
@@ -153,6 +166,11 @@ func (c *familyServiceClient) CreateFamily(ctx context.Context, req *connect.Req
 // JoinFamily calls scoreboard.v1.FamilyService.JoinFamily.
 func (c *familyServiceClient) JoinFamily(ctx context.Context, req *connect.Request[v1.JoinFamilyRequest]) (*connect.Response[v1.JoinFamilyResponse], error) {
 	return c.joinFamily.CallUnary(ctx, req)
+}
+
+// PreviewInvite calls scoreboard.v1.FamilyService.PreviewInvite.
+func (c *familyServiceClient) PreviewInvite(ctx context.Context, req *connect.Request[v1.PreviewInviteRequest]) (*connect.Response[v1.PreviewInviteResponse], error) {
+	return c.previewInvite.CallUnary(ctx, req)
 }
 
 // ListMyFamilies calls scoreboard.v1.FamilyService.ListMyFamilies.
@@ -189,6 +207,9 @@ func (c *familyServiceClient) RegenerateInviteCode(ctx context.Context, req *con
 type FamilyServiceHandler interface {
 	CreateFamily(context.Context, *connect.Request[v1.CreateFamilyRequest]) (*connect.Response[v1.CreateFamilyResponse], error)
 	JoinFamily(context.Context, *connect.Request[v1.JoinFamilyRequest]) (*connect.Response[v1.JoinFamilyResponse], error)
+	// Look up what a code refers to without joining, so somebody following an
+	// invite link can see what they are being asked to join.
+	PreviewInvite(context.Context, *connect.Request[v1.PreviewInviteRequest]) (*connect.Response[v1.PreviewInviteResponse], error)
 	ListMyFamilies(context.Context, *connect.Request[v1.ListMyFamiliesRequest]) (*connect.Response[v1.ListMyFamiliesResponse], error)
 	GetFamily(context.Context, *connect.Request[v1.GetFamilyRequest]) (*connect.Response[v1.GetFamilyResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
@@ -215,6 +236,12 @@ func NewFamilyServiceHandler(svc FamilyServiceHandler, opts ...connect.HandlerOp
 		FamilyServiceJoinFamilyProcedure,
 		svc.JoinFamily,
 		connect.WithSchema(familyServiceMethods.ByName("JoinFamily")),
+		connect.WithHandlerOptions(opts...),
+	)
+	familyServicePreviewInviteHandler := connect.NewUnaryHandler(
+		FamilyServicePreviewInviteProcedure,
+		svc.PreviewInvite,
+		connect.WithSchema(familyServiceMethods.ByName("PreviewInvite")),
 		connect.WithHandlerOptions(opts...),
 	)
 	familyServiceListMyFamiliesHandler := connect.NewUnaryHandler(
@@ -259,6 +286,8 @@ func NewFamilyServiceHandler(svc FamilyServiceHandler, opts ...connect.HandlerOp
 			familyServiceCreateFamilyHandler.ServeHTTP(w, r)
 		case FamilyServiceJoinFamilyProcedure:
 			familyServiceJoinFamilyHandler.ServeHTTP(w, r)
+		case FamilyServicePreviewInviteProcedure:
+			familyServicePreviewInviteHandler.ServeHTTP(w, r)
 		case FamilyServiceListMyFamiliesProcedure:
 			familyServiceListMyFamiliesHandler.ServeHTTP(w, r)
 		case FamilyServiceGetFamilyProcedure:
@@ -286,6 +315,10 @@ func (UnimplementedFamilyServiceHandler) CreateFamily(context.Context, *connect.
 
 func (UnimplementedFamilyServiceHandler) JoinFamily(context.Context, *connect.Request[v1.JoinFamilyRequest]) (*connect.Response[v1.JoinFamilyResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.FamilyService.JoinFamily is not implemented"))
+}
+
+func (UnimplementedFamilyServiceHandler) PreviewInvite(context.Context, *connect.Request[v1.PreviewInviteRequest]) (*connect.Response[v1.PreviewInviteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.FamilyService.PreviewInvite is not implemented"))
 }
 
 func (UnimplementedFamilyServiceHandler) ListMyFamilies(context.Context, *connect.Request[v1.ListMyFamiliesRequest]) (*connect.Response[v1.ListMyFamiliesResponse], error) {

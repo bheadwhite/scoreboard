@@ -1,36 +1,11 @@
-import { PollAsync, Runner, Signal } from "@tcn/state/core";
+import { Runner, Signal } from "@tcn/state/core";
 
 import type { Domain } from "../../lib/domain/domain.js";
 import type { Match, MatchParticipant } from "../../gen/scoreboard/v1/common_pb.js";
 import { MatchStatus } from "../../gen/scoreboard/v1/common_pb.js";
 
-/**
- * How often a live match refreshes, by what the match is doing.
- *
- * Concession is inherently multi-device — you claim victory and three other
- * phones need to light up. Polling handles that at family scale for free, and
- * survives the flaky wifi at somebody's parents' house better than a held-open
- * stream would.
- *
- * The rate is deliberately uneven. The only moment latency is felt is a
- * standing claim, when people are staring at the screen waiting to concede;
- * a match that has been in progress for an hour changes nothing until somebody
- * claims. Polling a flat interval spends most of its requests on the state
- * where nobody is watching.
- */
-const POLL_MS: Partial<Record<MatchStatus, number>> = {
-  [MatchStatus.CLAIMED]: 2000,
-  [MatchStatus.DISPUTED]: 5000,
-  [MatchStatus.LOBBY]: 5000,
-  [MatchStatus.IN_PROGRESS]: 20000,
-};
-
-/** Used before the first load tells us what the match is doing. */
-const POLL_DEFAULT_MS = 5000;
-
-function pollInterval(status: MatchStatus | undefined): number {
-  return (status !== undefined && POLL_MS[status]) || POLL_DEFAULT_MS;
-}
+/** One player's standing position on a claim. Every one of them is changeable. */
+export type Answer = "claimant" | "conceded" | "disputed" | "silent";
 
 /**
  * MatchPresenter drives one match all the way through: lobby, teams, contract,
@@ -51,9 +26,10 @@ export class MatchPresenter {
   private readonly _confirmingConcede = new Signal<boolean>(false);
   private readonly _disputing = new Signal<boolean>(false);
 
-  private _poller: PollAsync<Match | undefined> | null = null;
   private _settled = false;
-  private _onVisibility: (() => void) | null = null;
+  private _unsubscribe: (() => void) | null = null;
+  /** Last status and headcount seen, to notice when the lists behind us go stale. */
+  private _seen = "";
 
   constructor(domain: Domain, matchId: string, onSettled: () => void) {
     this._domain = domain;
@@ -98,44 +74,27 @@ export class MatchPresenter {
     });
   }
 
-  /** Begins polling. Called once when the screen mounts. */
+  /**
+   * Starts listening for changes to this match.
+   *
+   * No polling: the server pushes when anything about the match changes, and a
+   * reconnect re-reads in case something was missed while the connection was
+   * down.
+   */
   start(): void {
-    if (this._poller) return;
+    if (this._settled || this._unsubscribe) return;
 
-    this._poller = new PollAsync<Match | undefined>(
-      undefined,
-      async () => {
-        const res = await this._domain.api.matches.getMatch({ matchId: this._matchId });
-        if (res.match) {
-          this._match.set(res.match);
-          this._afterUpdate(res.match);
-        }
-        return res.match;
-      },
-      pollInterval(this._match.get()?.status),
-      { startImmediately: true, delayFirstTick: true },
-    );
-
-    // Nobody is waiting on a screen they cannot see. Pausing on a hidden tab
-    // also stops a backgrounded phone from polling all night.
-    this._onVisibility = () => {
-      if (this._settled) return;
-      if (document.visibilityState === "hidden") {
-        this._poller?.stop();
-      } else {
-        this._poller?.start();
-        void this.load();
-      }
-    };
-    document.addEventListener("visibilitychange", this._onVisibility);
+    this._unsubscribe = this._domain.realtime.onChange((change) => {
+      // Ignore other games happening in the same family.
+      if (change.kind !== "match") return;
+      if (change.matchId && change.matchId !== this._matchId) return;
+      void this.load();
+    });
   }
 
   stop(): void {
-    this._poller?.stop();
-    if (this._onVisibility) {
-      document.removeEventListener("visibilitychange", this._onVisibility);
-      this._onVisibility = null;
-    }
+    this._unsubscribe?.();
+    this._unsubscribe = null;
   }
 
   /**
@@ -145,20 +104,22 @@ export class MatchPresenter {
   private _afterUpdate(match: Match | undefined): void {
     if (!match) return;
 
+    // Anything that changes how this match reads in a list — it started, it was
+    // claimed, somebody joined — makes the scoreboard behind us wrong. Only
+    // finalizing used to invalidate anything, so a started match kept showing
+    // as "Not started" with its original headcount until a full reload.
+    const signature = `${match.status}:${match.joined.length}:${match.invited.length}`;
+    if (signature !== this._seen) {
+      this._seen = signature;
+      this._domain.store.invalidateMatches(match.familyId);
+    }
+
     const settled =
       match.status === MatchStatus.FINAL || match.status === MatchStatus.CANCELED;
     if (settled && !this._settled) {
       this._settled = true;
       this.stop();
       this._onSettled();
-      return;
-    }
-
-    // Re-pace as the match moves between states — most importantly, speed up
-    // the moment a claim lands.
-    const next = pollInterval(match.status);
-    if (this._poller && this._poller.delay !== next) {
-      this._poller.setDelay(next);
     }
   }
 
@@ -190,6 +151,10 @@ export class MatchPresenter {
   leave = (): Promise<void> =>
     this._run(() => this._domain.api.matches.leaveMatch({ matchId: this._matchId }));
 
+  /** Affirm, or withdraw, that you are ready under the current contract. */
+  setReady = (ready: boolean): Promise<void> =>
+    this._run(() => this._domain.api.matches.setReady({ matchId: this._matchId, ready }));
+
   start_ = (): Promise<void> =>
     this._run(() => this._domain.api.matches.startMatch({ matchId: this._matchId }));
 
@@ -206,6 +171,14 @@ export class MatchPresenter {
     this._run(() =>
       this._domain.api.matches.claimVictory({ matchId: this._matchId, teamId }),
     );
+
+  /**
+   * Takes back a claim your own team made. The match goes back to being in play
+   * with no winner — this is "never mind", not "you won". Handing the win over
+   * is not something a claimant can do: only the other side can claim it.
+   */
+  withdrawClaim = (): Promise<void> =>
+    this._run(() => this._domain.api.matches.withdrawClaim({ matchId: this._matchId }));
 
   askToConcede = (): void => {
     this._confirmingConcede.set(true);
@@ -246,6 +219,59 @@ export class MatchPresenter {
 
   // ── Read helpers the views need ────────────────────────────────────────────
 
+  /**
+   * The answer the signed-in player currently has on the table.
+   *
+   * "none" is a position too — it is the one the clock eventually reads as a
+   * concession — so this is what the screen shows back to you, rather than
+   * hiding the controls once you have answered. Every one of these is
+   * changeable until the match finalizes.
+   */
+  myAnswer(match: Match): "none" | "conceded" | "disputed" {
+    const me = this._domain.session.user?.id;
+    const p = match.joined.find((x) => x.user?.id === me);
+    if (p?.disputedAt) return "disputed";
+    if (p?.concededAt) return "conceded";
+    return "none";
+  }
+
+  /**
+   * Where every player stands on the claim, opponents first.
+   *
+   * "silent" covers two cases the viewer usually cannot tell apart: nobody home,
+   * and an objection the server redacted. Who called foul is sent only to the
+   * organizer, so this deliberately does not guess — the view says so rather
+   * than reporting someone as unanswered when they have in fact answered.
+   */
+  answers(match: Match): { user: MatchParticipant["user"]; state: Answer }[] {
+    return match.joined
+      .map((p) => {
+        const claimant = match.claimedByTeamId !== "" && p.teamId === match.claimedByTeamId;
+        const state: Answer = claimant
+          ? "claimant"
+          : p.disputedAt
+            ? "disputed"
+            : p.concededAt
+              ? "conceded"
+              : "silent";
+        return { user: p.user, state };
+      })
+      .sort((a, b) => Number(a.state === "claimant") - Number(b.state === "claimant"));
+  }
+
+  /**
+   * Whether the viewer's concession would be the one that ends it. The last
+   * concession finalizes in the same transaction, and finalizing is the only
+   * step in this whole protocol that cannot be taken back — so it is worth
+   * saying out loud before they tap.
+   *
+   * Only sound when no objection stands, which is exactly when it is asked:
+   * an objection stops finalization regardless of who else concedes.
+   */
+  concessionWouldSettleIt(match: Match): boolean {
+    return match.status === MatchStatus.CLAIMED && match.awaitingConcession.length <= 1;
+  }
+
   /** Participants grouped by team, in team order. */
   teamsWithPlayers(match: Match): { id: string; name: string; players: MatchParticipant[] }[] {
     return match.teams.map((team) => ({
@@ -281,6 +307,43 @@ export class MatchPresenter {
     return this.myTeamSize(match) === 1;
   }
 
+  /** Whether the signed-in player runs this family. */
+  private get isOrganizer(): boolean {
+    const me = this._domain.session.user?.id;
+    if (!me) return false;
+    const match = this._match.get();
+    if (!match) return false;
+    const family = this._domain.store.families.peek().find((f) => f.id === match.familyId);
+    return family?.ownerId === me;
+  }
+
+  /**
+   * On what footing, if any, the viewer may call this match off. Mirrors the
+   * server rule exactly.
+   *
+   * Before it starts, whoever set it up can drop it — that is their own game, so
+   * it is an ordinary lobby action. Once play begins only the family organizer
+   * can, and that is deliberate: a player who is losing must not be able to
+   * erase the game rather than concede it. That would undo the entire point of
+   * the app. A finalized match cannot be cancelled by anyone — disputing it is
+   * the route, and the organizer resolves that.
+   *
+   * The two are separated because the organizer deleting somebody else's game is
+   * not the same act as the host dropping their own, and it should not be
+   * offered by the same one-tap button sitting next to Join.
+   */
+  cancelAuthority(match: Match): "none" | "creator" | "organizer" {
+    const me = this._domain.session.user?.id;
+    if (!me) return "none";
+    if (match.status === MatchStatus.FINAL || match.status === MatchStatus.CANCELED) return "none";
+    if (match.status === MatchStatus.LOBBY && match.createdBy === me) return "creator";
+    return this.isOrganizer ? "organizer" : "none";
+  }
+
+  canCancel(match: Match): boolean {
+    return this.cancelAuthority(match) !== "none";
+  }
+
   /**
    * Every mutation returns the updated match, so the response is written
    * straight into the runner and the UI moves without waiting for the next
@@ -302,8 +365,7 @@ export class MatchPresenter {
   }
 
   dispose(): void {
-    this._poller?.dispose();
-    this._poller = null;
+    this.stop();
     this._match.dispose();
     this._action.dispose();
     this._error.dispose();

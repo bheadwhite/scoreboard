@@ -275,6 +275,23 @@ func sessionToken(r *http.Request) string {
 
 // ── Connect interceptor ──────────────────────────────────────────────────────
 
+// IdentifyRequest resolves the session on a plain HTTP request.
+//
+// The Connect interceptor covers RPCs; this covers handlers that are not RPCs —
+// currently the event stream, which has to be a real HTTP response because the
+// browser consumes it with EventSource.
+func (a *Auth) IdentifyRequest(r *http.Request) (Identity, bool) {
+	token := sessionToken(r)
+	if token == "" {
+		return Identity{}, false
+	}
+	c := a.verify(token)
+	if c == nil || c.UserID == "" {
+		return Identity{}, false
+	}
+	return Identity{ID: c.UserID}, true
+}
+
 // Interceptor resolves the session on every RPC. Requests without one pass
 // through unauthenticated and are rejected by Require inside the handler, which
 // leaves room for public RPCs later.

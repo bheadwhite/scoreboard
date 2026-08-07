@@ -11,6 +11,7 @@ import { messageOf } from "../match/match_presenter.js";
 export class FamiliesPresenter {
   private readonly _domain: Domain;
   private readonly _onJoined: (familyId: string) => void;
+  private _watching = "";
 
   private readonly _name = new Signal<string>("");
   private readonly _code = new Signal<string>("");
@@ -54,6 +55,27 @@ export class FamiliesPresenter {
 
   members(familyId: string) {
     return this._domain.store.members.for(familyId);
+  }
+
+  /**
+   * Remembers which family is on screen so a refresh knows what to re-read.
+   * Roster changes arrive over the live connection; there is nothing to poll.
+   */
+  start(familyId: string): void {
+    this._watching = familyId;
+  }
+
+  stop(): void {
+    this._watching = "";
+  }
+
+  async refreshRoster(): Promise<void> {
+    const id = this._watching;
+    if (!id) return;
+    await Promise.all([
+      this._domain.store.members.for(id).load(true),
+      this._domain.store.families.load(true),
+    ]).catch(() => {});
   }
 
   setName = (name: string): void => {
@@ -191,6 +213,7 @@ export class FamiliesPresenter {
   }
 
   dispose(): void {
+    this.stop();
     this._name.dispose();
     this._code.dispose();
     this._mode.dispose();

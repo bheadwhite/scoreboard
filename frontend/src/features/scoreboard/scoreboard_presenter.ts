@@ -15,12 +15,14 @@ import { StatsRange } from "../../gen/scoreboard/v1/stats_pb.js";
  */
 export class ScoreboardPresenter {
   private readonly _domain: Domain;
+  private readonly _onAccessLost: () => void;
   private readonly _familyId = new Signal<string>("");
   private readonly _gameId = new Signal<string>("");
   private readonly _range = new Signal<StatsRange>(StatsRange.ALL_TIME);
 
-  constructor(domain: Domain) {
+  constructor(domain: Domain, onAccessLost: () => void = () => {}) {
     this._domain = domain;
+    this._onAccessLost = onAccessLost;
   }
 
   get familyIdBroadcast() {
@@ -60,6 +62,11 @@ export class ScoreboardPresenter {
 
   setFamily(familyId: string): void {
     if (this._familyId.get() === familyId) return;
+    if (!familyId) {
+      this._familyId.set("");
+      this._gameId.set("");
+      return;
+    }
     this._familyId.set(familyId);
     // A game filter from the previous family means nothing here.
     this._gameId.set("");
@@ -88,11 +95,33 @@ export class ScoreboardPresenter {
 
     return Promise.all([
       this.standings.load(),
-      this.liveMatches.load(),
+      // Forced: what is happening now is the one thing on this screen that is
+      // routinely out of date by the time you look at it.
+      this.liveMatches.load(true),
       this.recentMatches.load(),
       this.games.load(),
       this.members.load(),
     ]);
+  }
+
+  /**
+   * Kept so the view's lifecycle reads the same as before. There is nothing to
+   * start: changes arrive over the live connection and land as cache
+   * invalidation, which every screen already reacts to.
+   */
+  start(): void {}
+
+  stop(): void {}
+
+  /** Re-read what is happening right now, ignoring the cache. */
+  async refreshLive(): Promise<void> {
+    const familyId = this._familyId.get();
+    if (!familyId) return;
+    try {
+      await this._domain.store.liveMatches.for(familyId).load(true);
+    } catch {
+      this._onAccessLost();
+    }
   }
 
   /** Called after anything that could change the record. */

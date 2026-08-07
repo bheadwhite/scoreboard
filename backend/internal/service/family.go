@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
 
@@ -14,8 +15,8 @@ type FamilyService struct {
 	base
 }
 
-func NewFamilyService(s *store.Store) *FamilyService {
-	return &FamilyService{base: base{store: s}}
+func NewFamilyService(s *store.Store, hub *events.Hub) *FamilyService {
+	return &FamilyService{base: base{store: s, hub: hub}}
 }
 
 const maxFamilyName = 60
@@ -60,7 +61,36 @@ func (svc *FamilyService) JoinFamily(
 	if err != nil {
 		return nil, wrapErr(err)
 	}
+	svc.publish(f.ID, events.KindFamily, "")
 	return connect.NewResponse(&scoreboardv1.JoinFamilyResponse{Family: familyPB(f)}), nil
+}
+
+// PreviewInvite tells a signed-in caller what a code refers to. Sign-in is
+// required so this cannot be scraped anonymously, and the response carries no
+// family id — knowing the name does not let you act on it.
+func (svc *FamilyService) PreviewInvite(
+	ctx context.Context, req *connect.Request[scoreboardv1.PreviewInviteRequest],
+) (*connect.Response[scoreboardv1.PreviewInviteResponse], error) {
+	uid, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	code := strings.TrimSpace(req.Msg.GetInviteCode())
+	if code == "" {
+		return nil, invalid("enter an invite code")
+	}
+
+	p, err := svc.store.PreviewInvite(ctx, code, uid)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	return connect.NewResponse(&scoreboardv1.PreviewInviteResponse{
+		Name:          p.Name,
+		MemberCount:   int32(p.MemberCount),
+		OwnerName:     p.OwnerName,
+		AlreadyMember: p.AlreadyMember,
+	}), nil
 }
 
 func (svc *FamilyService) ListMyFamilies(
@@ -136,6 +166,7 @@ func (svc *FamilyService) LeaveFamily(
 	if err := svc.store.RemoveMember(ctx, familyID, uid); err != nil {
 		return nil, wrapErr(err)
 	}
+	svc.publish(familyID, events.KindFamily, "")
 	return connect.NewResponse(&scoreboardv1.LeaveFamilyResponse{}), nil
 }
 
@@ -156,6 +187,7 @@ func (svc *FamilyService) RemoveMember(
 	if err := svc.store.RemoveMember(ctx, familyID, req.Msg.GetUserId()); err != nil {
 		return nil, wrapErr(err)
 	}
+	svc.publish(familyID, events.KindFamily, "")
 	return connect.NewResponse(&scoreboardv1.RemoveMemberResponse{}), nil
 }
 
@@ -175,5 +207,6 @@ func (svc *FamilyService) RegenerateInviteCode(
 	if err != nil {
 		return nil, wrapErr(err)
 	}
+	svc.publish(familyID, events.KindFamily, "")
 	return connect.NewResponse(&scoreboardv1.RegenerateInviteCodeResponse{InviteCode: code}), nil
 }

@@ -114,6 +114,40 @@ func (s *Store) JoinFamily(ctx context.Context, userID, code string) (model.Fami
 	return f, err
 }
 
+// InvitePreview is what an invite code reveals before joining.
+type InvitePreview struct {
+	Name          string
+	MemberCount   int
+	OwnerName     string
+	AlreadyMember bool
+}
+
+// PreviewInvite resolves a code to the family it names, without joining.
+//
+// It returns only what somebody needs to recognise what they are being asked
+// to join. Guessing codes therefore yields a family name and nothing else — no
+// id to act on, no roster to harvest.
+func (s *Store) PreviewInvite(ctx context.Context, code, viewerID string) (InvitePreview, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+
+	const q = `
+		SELECT f.name,
+		       (SELECT count(*) FROM family_members m WHERE m.family_id = f.id),
+		       coalesce(o.display_name, ''),
+		       EXISTS (SELECT 1 FROM family_members m WHERE m.family_id = f.id AND m.user_id = $2)
+		FROM families f
+		LEFT JOIN users o ON o.id = f.owner_id
+		WHERE f.invite_code = $1`
+
+	var p InvitePreview
+	err := s.pool.QueryRow(ctx, q, code, viewerID).
+		Scan(&p.Name, &p.MemberCount, &p.OwnerName, &p.AlreadyMember)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return p, fmt.Errorf("%w: that invite code does not match any family — it may have been changed since the link was shared", ErrNotFound)
+	}
+	return p, err
+}
+
 func (s *Store) ListFamiliesForUser(ctx context.Context, userID string) ([]model.Family, error) {
 	const q = `
 		SELECT f.id, f.name, f.invite_code, f.owner_id, f.created_at, m.role,

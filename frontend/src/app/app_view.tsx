@@ -81,6 +81,9 @@ export function AppView() {
 function TopBar({ route, title }: { route: Route; title: string }) {
   const app = useAppPresenter();
   const me = useSignalValue(app.session.userBroadcast);
+  // Whatever the open screen calls itself — the game being played, the player
+  // being looked at — falling back to the generic name for the route.
+  const screenTitle = useSignalValue(app.screenTitleBroadcast);
   const atHome = route.name === "scoreboard";
 
   return (
@@ -92,7 +95,7 @@ function TopBar({ route, title }: { route: Route; title: string }) {
       )}
       <h1 className="topbar__title">
         <span className="topbar__sub">{subtitleFor(route)}</span>
-        {atHome ? title : titleFor(route)}
+        {atHome ? title : screenTitle || titleFor(route)}
       </h1>
       {atHome && (
         <button
