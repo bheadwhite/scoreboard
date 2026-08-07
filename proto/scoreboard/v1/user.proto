@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "scoreboard/v1/common.proto";
+
+// UserService manages the caller's own profile. Identity itself comes from the
+// Supabase JWT; the first authenticated call upserts a row here.
+service UserService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  User user = 1;
+}
+
+message UpdateProfileRequest {
+  string display_name = 1;
+  string avatar_url = 2;
+}
+
+message UpdateProfileResponse {
+  User user = 1;
+}

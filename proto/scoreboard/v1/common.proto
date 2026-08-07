@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// A player. Mirrors a Supabase auth user; the id is the Supabase user id.
+message User {
+  string id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// What a member may do inside a family.
+enum FamilyRole {
+  FAMILY_ROLE_UNSPECIFIED = 0;
+  // Can play, and nothing else.
+  FAMILY_ROLE_MEMBER = 1;
+  // Can remove members, resolve disputes, and rotate the invite code.
+  FAMILY_ROLE_OWNER = 2;
+}
+
+// A group of players who share a scoreboard.
+message Family {
+  string id = 1;
+  string name = 2;
+  // Only sent to members; this is how new players are let in.
+  string invite_code = 3;
+  string owner_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  // The caller's own role, filled in per-request.
+  FamilyRole viewer_role = 6;
+  int32 member_count = 7;
+}
+
+message FamilyMember {
+  User user = 1;
+  FamilyRole role = 2;
+  google.protobuf.Timestamp joined_at = 3;
+}
+
+// A game that can be played. A game with no family_id is part of the built-in
+// catalog and is visible to everyone; a family may also define its own.
+message Game {
+  string id = 1;
+  // Empty for built-in catalog games.
+  string family_id = 2;
+  string name = 3;
+  string emoji = 4;
+  // Whether players are normally split into multi-player teams. Free-for-all
+  // games still get one team per player internally — see match_teams.
+  bool team_based = 5;
+  int32 min_players = 6;
+  int32 max_players = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// How victory is defined for a match. Declared before play begins and locked
+// once the match starts, so the win condition cannot be relitigated afterward.
+enum ContractKind {
+  CONTRACT_KIND_UNSPECIFIED = 0;
+  // First side to reach contract_target points.
+  CONTRACT_KIND_FIRST_TO_SCORE = 1;
+  // Best of contract_target rounds.
+  CONTRACT_KIND_BEST_OF = 2;
+  // Play until one side remains.
+  CONTRACT_KIND_LAST_STANDING = 3;
+  // A single decisive game.
+  CONTRACT_KIND_SINGLE_GAME = 4;
+  // Anything else; contract_detail carries the terms.
+  CONTRACT_KIND_CUSTOM = 5;
+}
+
+message Contract {
+  ContractKind kind = 1;
+  // 500 for FIRST_TO_SCORE, 3 for BEST_OF; unset otherwise.
+  int32 target = 2;
+  // Free text shown alongside the contract. Required for CUSTOM.
+  string detail = 3;
+}
+
+// Where a match is in its lifecycle. Only MATCH_STATUS_FINAL matches count
+// toward the scoreboard.
+enum MatchStatus {
+  MATCH_STATUS_UNSPECIFIED = 0;
+  // Players are still joining and the contract is not locked.
+  MATCH_STATUS_LOBBY = 1;
+  // Contract locked, play underway.
+  MATCH_STATUS_IN_PROGRESS = 2;
+  // Someone claimed victory; opponents owe a concession.
+  MATCH_STATUS_CLAIMED = 3;
+  // Ratified. Counts on the scoreboard.
+  MATCH_STATUS_FINAL = 4;
+  // An opponent disputed the claim. The clock is stopped and only the family
+  // owner can resolve it.
+  MATCH_STATUS_DISPUTED = 5;
+  // Abandoned before finalizing. Never counts.
+  MATCH_STATUS_CANCELED = 6;
+}
+
+// A participant's outcome, written at finalization.
+enum ParticipantResult {
+  PARTICIPANT_RESULT_UNSPECIFIED = 0;
+  PARTICIPANT_RESULT_PENDING = 1;
+  PARTICIPANT_RESULT_WIN = 2;
+  PARTICIPANT_RESULT_LOSS = 3;
+}
+
+// A side in a match. Free-for-all games give each player a team of one, which
+// collapses "concede to that player or that team" into a single code path.
+message MatchTeam {
+  string id = 1;
+  string match_id = 2;
+  string name = 3;
+  int32 ordinal = 4;
+}
+
+message MatchParticipant {
+  string match_id = 1;
+  User user = 2;
+  string team_id = 3;
+  ParticipantResult result = 4;
+  // When this player acknowledged the claim. Unset if they have not.
+  google.protobuf.Timestamp conceded_at = 5;
+  // When this player disputed the claim. Unset if they have not.
+  google.protobuf.Timestamp disputed_at = 6;
+}
+
+message Match {
+  string id = 1;
+  string family_id = 2;
+  Game game = 3;
+  MatchStatus status = 4;
+  Contract contract = 5;
+  string created_by = 6;
+
+  repeated MatchTeam teams = 7;
+  repeated MatchParticipant participants = 8;
+
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp started_at = 10;
+
+  // Set when victory is claimed.
+  google.protobuf.Timestamp claimed_at = 11;
+  string claimed_by_team_id = 12;
+  // After this instant, outstanding concessions are assumed and the match
+  // finalizes on its own. A dispute clears this and stops the clock.
+  google.protobuf.Timestamp concede_deadline = 13;
+
+  google.protobuf.Timestamp finalized_at = 14;
+
+  // Convenience for the UI: opponents of the claiming team who have not yet
+  // conceded or disputed.
+  repeated User awaiting_concession = 15;
+  // Whether the caller personally still owes a concession.
+  bool viewer_owes_concession = 16;
+}

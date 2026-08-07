@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.deploy
+.DS_Store
+backend/server
+frontend/.vite/
+*.log

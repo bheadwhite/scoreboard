@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "scoreboard/v1/common.proto";
+
+// FamilyService manages families and their membership. Every other service
+// authorizes against membership established here.
+service FamilyService {
+  rpc CreateFamily(CreateFamilyRequest) returns (CreateFamilyResponse);
+  rpc JoinFamily(JoinFamilyRequest) returns (JoinFamilyResponse);
+  rpc ListMyFamilies(ListMyFamiliesRequest) returns (ListMyFamiliesResponse);
+  rpc GetFamily(GetFamilyRequest) returns (GetFamilyResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc LeaveFamily(LeaveFamilyRequest) returns (LeaveFamilyResponse);
+
+  // Owner only.
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc RegenerateInviteCode(RegenerateInviteCodeRequest) returns (RegenerateInviteCodeResponse);
+}
+
+message CreateFamilyRequest {
+  string name = 1;
+}
+
+message CreateFamilyResponse {
+  Family family = 1;
+}
+
+message JoinFamilyRequest {
+  // Case-insensitive; the code shown to members of the family.
+  string invite_code = 1;
+}
+
+message JoinFamilyResponse {
+  Family family = 1;
+}
+
+message ListMyFamiliesRequest {}
+
+message ListMyFamiliesResponse {
+  repeated Family families = 1;
+}
+
+message GetFamilyRequest {
+  string family_id = 1;
+}
+
+message GetFamilyResponse {
+  Family family = 1;
+}
+
+message ListMembersRequest {
+  string family_id = 1;
+}
+
+message ListMembersResponse {
+  repeated FamilyMember members = 1;
+}
+
+message LeaveFamilyRequest {
+  string family_id = 1;
+}
+
+message LeaveFamilyResponse {}
+
+message RemoveMemberRequest {
+  string family_id = 1;
+  string user_id = 2;
+}
+
+message RemoveMemberResponse {}
+
+message RegenerateInviteCodeRequest {
+  string family_id = 1;
+}
+
+message RegenerateInviteCodeResponse {
+  string invite_code = 1;
+}

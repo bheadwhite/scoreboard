@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "scoreboard/v1/common.proto";
+
+// StatsService is the bragging-rights layer. Everything here is computed on
+// read from finalized matches; nothing is materialized.
+service StatsService {
+  rpc GetStandings(GetStandingsRequest) returns (GetStandingsResponse);
+  rpc GetHeadToHead(GetHeadToHeadRequest) returns (GetHeadToHeadResponse);
+  rpc GetPlayerProfile(GetPlayerProfileRequest) returns (GetPlayerProfileResponse);
+}
+
+// How far back to count.
+enum StatsRange {
+  STATS_RANGE_UNSPECIFIED = 0;
+  STATS_RANGE_ALL_TIME = 1;
+  STATS_RANGE_YEAR = 2;
+  STATS_RANGE_MONTH = 3;
+}
+
+message StandingsRow {
+  User user = 1;
+  int32 wins = 2;
+  int32 losses = 3;
+  // 0..1. Zero when the player has no finalized matches.
+  double win_rate = 4;
+  // Positive for an active winning streak, negative for a losing one.
+  int32 streak = 5;
+  int32 rank = 6;
+}
+
+message GetStandingsRequest {
+  string family_id = 1;
+  // Empty means all games combined.
+  string game_id = 2;
+  StatsRange range = 3;
+}
+
+message GetStandingsResponse {
+  repeated StandingsRow rows = 1;
+  int32 total_matches = 2;
+}
+
+// One game's slice of a head-to-head record.
+message HeadToHeadGame {
+  Game game = 1;
+  int32 wins = 2;
+  int32 losses = 3;
+}
+
+message GetHeadToHeadRequest {
+  string family_id = 1;
+  // The record is reported from this player's point of view.
+  string user_id = 2;
+  string opponent_id = 3;
+  // Empty means all games.
+  string game_id = 4;
+  StatsRange range = 5;
+}
+
+message GetHeadToHeadResponse {
+  User user = 1;
+  User opponent = 2;
+  // Matches where the two were on opposing teams.
+  int32 wins = 3;
+  int32 losses = 4;
+  // Matches where they were teammates, and how those went.
+  int32 together_wins = 5;
+  int32 together_losses = 6;
+  // Per-game breakdown, most-played first.
+  repeated HeadToHeadGame games = 7;
+  // Most recent meetings, newest first.
+  repeated Match recent_matches = 8;
+  // From user's point of view: positive is a winning streak against opponent.
+  int32 streak = 9;
+}
+
+message GetPlayerProfileRequest {
+  string family_id = 1;
+  string user_id = 2;
+  StatsRange range = 3;
+}
+
+message GetPlayerProfileResponse {
+  User user = 1;
+  int32 wins = 2;
+  int32 losses = 3;
+  double win_rate = 4;
+  int32 current_streak = 5;
+  int32 longest_win_streak = 6;
+  // The opponent who has beaten this player the most. Unset if nobody has.
+  User nemesis = 7;
+  int32 nemesis_losses = 8;
+  int32 nemesis_wins = 9;
+  // The opponent this player has beaten the most. Unset if nobody has.
+  User favorite_victim = 10;
+  int32 victim_wins = 11;
+  int32 victim_losses = 12;
+  // Per-game record, most-played first.
+  repeated HeadToHeadGame games = 13;
+}

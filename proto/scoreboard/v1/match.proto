@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "scoreboard/v1/common.proto";
+
+// MatchService runs the match lifecycle, including the concession protocol that
+// is the whole point of this app:
+//
+//   LOBBY -> IN_PROGRESS -> CLAIMED -> FINAL       (all opponents concede, or timeout)
+//                              \
+//                               -> DISPUTED -> FINAL | CANCELED  (owner resolves)
+//
+// Only FINAL matches count toward the scoreboard.
+service MatchService {
+  rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
+  rpc JoinMatch(JoinMatchRequest) returns (JoinMatchResponse);
+  rpc LeaveMatch(LeaveMatchRequest) returns (LeaveMatchResponse);
+  // Replaces the whole team layout while still in the lobby.
+  rpc SetTeams(SetTeamsRequest) returns (SetTeamsResponse);
+  rpc SetContract(SetContractRequest) returns (SetContractResponse);
+  // Locks the contract and begins play.
+  rpc StartMatch(StartMatchRequest) returns (StartMatchResponse);
+
+  // Claim victory for the caller's team. Starts the concession clock.
+  // Idempotent: re-claiming by the same team is a no-op.
+  rpc ClaimVictory(ClaimVictoryRequest) returns (ClaimVictoryResponse);
+  // Acknowledge someone else's claim. Idempotent.
+  rpc Concede(ConcedeRequest) returns (ConcedeResponse);
+  // Reject a claim. Stops the concession clock and requires an owner to resolve.
+  rpc DisputeMatch(DisputeMatchRequest) returns (DisputeMatchResponse);
+  // Owner only: settle a disputed match by naming the winning team, or void it.
+  rpc ResolveDispute(ResolveDisputeRequest) returns (ResolveDisputeResponse);
+
+  rpc CancelMatch(CancelMatchRequest) returns (CancelMatchResponse);
+
+  rpc GetMatch(GetMatchRequest) returns (GetMatchResponse);
+  rpc ListMatches(ListMatchesRequest) returns (ListMatchesResponse);
+}
+
+message CreateMatchRequest {
+  string family_id = 1;
+  string game_id = 2;
+  // Optional: seed the lobby with these players alongside the creator.
+  repeated string invite_user_ids = 3;
+}
+
+message CreateMatchResponse {
+  Match match = 1;
+}
+
+message JoinMatchRequest {
+  string match_id = 1;
+}
+
+message JoinMatchResponse {
+  Match match = 1;
+}
+
+message LeaveMatchRequest {
+  string match_id = 1;
+}
+
+message LeaveMatchResponse {
+  Match match = 1;
+}
+
+// One side of a match. Omit team_id to create a new team.
+message TeamAssignment {
+  string team_id = 1;
+  string name = 2;
+  repeated string user_ids = 3;
+}
+
+message SetTeamsRequest {
+  string match_id = 1;
+  // The complete team layout. Every participant must appear exactly once.
+  repeated TeamAssignment teams = 2;
+}
+
+message SetTeamsResponse {
+  Match match = 1;
+}
+
+message SetContractRequest {
+  string match_id = 1;
+  Contract contract = 2;
+}
+
+message SetContractResponse {
+  Match match = 1;
+}
+
+message StartMatchRequest {
+  string match_id = 1;
+}
+
+message StartMatchResponse {
+  Match match = 1;
+}
+
+message ClaimVictoryRequest {
+  string match_id = 1;
+  // Defaults to the caller's own team.
+  string team_id = 2;
+}
+
+message ClaimVictoryResponse {
+  Match match = 1;
+}
+
+message ConcedeRequest {
+  string match_id = 1;
+}
+
+message ConcedeResponse {
+  Match match = 1;
+}
+
+message DisputeMatchRequest {
+  string match_id = 1;
+  // Shown to the family owner when they resolve it.
+  string reason = 2;
+}
+
+message DisputeMatchResponse {
+  Match match = 1;
+}
+
+message ResolveDisputeRequest {
+  string match_id = 1;
+  // The team that actually won. Leave empty to void the match instead.
+  string winning_team_id = 2;
+  bool void_match = 3;
+}
+
+message ResolveDisputeResponse {
+  Match match = 1;
+}
+
+message CancelMatchRequest {
+  string match_id = 1;
+}
+
+message CancelMatchResponse {
+  Match match = 1;
+}
+
+message GetMatchRequest {
+  string match_id = 1;
+}
+
+message GetMatchResponse {
+  Match match = 1;
+}
+
+message ListMatchesRequest {
+  string family_id = 1;
+  // Empty means every status.
+  repeated MatchStatus statuses = 2;
+  // Restrict to matches this user played in.
+  string user_id = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+
+message ListMatchesResponse {
+  repeated Match matches = 1;
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package scoreboard.v1;
+
+import "scoreboard/v1/common.proto";
+
+// GameService exposes the game catalog: the built-in games plus whatever a
+// family has added for itself.
+service GameService {
+  rpc ListGames(ListGamesRequest) returns (ListGamesResponse);
+  rpc CreateGame(CreateGameRequest) returns (CreateGameResponse);
+}
+
+message ListGamesRequest {
+  // Returns built-in catalog games plus this family's own.
+  string family_id = 1;
+}
+
+message ListGamesResponse {
+  repeated Game games = 1;
+}
+
+message CreateGameRequest {
+  string family_id = 1;
+  string name = 2;
+  string emoji = 3;
+  bool team_based = 4;
+  int32 min_players = 5;
+  int32 max_players = 6;
+}
+
+message CreateGameResponse {
+  Game game = 1;
+}

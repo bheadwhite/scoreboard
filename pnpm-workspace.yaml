@@ -1,0 +1,5 @@
+packages:
+  - frontend
+allowBuilds:
+  '@bufbuild/buf': true
+  esbuild: true

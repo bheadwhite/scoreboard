@@ -1,0 +1,962 @@
+/*
+ * Scoreboard — the look.
+ *
+ * The reference is a chalkboard in a garage where someone has been tracking
+ * ping pong for a decade: warm, worn, a little ceremonial. Numbers are the
+ * loudest thing on every screen, because the numbers are the entire point.
+ *
+ * Built mobile-first and one-handed. This gets used standing at a kitchen table
+ * by people who are half paying attention, so tap targets are large and the
+ * consequential buttons look consequential.
+ */
+
+:root {
+  --gold: #e0a422;
+  --gold-bright: #f5be48;
+  --win: #34c77b;
+  --loss: #e5584d;
+  --dispute: #d98324;
+
+  --radius: 14px;
+  --radius-lg: 20px;
+  --tap: 48px;
+
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Helvetica Neue", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 6px 18px -8px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.22), 0 20px 48px -16px rgba(0, 0, 0, 0.45);
+
+  color-scheme: light dark;
+}
+
+/* Dark is the default: this is an evening, around-a-table app. */
+:root,
+:root[data-theme="dark"] {
+  --bg: #17110e;
+  --bg-deep: #100b09;
+  --surface: #221a16;
+  --surface-2: #2d231e;
+  --line: #3a2e27;
+  --ink: #f6efe6;
+  --ink-dim: #b6a695;
+  --ink-faint: #7d6f63;
+  --chalk: rgba(246, 239, 230, 0.06);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4ece1;
+    --bg-deep: #e8ddcd;
+    --surface: #fffcf7;
+    --surface-2: #f7f0e5;
+    --line: #ddd0bc;
+    --ink: #2b2019;
+    --ink-dim: #6d5c4c;
+    --ink-faint: #9c8b79;
+    --chalk: rgba(43, 32, 25, 0.04);
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f4ece1;
+  --bg-deep: #e8ddcd;
+  --surface: #fffcf7;
+  --surface-2: #f7f0e5;
+  --line: #ddd0bc;
+  --ink: #2b2019;
+  --ink-dim: #6d5c4c;
+  --ink-faint: #9c8b79;
+  --chalk: rgba(43, 32, 25, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Keeps the page from bouncing under the fixed bottom bar on iOS. */
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+h1 {
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+p {
+  margin: 0 0 0.75em;
+}
+
+a {
+  color: var(--gold);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Every number in this app is a record, so they all line up. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px calc(96px + env(safe-area-inset-bottom));
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 0;
+  background: linear-gradient(var(--bg) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.topbar__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__sub {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stack--lg {
+  gap: 22px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.row--between {
+  justify-content: space-between;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card--quiet {
+  background: var(--chalk);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.empty {
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--ink-dim);
+}
+
+.empty__emoji {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 2rem;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 0.95rem;
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #22160a;
+  font-weight: 800;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+.btn--sm {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.btn--icon {
+  min-width: var(--tap);
+  padding: 0 12px;
+}
+
+/*
+ * The claim and concede buttons are the two moments the app is built around, so
+ * they get their own weight. Concede in particular is pressed by someone who is
+ * annoyed and not looking carefully — it has to be unmissable and hard to hit
+ * by accident, which is why it is also behind a confirmation.
+ */
+.btn--claim {
+  min-height: 62px;
+  font-size: 1.1rem;
+  letter-spacing: 0.01em;
+}
+
+.btn--concede {
+  min-height: 62px;
+  border-color: transparent;
+  background: linear-gradient(180deg, #f0685c, var(--loss));
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.btn--dispute {
+  border-color: var(--dispute);
+  background: transparent;
+  color: var(--dispute);
+  font-weight: 700;
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  /* 16px minimum stops iOS from zooming the page on focus. */
+  font-size: 16px;
+}
+
+.textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.input:focus-visible,
+.textarea:focus-visible,
+.select:focus-visible,
+.btn:focus-visible,
+.chip:focus-visible,
+.rowbtn:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.input--code {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── Chips (filters, toggles) ─────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin: 0 -16px;
+  padding-inline: 16px;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #22160a;
+  font-weight: 750;
+}
+
+/* ── Avatars ──────────────────────────────────────────────────────────────── */
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.9rem;
+  overflow: hidden;
+  object-fit: cover;
+}
+
+.avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 1.4rem;
+}
+
+.avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 0.72rem;
+}
+
+.avatar-stack {
+  display: flex;
+}
+
+.avatar-stack .avatar {
+  margin-left: -10px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.avatar-stack .avatar:first-child {
+  margin-left: 0;
+}
+
+/* ── Standings ────────────────────────────────────────────────────────────── */
+
+.rowbtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.rowbtn:last-child {
+  border-bottom: 0;
+}
+
+.rowbtn:active {
+  background: var(--chalk);
+}
+
+.rank {
+  width: 26px;
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.rank--1 {
+  color: var(--gold);
+}
+
+.rowbtn__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowbtn__name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowbtn__meta {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.record {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.record__w {
+  color: var(--win);
+}
+
+.record__sep {
+  color: var(--ink-faint);
+  margin: 0 2px;
+}
+
+.record__l {
+  color: var(--ink-dim);
+}
+
+/* ── Streak / badges ──────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--chalk);
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge--hot {
+  background: rgba(224, 164, 34, 0.16);
+  color: var(--gold-bright);
+}
+
+.badge--cold {
+  background: rgba(229, 88, 77, 0.14);
+  color: var(--loss);
+}
+
+.badge--live {
+  background: rgba(52, 199, 123, 0.16);
+  color: var(--win);
+}
+
+.badge--wait {
+  background: rgba(217, 131, 36, 0.16);
+  color: var(--dispute);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── The big number (head-to-head, profile) ───────────────────────────────── */
+
+.tally {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 12px;
+  text-align: center;
+}
+
+.tally__num {
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 20vw, 5.2rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+.tally__num--win {
+  color: var(--gold-bright);
+}
+
+.tally__num--loss {
+  color: var(--ink-dim);
+}
+
+.tally__dash {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--ink-faint);
+}
+
+.tally__who {
+  margin-top: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verdict {
+  padding: 12px 16px 18px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+/* ── Stat tiles ───────────────────────────────────────────────────────────── */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.tile {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.tile__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.tile__value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.tile__note {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+/* ── The claim / concession ceremony ──────────────────────────────────────── */
+
+/*
+ * A standing claim is the most important thing on any screen it appears on. It
+ * gets a gold frame and a slow breathing glow so it reads as an event, not a
+ * status field.
+ */
+.claim {
+  position: relative;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, rgba(224, 164, 34, 0.14), transparent 60%), var(--surface);
+  padding: 20px 18px;
+  text-align: center;
+  animation: claim-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  box-shadow: 0 0 0 6px rgba(224, 164, 34, 0.08);
+}
+
+@keyframes claim-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+}
+
+.claim__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.claim__who {
+  margin: 10px 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.claim__says {
+  color: var(--ink-dim);
+  font-size: 0.95rem;
+}
+
+.claim__deadline {
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+.waiting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.waiting__name {
+  padding: 5px 11px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+
+/* The victory moment. Brief, then it settles into a normal record. */
+.crown {
+  padding: 26px 18px;
+  text-align: center;
+  animation: crown-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+.crown__emoji {
+  font-size: 3.2rem;
+  display: block;
+  animation: crown-pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+}
+
+.crown__who {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+@keyframes crown-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes crown-pop {
+  0% {
+    transform: scale(0.3) rotate(-14deg);
+  }
+  60% {
+    transform: scale(1.18) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+/* ── Teams ────────────────────────────────────────────────────────────────── */
+
+.team {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--surface-2);
+}
+
+.team--claimed {
+  border-color: var(--gold);
+  background: linear-gradient(160deg, rgba(224, 164, 34, 0.1), transparent), var(--surface-2);
+}
+
+.team--lost {
+  opacity: 0.62;
+}
+
+.team__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.team__players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.team__player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
+.team__player--conceded {
+  color: var(--ink-faint);
+}
+
+/* ── Bottom bar ───────────────────────────────────────────────────────────── */
+
+.bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--bg) 42%);
+  pointer-events: none;
+}
+
+.bottombar > * {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 608px;
+}
+
+/* ── Feedback ─────────────────────────────────────────────────────────────── */
+
+.async-loading {
+  padding: 22px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+.async-loading.subtle {
+  padding: 6px;
+  font-size: 0.78rem;
+}
+
+.async-error,
+.alert {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--loss);
+  border-radius: var(--radius);
+  background: rgba(229, 88, 77, 0.1);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.alert--info {
+  border-color: var(--line);
+  background: var(--chalk);
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  animation: fade-in 0.18s ease;
+}
+
+.sheet__panel {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Sign-in ──────────────────────────────────────────────────────────────── */
+
+.hero {
+  padding: 56px 8px 28px;
+  text-align: center;
+}
+
+.hero__mark {
+  font-size: 3.4rem;
+}
+
+.hero__title {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.hero__tag {
+  margin-top: 6px;
+  color: var(--ink-dim);
+  font-size: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

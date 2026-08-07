@@ -1,0 +1,361 @@
+// Package stats computes the bragging-rights numbers from finalized matches.
+//
+// Everything here is a pure function over a flat slice of participations. The
+// store does one query for a family's finalized history and this package does
+// the rest, which keeps the SQL trivial and makes all of the interesting logic
+// testable without a database. At family scale — a few thousand matches, ever —
+// there is no reason to push this into the query planner or to materialize it.
+package stats
+
+import (
+	"sort"
+
+	"github.com/bheadwhite/scoreboard/backend/internal/model"
+)
+
+// Participation is one player's row in one finalized match.
+type Participation struct {
+	MatchID string
+	UserID  string
+	TeamID  string
+	GameID  string
+	// model.ResultWin or model.ResultLoss.
+	Result string
+	// Finalization order; ties broken by MatchID for stability.
+	Seq int64
+}
+
+func (p Participation) won() bool { return p.Result == model.ResultWin }
+
+// Record is a win/loss split.
+type Record struct {
+	Wins   int32
+	Losses int32
+}
+
+func (r *Record) add(won bool) {
+	if won {
+		r.Wins++
+	} else {
+		r.Losses++
+	}
+}
+
+func (r Record) total() int32 { return r.Wins + r.Losses }
+
+// PlayerStanding is one row of a family scoreboard.
+type PlayerStanding struct {
+	UserID string
+	Wins   int32
+	Losses int32
+	// Positive for an active winning streak, negative for a losing one.
+	Streak int32
+}
+
+// WinRate returns 0..1, or 0 for a player with no finalized matches.
+func (s PlayerStanding) WinRate() float64 {
+	total := s.Wins + s.Losses
+	if total == 0 {
+		return 0
+	}
+	return float64(s.Wins) / float64(total)
+}
+
+// byMatch groups participations by match, each group sorted for determinism.
+func byMatch(ps []Participation) map[string][]Participation {
+	out := make(map[string][]Participation)
+	for _, p := range ps {
+		out[p.MatchID] = append(out[p.MatchID], p)
+	}
+	return out
+}
+
+// forPlayer returns one player's participations, oldest first.
+func forPlayer(ps []Participation, userID string) []Participation {
+	var mine []Participation
+	for _, p := range ps {
+		if p.UserID == userID {
+			mine = append(mine, p)
+		}
+	}
+	sortBySeq(mine)
+	return mine
+}
+
+func sortBySeq(ps []Participation) {
+	sort.Slice(ps, func(i, j int) bool {
+		if ps[i].Seq != ps[j].Seq {
+			return ps[i].Seq < ps[j].Seq
+		}
+		return ps[i].MatchID < ps[j].MatchID
+	})
+}
+
+// streak counts the current run at the end of an oldest-first sequence:
+// positive for wins, negative for losses, zero for an empty history.
+func streak(ordered []Participation) int32 {
+	if len(ordered) == 0 {
+		return 0
+	}
+	last := ordered[len(ordered)-1].won()
+	var n int32
+	for i := len(ordered) - 1; i >= 0; i-- {
+		if ordered[i].won() != last {
+			break
+		}
+		n++
+	}
+	if !last {
+		return -n
+	}
+	return n
+}
+
+// longestWinStreak returns the best run of wins anywhere in the history.
+func longestWinStreak(ordered []Participation) int32 {
+	var best, run int32
+	for _, p := range ordered {
+		if p.won() {
+			run++
+			if run > best {
+				best = run
+			}
+		} else {
+			run = 0
+		}
+	}
+	return best
+}
+
+// Standings ranks every player who appears in ps. Order is wins desc, then win
+// rate desc, then fewer losses, then user id so the result is stable.
+func Standings(ps []Participation) []PlayerStanding {
+	agg := map[string]*PlayerStanding{}
+	for _, p := range ps {
+		row, ok := agg[p.UserID]
+		if !ok {
+			row = &PlayerStanding{UserID: p.UserID}
+			agg[p.UserID] = row
+		}
+		if p.won() {
+			row.Wins++
+		} else {
+			row.Losses++
+		}
+	}
+
+	out := make([]PlayerStanding, 0, len(agg))
+	for id, row := range agg {
+		row.Streak = streak(forPlayer(ps, id))
+		out = append(out, *row)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.Wins != b.Wins {
+			return a.Wins > b.Wins
+		}
+		if ar, br := a.WinRate(), b.WinRate(); ar != br {
+			return ar > br
+		}
+		if a.Losses != b.Losses {
+			return a.Losses < b.Losses
+		}
+		return a.UserID < b.UserID
+	})
+	return out
+}
+
+// H2H is one player's record against one opponent.
+type H2H struct {
+	// Meetings on opposing teams, from the subject's point of view.
+	Wins   int32
+	Losses int32
+	// Meetings as teammates.
+	TogetherWins   int32
+	TogetherLosses int32
+	// Per-game breakdown of the opposing meetings, most-played first.
+	Games []GameRecord
+	// Positive for an active winning streak against this opponent.
+	Streak int32
+	// Opposing meetings, newest first.
+	MatchIDs []string
+}
+
+// GameRecord is a record within a single game.
+type GameRecord struct {
+	GameID string
+	Record
+}
+
+// HeadToHead computes userID's record against opponentID. This is the query the
+// whole app exists for: "how many times have I beaten Dad at Rook."
+func HeadToHead(ps []Participation, userID, opponentID string) H2H {
+	var out H2H
+	games := map[string]*Record{}
+	var opposing []Participation
+
+	for _, group := range byMatch(ps) {
+		var mine, theirs *Participation
+		for i := range group {
+			switch group[i].UserID {
+			case userID:
+				mine = &group[i]
+			case opponentID:
+				theirs = &group[i]
+			}
+		}
+		if mine == nil || theirs == nil {
+			continue
+		}
+
+		if mine.TeamID == theirs.TeamID {
+			if mine.won() {
+				out.TogetherWins++
+			} else {
+				out.TogetherLosses++
+			}
+			continue
+		}
+
+		if mine.won() {
+			out.Wins++
+		} else {
+			out.Losses++
+		}
+		rec, ok := games[mine.GameID]
+		if !ok {
+			rec = &Record{}
+			games[mine.GameID] = rec
+		}
+		rec.add(mine.won())
+		opposing = append(opposing, *mine)
+	}
+
+	sortBySeq(opposing)
+	out.Streak = streak(opposing)
+	for i := len(opposing) - 1; i >= 0; i-- {
+		out.MatchIDs = append(out.MatchIDs, opposing[i].MatchID)
+	}
+	out.Games = rankGames(games)
+	return out
+}
+
+// Profile is the bragging-rights summary for one player.
+type Profile struct {
+	Wins          int32
+	Losses        int32
+	CurrentStreak int32
+	LongestWin    int32
+
+	// The opponent who has beaten this player the most.
+	NemesisID     string
+	NemesisLosses int32
+	NemesisWins   int32
+
+	// The opponent this player has beaten the most.
+	VictimID     string
+	VictimWins   int32
+	VictimLosses int32
+
+	Games []GameRecord
+}
+
+// PlayerProfile summarizes one player's whole record, including the two stats
+// that make this fun: your nemesis and your favorite victim.
+func PlayerProfile(ps []Participation, userID string) Profile {
+	var out Profile
+
+	mine := forPlayer(ps, userID)
+	for _, p := range mine {
+		if p.won() {
+			out.Wins++
+		} else {
+			out.Losses++
+		}
+	}
+	out.CurrentStreak = streak(mine)
+	out.LongestWin = longestWinStreak(mine)
+
+	games := map[string]*Record{}
+	for _, p := range mine {
+		rec, ok := games[p.GameID]
+		if !ok {
+			rec = &Record{}
+			games[p.GameID] = rec
+		}
+		rec.add(p.won())
+	}
+	out.Games = rankGames(games)
+
+	// Head-to-head tallies against everyone this player has faced.
+	versus := map[string]*Record{}
+	for _, group := range byMatch(ps) {
+		var me *Participation
+		for i := range group {
+			if group[i].UserID == userID {
+				me = &group[i]
+				break
+			}
+		}
+		if me == nil {
+			continue
+		}
+		for i := range group {
+			other := group[i]
+			if other.UserID == userID || other.TeamID == me.TeamID {
+				continue
+			}
+			rec, ok := versus[other.UserID]
+			if !ok {
+				rec = &Record{}
+				versus[other.UserID] = rec
+			}
+			rec.add(me.won())
+		}
+	}
+
+	// Nemesis: most losses to. Ties broken by fewer wins against them (a
+	// rivalry you are losing more lopsidedly is the better story), then by id.
+	for id, rec := range versus {
+		if rec.Losses == 0 {
+			continue
+		}
+		if out.NemesisID == "" || rec.Losses > out.NemesisLosses ||
+			(rec.Losses == out.NemesisLosses && rec.Wins < out.NemesisWins) ||
+			(rec.Losses == out.NemesisLosses && rec.Wins == out.NemesisWins && id < out.NemesisID) {
+			out.NemesisID, out.NemesisLosses, out.NemesisWins = id, rec.Losses, rec.Wins
+		}
+	}
+	for id, rec := range versus {
+		if rec.Wins == 0 {
+			continue
+		}
+		if out.VictimID == "" || rec.Wins > out.VictimWins ||
+			(rec.Wins == out.VictimWins && rec.Losses < out.VictimLosses) ||
+			(rec.Wins == out.VictimWins && rec.Losses == out.VictimLosses && id < out.VictimID) {
+			out.VictimID, out.VictimWins, out.VictimLosses = id, rec.Wins, rec.Losses
+		}
+	}
+
+	return out
+}
+
+// rankGames orders a game tally by most played, then most wins, then id.
+func rankGames(m map[string]*Record) []GameRecord {
+	out := make([]GameRecord, 0, len(m))
+	for id, rec := range m {
+		out = append(out, GameRecord{GameID: id, Record: *rec})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.total() != b.total() {
+			return a.total() > b.total()
+		}
+		if a.Wins != b.Wins {
+			return a.Wins > b.Wins
+		}
+		return a.GameID < b.GameID
+	})
+	return out
+}

@@ -1,0 +1,16 @@
+{
+  "name": "scoreboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "buf generate",
+    "dev": "pnpm --filter @scoreboard/frontend dev",
+    "build": "pnpm --filter @scoreboard/frontend build",
+    "check": "pnpm --filter @scoreboard/frontend check"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.57.2",
+    "@bufbuild/protoc-gen-es": "^2.9.0"
+  },
+  "packageManager": "pnpm@11.17.0"
+}
