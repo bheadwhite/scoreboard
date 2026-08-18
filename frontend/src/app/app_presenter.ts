@@ -18,14 +18,22 @@ export type Route =
   | { name: "family" };
 
 /**
- * How often an open tab asks whether it has been left behind by a deploy.
+ * How often a tab somebody is actually looking at asks whether it has been left
+ * behind by a deploy.
  *
- * Slow on purpose. The reconnect check below catches a deploy within seconds of
- * it happening, so this only has to cover a tab that was asleep through one —
- * and a phone left on the kitchen counter should not be polling briskly all day
- * to find out about a version of a scoreboard.
+ * Only while visible — see watchForUpdates — which is what lets this be a
+ * minute rather than the fifteen it used to be. The old interval ran whether or
+ * not anybody was there, so it had to be slow enough not to poll all night on a
+ * kitchen counter, and the cost of that was landing in the worst place: too
+ * frequent to be free, too rare to feel live. Gating on visibility separates
+ * the two questions. Nobody watching costs nothing; somebody watching gets an
+ * answer inside a minute.
+ *
+ * A minute is affordable because version.json is about forty bytes and is the
+ * one request in the app with nothing to compute — no database, no session, a
+ * static file off disk.
  */
-const UPDATE_POLL_MS = 15 * 60 * 1000;
+const UPDATE_POLL_MS = 60 * 1000;
 
 /**
  * Strips a /join/CODE link back to the app.
@@ -236,27 +244,46 @@ export class AppPresenter {
    * the protos, not the bundle — so the symptom is not a crash, it is a family
    * member quietly missing a feature everybody else is talking about.
    *
-   * Checked on three occasions, cheapest and most immediate first:
+   * Checked on four occasions, most immediate first:
    *
-   *   - whenever the tab comes back to the front, which is what a phone
+   *   - on a reconnect of the event stream, which is in watchFamily. A deploy
+   *     replaces the container and drops every open stream, so this is the
+   *     earliest possible hint that something shipped — usually seconds.
+   *   - whenever the app comes back to the front, which is what a phone
    *     actually does between glances at the scoreboard,
-   *   - on a slow timer, for a browser left open and visible all day,
+   *   - every minute while somebody is looking at it,
    *   - and at boot.
    *
-   * The fourth is in watchFamily: a deploy replaces the container, which drops
-   * every open event stream, so a reconnect is the earliest possible hint that
-   * something shipped.
+   * The timer is deliberately paused while the app is hidden. A backgrounded
+   * tab has its timers throttled to somewhere between "slow" and "never"
+   * depending on the browser, so polling there was never reliable enough to be
+   * the thing that caught a deploy — and coming back to the front runs a check
+   * immediately anyway, which covers everything the background poll was
+   * nominally for. Dropping it is what makes a one-minute interval reasonable
+   * instead of extravagant.
+   *
+   * Three events for "back to the front", because one is not enough on a phone.
+   * visibilitychange is the correct one and fires almost everywhere;
+   * pageshow catches a bfcache restore, where the page is resumed wholesale and
+   * visibility never transitions; focus catches a desktop window being clicked
+   * back into. They overlap heavily and that is fine — checkForUpdate is a
+   * no-op once an update is already on offer, and a duplicate forty-byte fetch
+   * is not worth deduplicating.
    */
   private watchForUpdates(): void {
     if (this._updateTimer) return;
 
     void this.checkForUpdate();
-    this._updateTimer = setInterval(() => void this.checkForUpdate(), UPDATE_POLL_MS);
 
-    this._onVisible = () => {
+    const poll = () => {
       if (document.visibilityState === "visible") void this.checkForUpdate();
     };
+    this._updateTimer = setInterval(poll, UPDATE_POLL_MS);
+
+    this._onVisible = poll;
     document.addEventListener("visibilitychange", this._onVisible);
+    window.addEventListener("pageshow", this._onVisible);
+    window.addEventListener("focus", this._onVisible);
   }
 
   /**
@@ -278,6 +305,20 @@ export class AppPresenter {
    * Takes the new build. A plain reload is enough: there is no service worker
    * here, and the server sends index.html with `Cache-Control: no-cache`, so the
    * reload revalidates it and picks up the new hashed assets it names.
+   *
+   * Note what this deliberately does not do: remember which build it was
+   * offering. The banner says "there is something newer", never "there is
+   * version B" — so if B ships, the banner appears, and C ships before anybody
+   * taps it, tapping still lands on C. Whatever the server is serving at the
+   * instant of the reload is what gets installed, which is the only answer that
+   * cannot go stale while the banner sits there.
+   *
+   * That property is worth guarding, because it is not really implemented here
+   * — it is implemented by two cache headers. index.html must stay `no-cache`
+   * so the reload revalidates it, and the assets it names must stay
+   * content-hashed so a new build cannot collide with a cached old one. Serve
+   * index.html with a max-age and this silently starts reinstalling whatever
+   * the browser already had.
    */
   applyUpdate = (): void => {
     window.location.reload();
@@ -418,7 +459,11 @@ export class AppPresenter {
   dispose(): void {
     if (this._updateTimer) clearInterval(this._updateTimer);
     this._updateTimer = null;
-    if (this._onVisible) document.removeEventListener("visibilitychange", this._onVisible);
+    if (this._onVisible) {
+      document.removeEventListener("visibilitychange", this._onVisible);
+      window.removeEventListener("pageshow", this._onVisible);
+      window.removeEventListener("focus", this._onVisible);
+    }
     this._onVisible = null;
     this._updateAvailable.dispose();
     this._unsubscribeRealtime?.();
