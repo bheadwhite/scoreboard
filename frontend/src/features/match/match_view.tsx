@@ -1012,6 +1012,7 @@ function Roster({
       <div className="row row--between">
         <span className="section-label">
           {match.joined.length} player{match.joined.length === 1 ? "" : "s"}
+          {match.invited.length > 0 && ` · ${match.invited.length} pending`}
         </span>
         {inMatch && (
           <button
@@ -1063,6 +1064,36 @@ function Roster({
             </button>
           );
         })}
+
+        {/* Invited and still deciding. Given a row rather than a sentence
+            underneath, because "who is in this game" is one question and
+            answering half of it in a list and half of it in prose made the
+            people who had not answered yet easy to miss. The pill is what
+            separates them: same row, one word of difference.
+
+            Never selectable for pairing. They hold no team until they join,
+            so there is nothing to put on a side. */}
+        {match.invited.map((p) => (
+          <button
+            key={p.user?.id}
+            className="rowbtn"
+            style={{
+              border: "1px solid",
+              borderColor: "var(--line)",
+              borderRadius: "var(--radius)",
+              cursor: "default",
+              minHeight: 54,
+              opacity: 0.72,
+            }}
+            disabled
+          >
+            <Avatar user={p.user} size="sm" />
+            <span className="rowbtn__main">
+              <span className="rowbtn__name">{displayName(p.user)}</span>
+            </span>
+            <span className="badge badge--wait">Pending</span>
+          </button>
+        ))}
       </div>
 
       {canPair && (
@@ -1087,8 +1118,7 @@ function Roster({
 
       {match.invited.length > 0 && (
         <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-faint)" }}>
-          Still deciding: {match.invited.map((p) => displayName(p.user)).join(", ")}. They can join
-          any time before somebody calls it.
+          Pending players can still join any time before somebody calls the win.
         </p>
       )}
 
