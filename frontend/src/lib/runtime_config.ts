@@ -4,6 +4,38 @@ export interface Capabilities {
 }
 
 /**
+ * The build this bundle was compiled as, or "" when there is not one — under
+ * vitest, where the define is not applied, and under `vite dev`, where it is
+ * applied but there is no deployed build to compare it against.
+ */
+export const RUNNING_BUILD: string =
+  typeof __BUILD_ID__ === "string" ? __BUILD_ID__ : "";
+
+/**
+ * Which build the server is serving right now.
+ *
+ * Fetched `no-store` on purpose. The point of this file is to be the one thing
+ * that cannot be answered from a cache — a stale copy would report the build we
+ * are already running and the update would never be offered.
+ *
+ * Every failure reports "" and is read as "no update": offline, a server too old
+ * to have the file, or — the case that actually happens — the Vite dev server,
+ * which answers unknown paths with index.html and so fails to parse as JSON. A
+ * false negative delays the banner; a false positive would nag somebody who is
+ * already up to date.
+ */
+export async function fetchDeployedBuild(): Promise<string> {
+  try {
+    const res = await fetch("/version.json", { cache: "no-store" });
+    if (!res.ok) return "";
+    const body = (await res.json()) as { build?: unknown };
+    return typeof body.build === "string" ? body.build : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Which sign-in options actually work, according to the server.
  *
  * This is fetched rather than compiled in or templated into index.html. Under

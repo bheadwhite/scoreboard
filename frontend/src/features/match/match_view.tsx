@@ -32,6 +32,7 @@ export function MatchView({
 }) {
   const match = useSignalValue(presenter.matchBroadcast);
   const error = useSignalValue(presenter.errorBroadcast);
+  const gone = useSignalValue(presenter.goneBroadcast);
   const actionStatus = useRunnerStatus(presenter.actionBroadcast);
   const busy = actionStatus === Status.PENDING;
 
@@ -46,6 +47,23 @@ export function MatchView({
   useEffect(() => {
     if (gameName) app.setScreenTitle(gameName);
   }, [app, gameName]);
+
+  // Voided out from under whoever is looking at it. Says so rather than
+  // failing, because from here it is indistinguishable from a broken link.
+  if (gone) {
+    return (
+      <div className="card">
+        <div className="empty">
+          <span className="empty__emoji">🫥</span>
+          This game was voided. It is gone from the record entirely — no win, no
+          loss, for anybody.
+        </div>
+        <button className="btn btn--block" onClick={app.goHome}>
+          Back to the scoreboard
+        </button>
+      </div>
+    );
+  }
 
   if (!match) {
     return (
@@ -92,6 +110,10 @@ export function MatchView({
 
       {presenter.cancelAuthority(match) === "organizer" && (
         <AbandonMatch presenter={presenter} match={match} busy={busy} />
+      )}
+
+      {match.viewerMayVoid && (
+        <VoidMatch presenter={presenter} match={match} app={app} busy={busy} />
       )}
     </div>
   );
@@ -158,6 +180,90 @@ function AbandonMatch({
             </button>
             <button className="btn btn--ghost btn--block" onClick={() => setConfirming(false)}>
               Keep playing
+            </button>
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+/**
+ * Erasing a match — the administrator's override, and the only thing in the app
+ * that takes something back out of the permanent record.
+ *
+ * Deliberately the plainest control on the screen, and deliberately separate
+ * from calling a game off. Those are different acts with different results:
+ * calling a game off leaves a cancelled match everybody can still see and read,
+ * while this leaves nothing at all. The copy has to say which one you are about
+ * to do, because after the tap there is nothing left to check against.
+ */
+function VoidMatch({
+  presenter,
+  match,
+  app,
+  busy,
+}: {
+  presenter: MatchPresenter;
+  match: Match;
+  app: AppPresenter;
+  busy: boolean;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState("");
+  const inRecord = match.status === MatchStatus.FINAL;
+
+  return (
+    <>
+      <button
+        className="btn btn--ghost btn--sm"
+        style={{ alignSelf: "center", color: "var(--ink-faint)" }}
+        disabled={busy}
+        onClick={() => setConfirming(true)}
+      >
+        Void this game
+      </button>
+
+      {confirming && (
+        <Sheet title="Void" onDismiss={() => setConfirming(false)}>
+          <h2>Void this game?</h2>
+          <p style={{ color: "var(--ink-dim)" }}>
+            {gameLabel(match.game)} is deleted outright — the result, both sides, every
+            concession. {inRecord ? (
+              <>
+                It comes straight off the scoreboard, and out of the head-to-head record
+                between everyone who played it, as though it never happened.
+              </>
+            ) : (
+              <>It disappears for everyone in it, and nothing is recorded.</>
+            )}{" "}
+            This cannot be undone and nobody is told.
+          </p>
+          <p style={{ color: "var(--ink-dim)" }}>
+            For a game that should never have existed — not for a result somebody
+            disagrees with. That is what disputing is for.
+          </p>
+          <div className="stack">
+            <textarea
+              className="textarea"
+              placeholder="Why? (goes in the server log)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+            <button
+              className="btn btn--concede btn--block"
+              disabled={busy}
+              onClick={() => {
+                void presenter.voidMatch(reason.trim()).then((done) => {
+                  setConfirming(false);
+                  if (done) app.goHome();
+                });
+              }}
+            >
+              Void it — erase this game
+            </button>
+            <button className="btn btn--ghost btn--block" onClick={() => setConfirming(false)}>
+              Leave it alone
             </button>
           </div>
         </Sheet>

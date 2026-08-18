@@ -85,6 +85,14 @@ clear-family: ## Delete one family and everything under it: make clear-family FA
 clear-all: ## Delete every family, match and player (keeps the game catalog)
 	cd backend && go run ./cmd/reset -all -yes
 
+.PHONY: consolidate
+consolidate: ## Show the plan for folding every family into one: make consolidate [INTO="The Whites"]
+	cd backend && go run ./cmd/consolidate -into "$(INTO)"
+
+.PHONY: consolidate-apply
+consolidate-apply: ## Actually fold every family into one: make consolidate-apply [INTO="The Whites"]
+	cd backend && go run ./cmd/consolidate -into "$(INTO)" -yes
+
 .PHONY: sweep
 sweep: ## Finalize any claims whose concession window has closed
 	curl -fsS -X POST localhost:$(PORT)/tasks/sweep -H "Authorization: Bearer $(SWEEP_TOKEN)"

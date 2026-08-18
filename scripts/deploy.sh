@@ -34,7 +34,12 @@ done
 # Anything that grants access goes to Secret Manager; the rest are plain env
 # vars, visible in the Cloud Run console where they are useful to see.
 SECRET_KEYS=(DATABASE_URL SESSION_SECRET GOOGLE_CLIENT_SECRET SWEEP_TOKEN)
-PLAIN_KEYS=(CONCEDE_WINDOW APP_URL GOOGLE_CLIENT_ID)
+# ADMIN_EMAILS is not a secret — it grants nothing on its own, since holding the
+# address means being able to sign in as it. Separate the addresses with spaces,
+# never commas: every plain key is joined into one comma-delimited
+# --set-env-vars argument below, and gcloud would read a comma as the start of
+# another variable.
+PLAIN_KEYS=(CONCEDE_WINDOW APP_URL GOOGLE_CLIENT_ID ADMIN_EMAILS FAMILY_NAME)
 
 # Accept the GCP_OAUTH_* spelling as well, which is what the Google console
 # calls them and what this repo's env file was first written with.

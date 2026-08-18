@@ -53,6 +53,11 @@ func main() {
 
 	production := config.Env("NODE_ENV", "") == "production" || config.Env("K_SERVICE", "") != ""
 
+	// What the one family is called in the database. Nothing shows it — the app
+	// stopped naming families when it stopped having more than one — so it only
+	// matters to whoever reads the tables or runs cmd/consolidate.
+	familyName := config.Env("FAMILY_NAME", "Gauntlet")
+
 	authn, err := auth.New(auth.Config{
 		ClientID:      config.Env("GOOGLE_CLIENT_ID", config.Env("GCP_OAUTH_CLIENT", "")),
 		ClientSecret:  config.Env("GOOGLE_CLIENT_SECRET", config.Env("GCP_OAUTH_SECRET", "")),
@@ -63,6 +68,14 @@ func main() {
 	}, func(ctx context.Context, provider, providerID, email, name, avatarURL string) (auth.Identity, error) {
 		u, err := st.UpsertOAuthUser(ctx, provider, providerID, email, name, avatarURL)
 		if err != nil {
+			return auth.Identity{}, err
+		}
+		// Signing in is joining. There is one family, the UI never asks which,
+		// and this is the only place that decides — so a player is never
+		// sitting in the app with no scoreboard to look at. On an empty
+		// database the first person through mints the family and owns it, which
+		// is the only time FAMILY_NAME is read.
+		if _, err := st.EnsureDefaultMembership(ctx, u.ID, familyName); err != nil {
 			return auth.Identity{}, err
 		}
 		return auth.Identity{ID: u.ID, Email: email, DisplayName: u.DisplayName, AvatarURL: u.AvatarURL}, nil
@@ -83,14 +96,25 @@ func main() {
 	concedeWindow := config.Duration("CONCEDE_WINDOW", 7*24*time.Hour)
 	log.Printf("concession window: %s", concedeWindow)
 
+	// Who may erase a match from the permanent record. Empty by default, and
+	// empty means nobody — granting it takes a deploy, which is the point. The
+	// count is logged and the addresses are not; that a deployment has two
+	// administrators is operational, who they are is not.
+	admins := auth.NewAdmins(config.Env("ADMIN_EMAILS", ""))
+	if len(admins) == 0 {
+		log.Println("no administrators configured — no match can be voided (set ADMIN_EMAILS)")
+	} else {
+		log.Printf("administrators: %d", len(admins))
+	}
+
 	opts := []connect.HandlerOption{connect.WithInterceptors(authn.Interceptor())}
 
 	api := http.NewServeMux()
 	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st, hub), opts...))
 	api.Handle(scoreboardv1connect.NewFamilyServiceHandler(service.NewFamilyService(st, hub), opts...))
 	api.Handle(scoreboardv1connect.NewGameServiceHandler(service.NewGameService(st, hub), opts...))
-	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, concedeWindow), opts...))
-	api.Handle(scoreboardv1connect.NewStatsServiceHandler(service.NewStatsService(st, hub), opts...))
+	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, concedeWindow, admins), opts...))
+	api.Handle(scoreboardv1connect.NewStatsServiceHandler(service.NewStatsService(st, hub, admins), opts...))
 
 	if !authn.Configured() {
 		log.Println("warning: Google sign-in is not configured — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET")

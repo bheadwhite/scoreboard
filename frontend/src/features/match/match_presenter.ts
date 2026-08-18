@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { Runner, Signal } from "@tcn/state/core";
 
 import type { Domain } from "../../lib/domain/domain.js";
@@ -25,6 +26,8 @@ export class MatchPresenter {
   /** Set while the concede confirmation is up. */
   private readonly _confirmingConcede = new Signal<boolean>(false);
   private readonly _disputing = new Signal<boolean>(false);
+  /** Set when the match no longer exists — an administrator voided it. */
+  private readonly _gone = new Signal<boolean>(false);
 
   private _settled = false;
   private _unsubscribe: (() => void) | null = null;
@@ -62,16 +65,42 @@ export class MatchPresenter {
     return this._disputing.broadcast;
   }
 
+  get goneBroadcast() {
+    return this._gone.broadcast;
+  }
+
   get match(): Match | undefined {
     return this._match.get();
   }
 
   load(): Promise<Match | undefined> {
     return this._match.execute(async () => {
-      const res = await this._domain.api.matches.getMatch({ matchId: this._matchId });
-      this._afterUpdate(res.match);
-      return res.match;
+      try {
+        const res = await this._domain.api.matches.getMatch({ matchId: this._matchId });
+        this._afterUpdate(res.match);
+        return res.match;
+      } catch (e) {
+        // A voided match stops existing rather than changing status, so the
+        // reload triggered by the change event is how anybody else's browser
+        // finds out. Without this the rejection lands in the runner and the
+        // screen keeps rendering a match that is no longer there.
+        if (ConnectError.from(e).code !== Code.NotFound) throw e;
+        this._markGone();
+        return undefined;
+      }
     });
+  }
+
+  /**
+   * Records that the match is gone: stop listening, and tell the app, which
+   * drops every cache that might still be counting it.
+   */
+  private _markGone(): void {
+    if (this._gone.get()) return;
+    this._gone.set(true);
+    this._settled = true;
+    this.stop();
+    this._onSettled();
   }
 
   /**
@@ -206,6 +235,28 @@ export class MatchPresenter {
       this._domain.api.matches.disputeMatch({ matchId: this._matchId, reason }),
     );
     this._disputing.set(false);
+  };
+
+  /**
+   * Erases the match. Administrators only, and the server enforces it — this is
+   * gated in the UI on `match.viewerMayVoid`, which the server computes.
+   *
+   * Unlike every other mutation here there is no updated match to write back:
+   * the match is gone, so this reports whether it worked and leaves the caller
+   * to navigate away.
+   */
+  voidMatch = async (reason: string): Promise<boolean> => {
+    this._error.set(null);
+    try {
+      await this._action.execute(async () => {
+        await this._domain.api.matches.voidMatch({ matchId: this._matchId, reason });
+      });
+    } catch (e) {
+      this._error.set(messageOf(e));
+      return false;
+    }
+    this._markGone();
+    return true;
   };
 
   resolveDispute = (winningTeamId: string, voidMatch = false): Promise<void> =>
@@ -371,6 +422,7 @@ export class MatchPresenter {
     this._error.dispose();
     this._confirmingConcede.dispose();
     this._disputing.dispose();
+    this._gone.dispose();
   }
 }
 

@@ -72,6 +72,8 @@ const (
 	// MatchServiceCancelMatchProcedure is the fully-qualified name of the MatchService's CancelMatch
 	// RPC.
 	MatchServiceCancelMatchProcedure = "/scoreboard.v1.MatchService/CancelMatch"
+	// MatchServiceVoidMatchProcedure is the fully-qualified name of the MatchService's VoidMatch RPC.
+	MatchServiceVoidMatchProcedure = "/scoreboard.v1.MatchService/VoidMatch"
 	// MatchServiceGetMatchProcedure is the fully-qualified name of the MatchService's GetMatch RPC.
 	MatchServiceGetMatchProcedure = "/scoreboard.v1.MatchService/GetMatch"
 	// MatchServiceListMatchesProcedure is the fully-qualified name of the MatchService's ListMatches
@@ -116,6 +118,18 @@ type MatchServiceClient interface {
 	// voids it.
 	ResolveDispute(context.Context, *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error)
 	CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error)
+	// Service administrator only, and the only way anything leaves the permanent
+	// record. The match is erased — its teams, its participations, every
+	// concession and objection on it — rather than marked, so it stops existing
+	// everywhere at once instead of lingering as a row every stats query has to
+	// remember to skip.
+	//
+	// Deliberately not offered to a family organizer, however stuck the match is.
+	// Undoing a ratified result is not adjudication, it is correcting a mistake in
+	// the record, and the whole argument of this app is that the organizer does
+	// not get to do that. What they get is ResolveDispute, which still ends in
+	// somebody named as the winner.
+	VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error)
 	GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error)
 	ListMatches(context.Context, *connect.Request[v1.ListMatchesRequest]) (*connect.Response[v1.ListMatchesResponse], error)
 }
@@ -221,6 +235,12 @@ func NewMatchServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(matchServiceMethods.ByName("CancelMatch")),
 			connect.WithClientOptions(opts...),
 		),
+		voidMatch: connect.NewClient[v1.VoidMatchRequest, v1.VoidMatchResponse](
+			httpClient,
+			baseURL+MatchServiceVoidMatchProcedure,
+			connect.WithSchema(matchServiceMethods.ByName("VoidMatch")),
+			connect.WithClientOptions(opts...),
+		),
 		getMatch: connect.NewClient[v1.GetMatchRequest, v1.GetMatchResponse](
 			httpClient,
 			baseURL+MatchServiceGetMatchProcedure,
@@ -253,6 +273,7 @@ type matchServiceClient struct {
 	disputeMatch   *connect.Client[v1.DisputeMatchRequest, v1.DisputeMatchResponse]
 	resolveDispute *connect.Client[v1.ResolveDisputeRequest, v1.ResolveDisputeResponse]
 	cancelMatch    *connect.Client[v1.CancelMatchRequest, v1.CancelMatchResponse]
+	voidMatch      *connect.Client[v1.VoidMatchRequest, v1.VoidMatchResponse]
 	getMatch       *connect.Client[v1.GetMatchRequest, v1.GetMatchResponse]
 	listMatches    *connect.Client[v1.ListMatchesRequest, v1.ListMatchesResponse]
 }
@@ -332,6 +353,11 @@ func (c *matchServiceClient) CancelMatch(ctx context.Context, req *connect.Reque
 	return c.cancelMatch.CallUnary(ctx, req)
 }
 
+// VoidMatch calls scoreboard.v1.MatchService.VoidMatch.
+func (c *matchServiceClient) VoidMatch(ctx context.Context, req *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error) {
+	return c.voidMatch.CallUnary(ctx, req)
+}
+
 // GetMatch calls scoreboard.v1.MatchService.GetMatch.
 func (c *matchServiceClient) GetMatch(ctx context.Context, req *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error) {
 	return c.getMatch.CallUnary(ctx, req)
@@ -379,6 +405,18 @@ type MatchServiceHandler interface {
 	// voids it.
 	ResolveDispute(context.Context, *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error)
 	CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error)
+	// Service administrator only, and the only way anything leaves the permanent
+	// record. The match is erased — its teams, its participations, every
+	// concession and objection on it — rather than marked, so it stops existing
+	// everywhere at once instead of lingering as a row every stats query has to
+	// remember to skip.
+	//
+	// Deliberately not offered to a family organizer, however stuck the match is.
+	// Undoing a ratified result is not adjudication, it is correcting a mistake in
+	// the record, and the whole argument of this app is that the organizer does
+	// not get to do that. What they get is ResolveDispute, which still ends in
+	// somebody named as the winner.
+	VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error)
 	GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error)
 	ListMatches(context.Context, *connect.Request[v1.ListMatchesRequest]) (*connect.Response[v1.ListMatchesResponse], error)
 }
@@ -480,6 +518,12 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(matchServiceMethods.ByName("CancelMatch")),
 		connect.WithHandlerOptions(opts...),
 	)
+	matchServiceVoidMatchHandler := connect.NewUnaryHandler(
+		MatchServiceVoidMatchProcedure,
+		svc.VoidMatch,
+		connect.WithSchema(matchServiceMethods.ByName("VoidMatch")),
+		connect.WithHandlerOptions(opts...),
+	)
 	matchServiceGetMatchHandler := connect.NewUnaryHandler(
 		MatchServiceGetMatchProcedure,
 		svc.GetMatch,
@@ -524,6 +568,8 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 			matchServiceResolveDisputeHandler.ServeHTTP(w, r)
 		case MatchServiceCancelMatchProcedure:
 			matchServiceCancelMatchHandler.ServeHTTP(w, r)
+		case MatchServiceVoidMatchProcedure:
+			matchServiceVoidMatchHandler.ServeHTTP(w, r)
 		case MatchServiceGetMatchProcedure:
 			matchServiceGetMatchHandler.ServeHTTP(w, r)
 		case MatchServiceListMatchesProcedure:
@@ -595,6 +641,10 @@ func (UnimplementedMatchServiceHandler) ResolveDispute(context.Context, *connect
 
 func (UnimplementedMatchServiceHandler) CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.CancelMatch is not implemented"))
+}
+
+func (UnimplementedMatchServiceHandler) VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.VoidMatch is not implemented"))
 }
 
 func (UnimplementedMatchServiceHandler) GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error) {

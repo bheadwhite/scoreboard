@@ -1,7 +1,7 @@
 import { Runner, Signal } from "@tcn/state/core";
 
 import { createDomain, type Domain } from "../lib/domain/domain.js";
-import type { PreviewInviteResponse } from "../gen/scoreboard/v1/family_pb.js";
+import { fetchDeployedBuild, RUNNING_BUILD } from "../lib/runtime_config.js";
 import { FamiliesPresenter } from "../features/families/families_presenter.js";
 import { HeadToHeadPresenter } from "../features/head_to_head/head_to_head_presenter.js";
 import { MatchPresenter } from "../features/match/match_presenter.js";
@@ -17,18 +17,28 @@ export type Route =
   | { name: "head_to_head"; userId: string; opponentId: string }
   | { name: "family" };
 
-/** Where the last chosen family is remembered between visits. */
-const FAMILY_KEY = "scoreboard.familyId";
+/**
+ * How often an open tab asks whether it has been left behind by a deploy.
+ *
+ * Slow on purpose. The reconnect check below catches a deploy within seconds of
+ * it happening, so this only has to cover a tab that was asleep through one —
+ * and a phone left on the kitchen counter should not be polling briskly all day
+ * to find out about a version of a scoreboard.
+ */
+const UPDATE_POLL_MS = 15 * 60 * 1000;
 
 /**
- * Reads an invite code out of a /join/CODE link.
+ * Strips a /join/CODE link back to the app.
  *
- * The code lives in the URL rather than storage so it survives being opened in
- * any browser, and so the sign-in round trip can carry it back verbatim.
+ * Those links still work — they are how somebody is told the app exists — but
+ * the code in them has already done its job by the time this runs: signing in
+ * puts you in the one family, so there is nothing left to accept. Clearing the
+ * path stops a refresh from looking like a pending invitation.
  */
-function inviteCodeFromLocation(): string {
-  const match = window.location.pathname.match(/^\/join\/([A-Za-z0-9]{4,12})\/?$/);
-  return match?.[1]?.toUpperCase() ?? "";
+function clearJoinPath(): void {
+  if (window.location.pathname.startsWith("/join/")) {
+    window.history.replaceState({}, "", "/");
+  }
 }
 
 /**
@@ -57,10 +67,11 @@ export class AppPresenter {
   private readonly _screenTitle = new Signal<string>("");
   /** Undoes the realtime subscription when the family changes. */
   private _unsubscribeRealtime: (() => void) | null = null;
-  /** An invite code from a /join/CODE link, pending the user accepting it. */
-  private readonly _invite = new Signal<string>("");
-  /** What that code turns out to refer to, once looked up. */
-  private readonly _invitePreview = new Runner<PreviewInviteResponse | undefined>(undefined);
+  /** Set once the server is serving a build newer than this one. */
+  private readonly _updateAvailable = new Signal<boolean>(false);
+  /** Cleared by dispose, so a torn-down app stops polling. */
+  private _updateTimer: ReturnType<typeof setInterval> | null = null;
+  private _onVisible: (() => void) | null = null;
 
   // Dynamic children, kept in sync with the route.
   private readonly _match = new Signal<MatchPresenter | null>(null);
@@ -70,7 +81,7 @@ export class AppPresenter {
 
   constructor(domain: Domain = createDomain()) {
     this.domain = domain;
-    this.families = new FamiliesPresenter(domain, (familyId) => this.selectFamily(familyId));
+    this.families = new FamiliesPresenter(domain);
     this.scoreboard = new ScoreboardPresenter(domain, () => this.reconcileMembership());
   }
 
@@ -103,12 +114,8 @@ export class AppPresenter {
     if (this._screenTitle.get() !== title) this._screenTitle.set(title);
   };
 
-  get inviteBroadcast() {
-    return this._invite.broadcast;
-  }
-
-  get invitePreviewBroadcast() {
-    return this._invitePreview.broadcast;
+  get updateAvailableBroadcast() {
+    return this._updateAvailable.broadcast;
   }
 
   get matchBroadcast() {
@@ -132,15 +139,15 @@ export class AppPresenter {
   }
 
   /**
-   * Boots the app: establish who is signed in, load their profile and their
-   * families, and land on a family if they have one.
+   * Boots the app: establish who is signed in and land on the scoreboard they
+   * were joined to when they signed in.
    */
   init(): Promise<void> {
+    this.watchForUpdates();
     return this._boot.execute(async () => {
       this._error.set(null);
       await this.domain.session.init();
-      // Captured before anything else touches the URL.
-      this._invite.set(inviteCodeFromLocation());
+      clearJoinPath();
 
       // The session is an HttpOnly cookie, so the only way to know whether we
       // are signed in is to ask. A rejected GetMe means no valid session.
@@ -152,54 +159,17 @@ export class AppPresenter {
         return;
       }
 
-      // Resolve the invite to a family name so the prompt can say what it is,
-      // rather than showing a bare code.
-      const code = this._invite.get();
-      if (code) {
-        try {
-          const preview = await this.domain.api.families.previewInvite({ inviteCode: code });
-          this._invitePreview.set(preview);
-          // Following your own family's link should just take you there.
-          if (preview.alreadyMember) this._invite.set("");
-        } catch {
-          // A dead code still reaches the invite screen, which explains it
-          // better than a blank page would.
-          this._invitePreview.set(undefined);
-        }
-      }
-
-      const families = await this.domain.store.families.load();
-      if (families.length === 0) return;
-
-      const remembered = localStorage.getItem(FAMILY_KEY);
-      const pick = families.find((f) => f.id === remembered) ?? families[0];
-      if (pick) this.selectFamily(pick.id);
+      // There is one family and signing in joins it, so this is a list of one.
+      // Empty means the sign-in that should have joined them did not, which the
+      // shell says out loud rather than offering a family to create.
+      const [family] = await this.domain.store.families.load();
+      if (family) this.selectFamily(family.id);
     });
   }
-
-  /**
-   * Accepts a pending invite. Clears the code and the /join/ URL either way, so
-   * a refresh does not re-run a join that already happened.
-   */
-  acceptInvite = async (): Promise<void> => {
-    const code = this._invite.get();
-    if (!code) return;
-
-    const familyId = await this.families.joinWithCode(code);
-    this._invite.set("");
-    window.history.replaceState({}, "", "/");
-    if (familyId) this.selectFamily(familyId);
-  };
-
-  dismissInvite = (): void => {
-    this._invite.set("");
-    window.history.replaceState({}, "", "/");
-  };
 
   selectFamily(familyId: string): void {
     if (!familyId) return;
     this._familyId.set(familyId);
-    localStorage.setItem(FAMILY_KEY, familyId);
     this.scoreboard.setFamily(familyId);
     this.watchFamily(familyId);
     this.navigate({ name: "scoreboard" });
@@ -238,8 +208,71 @@ export class AppPresenter {
     this.domain.realtime.connect(familyId, () => {
       void this.scoreboard.refreshLive();
       this.domain.store.members.invalidate(familyId);
+      // A deploy replaces the container and drops every stream, so a reconnect
+      // is the earliest sign one happened. Most reconnects are routine — the
+      // server closes each stream before Cloud Run's request timeout — and the
+      // check costs one small request, so asking on all of them is fine.
+      void this.checkForUpdate();
     });
   }
+
+  // ── Deploys ────────────────────────────────────────────────────────────────
+
+  /**
+   * Watches for the app being redeployed underneath an open tab.
+   *
+   * This is a phone-on-the-counter app: a tab sits open for days, the assets it
+   * loaded are long gone from the server, and nothing about ordinary use would
+   * ever fetch the new ones. Every RPC keeps working — the API is versioned by
+   * the protos, not the bundle — so the symptom is not a crash, it is a family
+   * member quietly missing a feature everybody else is talking about.
+   *
+   * Checked on three occasions, cheapest and most immediate first:
+   *
+   *   - whenever the tab comes back to the front, which is what a phone
+   *     actually does between glances at the scoreboard,
+   *   - on a slow timer, for a browser left open and visible all day,
+   *   - and at boot.
+   *
+   * The fourth is in watchFamily: a deploy replaces the container, which drops
+   * every open event stream, so a reconnect is the earliest possible hint that
+   * something shipped.
+   */
+  private watchForUpdates(): void {
+    if (this._updateTimer) return;
+
+    void this.checkForUpdate();
+    this._updateTimer = setInterval(() => void this.checkForUpdate(), UPDATE_POLL_MS);
+
+    this._onVisible = () => {
+      if (document.visibilityState === "visible") void this.checkForUpdate();
+    };
+    document.addEventListener("visibilitychange", this._onVisible);
+  }
+
+  /**
+   * Asks the server which build it is serving.
+   *
+   * One-way on purpose: once an update is on offer it stays on offer. A tab that
+   * learns it is stale does not become fresh again, and withdrawing the banner
+   * because a later check failed would be a worse lie than leaving it up.
+   */
+  private async checkForUpdate(): Promise<void> {
+    if (this._updateAvailable.get()) return;
+    if (!RUNNING_BUILD) return; // dev server or tests — nothing to compare against
+
+    const deployed = await fetchDeployedBuild();
+    if (deployed && deployed !== RUNNING_BUILD) this._updateAvailable.set(true);
+  }
+
+  /**
+   * Takes the new build. A plain reload is enough: there is no service worker
+   * here, and the server sends index.html with `Cache-Control: no-cache`, so the
+   * reload revalidates it and picks up the new hashed assets it names.
+   */
+  applyUpdate = (): void => {
+    window.location.reload();
+  };
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
@@ -308,12 +341,13 @@ export class AppPresenter {
 
   /**
    * Re-checks that the signed-in player is still in the family on screen, and
-   * moves them somewhere valid if not.
+   * clears it if not.
    *
    * Membership can be taken away while somebody is looking at the scoreboard —
-   * the organizer removes them, or they leave from another device. Their client
-   * has the family cached, so without this it keeps rendering a scoreboard they
-   * can no longer read and every request behind it quietly fails.
+   * the organizer removes them. Their client has the family cached, so without
+   * this it keeps rendering a scoreboard they can no longer read and every
+   * request behind it quietly fails. There is nowhere else to send them: with
+   * one family, being removed from it is being removed from the app.
    */
   reconcileMembership = async (): Promise<void> => {
     const current = this._familyId.get();
@@ -322,21 +356,13 @@ export class AppPresenter {
     const families = await this.domain.store.families.load(true);
     if (families.some((f) => f.id === current)) return;
 
-    this._error.set("You are no longer a member of that family.");
+    this._error.set("You have been removed from the scoreboard.");
     this._unsubscribeRealtime?.();
     this.domain.realtime.disconnect();
     this._familyId.set("");
-    localStorage.removeItem(FAMILY_KEY);
     this._leaveDynamic();
-
-    const next = families[0];
-    if (next) {
-      this.selectFamily(next.id);
-    } else {
-      // No families left: the shell falls back to onboarding on its own.
-      this.scoreboard.setFamily("");
-      this._route.set({ name: "scoreboard" });
-    }
+    this.scoreboard.setFamily("");
+    this._route.set({ name: "scoreboard" });
   };
 
   /**
@@ -351,7 +377,6 @@ export class AppPresenter {
   signOut = async (): Promise<void> => {
     await this.domain.session.signOut();
     this._familyId.set("");
-    localStorage.removeItem(FAMILY_KEY);
     this.navigate({ name: "scoreboard" });
   };
 
@@ -382,6 +407,11 @@ export class AppPresenter {
   }
 
   dispose(): void {
+    if (this._updateTimer) clearInterval(this._updateTimer);
+    this._updateTimer = null;
+    if (this._onVisible) document.removeEventListener("visibilitychange", this._onVisible);
+    this._onVisible = null;
+    this._updateAvailable.dispose();
     this._unsubscribeRealtime?.();
     this.domain.realtime.dispose();
     this._leaveDynamic();
@@ -391,8 +421,6 @@ export class AppPresenter {
     this._familyId.dispose();
     this._boot.dispose();
     this._error.dispose();
-    this._invite.dispose();
-    this._invitePreview.dispose();
     this._screenTitle.dispose();
     this._match.dispose();
     this._newMatch.dispose();

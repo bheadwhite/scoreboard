@@ -58,6 +58,19 @@ service MatchService {
 
   rpc CancelMatch(CancelMatchRequest) returns (CancelMatchResponse);
 
+  // Service administrator only, and the only way anything leaves the permanent
+  // record. The match is erased — its teams, its participations, every
+  // concession and objection on it — rather than marked, so it stops existing
+  // everywhere at once instead of lingering as a row every stats query has to
+  // remember to skip.
+  //
+  // Deliberately not offered to a family organizer, however stuck the match is.
+  // Undoing a ratified result is not adjudication, it is correcting a mistake in
+  // the record, and the whole argument of this app is that the organizer does
+  // not get to do that. What they get is ResolveDispute, which still ends in
+  // somebody named as the winner.
+  rpc VoidMatch(VoidMatchRequest) returns (VoidMatchResponse);
+
   rpc GetMatch(GetMatchRequest) returns (GetMatchResponse);
   rpc ListMatches(ListMatchesRequest) returns (ListMatchesResponse);
 }
@@ -203,6 +216,19 @@ message CancelMatchRequest {
 
 message CancelMatchResponse {
   Match match = 1;
+}
+
+message VoidMatchRequest {
+  string match_id = 1;
+  // Why. Written to the server log, which is the only trace a voided match
+  // leaves. Optional — the log records who, what and when either way.
+  string reason = 2;
+}
+
+message VoidMatchResponse {
+  // The family it belonged to, so the caller knows what to refresh. There is no
+  // match to send back.
+  string family_id = 1;
 }
 
 message GetMatchRequest {

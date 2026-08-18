@@ -1488,6 +1488,106 @@ func (x *CancelMatchResponse) GetMatch() *Match {
 	return nil
 }
 
+type VoidMatchRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	MatchId string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	// Why. Written to the server log, which is the only trace a voided match
+	// leaves. Optional — the log records who, what and when either way.
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VoidMatchRequest) Reset() {
+	*x = VoidMatchRequest{}
+	mi := &file_scoreboard_v1_match_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VoidMatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VoidMatchRequest) ProtoMessage() {}
+
+func (x *VoidMatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_match_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VoidMatchRequest.ProtoReflect.Descriptor instead.
+func (*VoidMatchRequest) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *VoidMatchRequest) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *VoidMatchRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type VoidMatchResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The family it belonged to, so the caller knows what to refresh. There is no
+	// match to send back.
+	FamilyId      string `protobuf:"bytes,1,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VoidMatchResponse) Reset() {
+	*x = VoidMatchResponse{}
+	mi := &file_scoreboard_v1_match_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VoidMatchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VoidMatchResponse) ProtoMessage() {}
+
+func (x *VoidMatchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_match_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VoidMatchResponse.ProtoReflect.Descriptor instead.
+func (*VoidMatchResponse) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *VoidMatchResponse) GetFamilyId() string {
+	if x != nil {
+		return x.FamilyId
+	}
+	return ""
+}
+
 type GetMatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
@@ -1497,7 +1597,7 @@ type GetMatchRequest struct {
 
 func (x *GetMatchRequest) Reset() {
 	*x = GetMatchRequest{}
-	mi := &file_scoreboard_v1_match_proto_msgTypes[31]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1509,7 +1609,7 @@ func (x *GetMatchRequest) String() string {
 func (*GetMatchRequest) ProtoMessage() {}
 
 func (x *GetMatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_match_proto_msgTypes[31]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1522,7 +1622,7 @@ func (x *GetMatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMatchRequest.ProtoReflect.Descriptor instead.
 func (*GetMatchRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{31}
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetMatchRequest) GetMatchId() string {
@@ -1541,7 +1641,7 @@ type GetMatchResponse struct {
 
 func (x *GetMatchResponse) Reset() {
 	*x = GetMatchResponse{}
-	mi := &file_scoreboard_v1_match_proto_msgTypes[32]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1553,7 +1653,7 @@ func (x *GetMatchResponse) String() string {
 func (*GetMatchResponse) ProtoMessage() {}
 
 func (x *GetMatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_match_proto_msgTypes[32]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1566,7 +1666,7 @@ func (x *GetMatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMatchResponse.ProtoReflect.Descriptor instead.
 func (*GetMatchResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{32}
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetMatchResponse) GetMatch() *Match {
@@ -1591,7 +1691,7 @@ type ListMatchesRequest struct {
 
 func (x *ListMatchesRequest) Reset() {
 	*x = ListMatchesRequest{}
-	mi := &file_scoreboard_v1_match_proto_msgTypes[33]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1603,7 +1703,7 @@ func (x *ListMatchesRequest) String() string {
 func (*ListMatchesRequest) ProtoMessage() {}
 
 func (x *ListMatchesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_match_proto_msgTypes[33]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1616,7 +1716,7 @@ func (x *ListMatchesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMatchesRequest.ProtoReflect.Descriptor instead.
 func (*ListMatchesRequest) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{33}
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ListMatchesRequest) GetFamilyId() string {
@@ -1663,7 +1763,7 @@ type ListMatchesResponse struct {
 
 func (x *ListMatchesResponse) Reset() {
 	*x = ListMatchesResponse{}
-	mi := &file_scoreboard_v1_match_proto_msgTypes[34]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1675,7 +1775,7 @@ func (x *ListMatchesResponse) String() string {
 func (*ListMatchesResponse) ProtoMessage() {}
 
 func (x *ListMatchesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_match_proto_msgTypes[34]
+	mi := &file_scoreboard_v1_match_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1688,7 +1788,7 @@ func (x *ListMatchesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMatchesResponse.ProtoReflect.Descriptor instead.
 func (*ListMatchesResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{34}
+	return file_scoreboard_v1_match_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListMatchesResponse) GetMatches() []*Match {
@@ -1777,7 +1877,12 @@ const file_scoreboard_v1_match_proto_rawDesc = "" +
 	"\x12CancelMatchRequest\x12\x19\n" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\"A\n" +
 	"\x13CancelMatchResponse\x12*\n" +
-	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\",\n" +
+	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\"E\n" +
+	"\x10VoidMatchRequest\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"0\n" +
+	"\x11VoidMatchResponse\x12\x1b\n" +
+	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\",\n" +
 	"\x0fGetMatchRequest\x12\x19\n" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\">\n" +
 	"\x10GetMatchResponse\x12*\n" +
@@ -1789,7 +1894,7 @@ const file_scoreboard_v1_match_proto_rawDesc = "" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x05 \x01(\x05R\x06offset\"E\n" +
 	"\x13ListMatchesResponse\x12.\n" +
-	"\amatches\x18\x01 \x03(\v2\x14.scoreboard.v1.MatchR\amatches2\xaf\v\n" +
+	"\amatches\x18\x01 \x03(\v2\x14.scoreboard.v1.MatchR\amatches2\xff\v\n" +
 	"\fMatchService\x12T\n" +
 	"\vCreateMatch\x12!.scoreboard.v1.CreateMatchRequest\x1a\".scoreboard.v1.CreateMatchResponse\x12N\n" +
 	"\tJoinMatch\x12\x1f.scoreboard.v1.JoinMatchRequest\x1a .scoreboard.v1.JoinMatchResponse\x12Q\n" +
@@ -1807,7 +1912,8 @@ const file_scoreboard_v1_match_proto_rawDesc = "" +
 	"\aConcede\x12\x1d.scoreboard.v1.ConcedeRequest\x1a\x1e.scoreboard.v1.ConcedeResponse\x12W\n" +
 	"\fDisputeMatch\x12\".scoreboard.v1.DisputeMatchRequest\x1a#.scoreboard.v1.DisputeMatchResponse\x12]\n" +
 	"\x0eResolveDispute\x12$.scoreboard.v1.ResolveDisputeRequest\x1a%.scoreboard.v1.ResolveDisputeResponse\x12T\n" +
-	"\vCancelMatch\x12!.scoreboard.v1.CancelMatchRequest\x1a\".scoreboard.v1.CancelMatchResponse\x12K\n" +
+	"\vCancelMatch\x12!.scoreboard.v1.CancelMatchRequest\x1a\".scoreboard.v1.CancelMatchResponse\x12N\n" +
+	"\tVoidMatch\x12\x1f.scoreboard.v1.VoidMatchRequest\x1a .scoreboard.v1.VoidMatchResponse\x12K\n" +
 	"\bGetMatch\x12\x1e.scoreboard.v1.GetMatchRequest\x1a\x1f.scoreboard.v1.GetMatchResponse\x12T\n" +
 	"\vListMatches\x12!.scoreboard.v1.ListMatchesRequest\x1a\".scoreboard.v1.ListMatchesResponseB\xbd\x01\n" +
 	"\x11com.scoreboard.v1B\n" +
@@ -1825,7 +1931,7 @@ func file_scoreboard_v1_match_proto_rawDescGZIP() []byte {
 	return file_scoreboard_v1_match_proto_rawDescData
 }
 
-var file_scoreboard_v1_match_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_scoreboard_v1_match_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
 var file_scoreboard_v1_match_proto_goTypes = []any{
 	(*CreateMatchRequest)(nil),     // 0: scoreboard.v1.CreateMatchRequest
 	(*CreateMatchResponse)(nil),    // 1: scoreboard.v1.CreateMatchResponse
@@ -1858,35 +1964,37 @@ var file_scoreboard_v1_match_proto_goTypes = []any{
 	(*ResolveDisputeResponse)(nil), // 28: scoreboard.v1.ResolveDisputeResponse
 	(*CancelMatchRequest)(nil),     // 29: scoreboard.v1.CancelMatchRequest
 	(*CancelMatchResponse)(nil),    // 30: scoreboard.v1.CancelMatchResponse
-	(*GetMatchRequest)(nil),        // 31: scoreboard.v1.GetMatchRequest
-	(*GetMatchResponse)(nil),       // 32: scoreboard.v1.GetMatchResponse
-	(*ListMatchesRequest)(nil),     // 33: scoreboard.v1.ListMatchesRequest
-	(*ListMatchesResponse)(nil),    // 34: scoreboard.v1.ListMatchesResponse
-	(*Match)(nil),                  // 35: scoreboard.v1.Match
-	(*Contract)(nil),               // 36: scoreboard.v1.Contract
-	(MatchStatus)(0),               // 37: scoreboard.v1.MatchStatus
+	(*VoidMatchRequest)(nil),       // 31: scoreboard.v1.VoidMatchRequest
+	(*VoidMatchResponse)(nil),      // 32: scoreboard.v1.VoidMatchResponse
+	(*GetMatchRequest)(nil),        // 33: scoreboard.v1.GetMatchRequest
+	(*GetMatchResponse)(nil),       // 34: scoreboard.v1.GetMatchResponse
+	(*ListMatchesRequest)(nil),     // 35: scoreboard.v1.ListMatchesRequest
+	(*ListMatchesResponse)(nil),    // 36: scoreboard.v1.ListMatchesResponse
+	(*Match)(nil),                  // 37: scoreboard.v1.Match
+	(*Contract)(nil),               // 38: scoreboard.v1.Contract
+	(MatchStatus)(0),               // 39: scoreboard.v1.MatchStatus
 }
 var file_scoreboard_v1_match_proto_depIdxs = []int32{
-	35, // 0: scoreboard.v1.CreateMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 1: scoreboard.v1.JoinMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 2: scoreboard.v1.LeaveMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 3: scoreboard.v1.DeclineMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 4: scoreboard.v1.InvitePlayersResponse.match:type_name -> scoreboard.v1.Match
+	37, // 0: scoreboard.v1.CreateMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 1: scoreboard.v1.JoinMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 2: scoreboard.v1.LeaveMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 3: scoreboard.v1.DeclineMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 4: scoreboard.v1.InvitePlayersResponse.match:type_name -> scoreboard.v1.Match
 	10, // 5: scoreboard.v1.SetTeamsRequest.teams:type_name -> scoreboard.v1.TeamAssignment
-	35, // 6: scoreboard.v1.SetTeamsResponse.match:type_name -> scoreboard.v1.Match
-	36, // 7: scoreboard.v1.SetContractRequest.contract:type_name -> scoreboard.v1.Contract
-	35, // 8: scoreboard.v1.SetContractResponse.match:type_name -> scoreboard.v1.Match
-	35, // 9: scoreboard.v1.SetReadyResponse.match:type_name -> scoreboard.v1.Match
-	35, // 10: scoreboard.v1.StartMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 11: scoreboard.v1.ClaimVictoryResponse.match:type_name -> scoreboard.v1.Match
-	35, // 12: scoreboard.v1.WithdrawClaimResponse.match:type_name -> scoreboard.v1.Match
-	35, // 13: scoreboard.v1.ConcedeResponse.match:type_name -> scoreboard.v1.Match
-	35, // 14: scoreboard.v1.DisputeMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 15: scoreboard.v1.ResolveDisputeResponse.match:type_name -> scoreboard.v1.Match
-	35, // 16: scoreboard.v1.CancelMatchResponse.match:type_name -> scoreboard.v1.Match
-	35, // 17: scoreboard.v1.GetMatchResponse.match:type_name -> scoreboard.v1.Match
-	37, // 18: scoreboard.v1.ListMatchesRequest.statuses:type_name -> scoreboard.v1.MatchStatus
-	35, // 19: scoreboard.v1.ListMatchesResponse.matches:type_name -> scoreboard.v1.Match
+	37, // 6: scoreboard.v1.SetTeamsResponse.match:type_name -> scoreboard.v1.Match
+	38, // 7: scoreboard.v1.SetContractRequest.contract:type_name -> scoreboard.v1.Contract
+	37, // 8: scoreboard.v1.SetContractResponse.match:type_name -> scoreboard.v1.Match
+	37, // 9: scoreboard.v1.SetReadyResponse.match:type_name -> scoreboard.v1.Match
+	37, // 10: scoreboard.v1.StartMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 11: scoreboard.v1.ClaimVictoryResponse.match:type_name -> scoreboard.v1.Match
+	37, // 12: scoreboard.v1.WithdrawClaimResponse.match:type_name -> scoreboard.v1.Match
+	37, // 13: scoreboard.v1.ConcedeResponse.match:type_name -> scoreboard.v1.Match
+	37, // 14: scoreboard.v1.DisputeMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 15: scoreboard.v1.ResolveDisputeResponse.match:type_name -> scoreboard.v1.Match
+	37, // 16: scoreboard.v1.CancelMatchResponse.match:type_name -> scoreboard.v1.Match
+	37, // 17: scoreboard.v1.GetMatchResponse.match:type_name -> scoreboard.v1.Match
+	39, // 18: scoreboard.v1.ListMatchesRequest.statuses:type_name -> scoreboard.v1.MatchStatus
+	37, // 19: scoreboard.v1.ListMatchesResponse.matches:type_name -> scoreboard.v1.Match
 	0,  // 20: scoreboard.v1.MatchService.CreateMatch:input_type -> scoreboard.v1.CreateMatchRequest
 	2,  // 21: scoreboard.v1.MatchService.JoinMatch:input_type -> scoreboard.v1.JoinMatchRequest
 	4,  // 22: scoreboard.v1.MatchService.LeaveMatch:input_type -> scoreboard.v1.LeaveMatchRequest
@@ -1902,27 +2010,29 @@ var file_scoreboard_v1_match_proto_depIdxs = []int32{
 	25, // 32: scoreboard.v1.MatchService.DisputeMatch:input_type -> scoreboard.v1.DisputeMatchRequest
 	27, // 33: scoreboard.v1.MatchService.ResolveDispute:input_type -> scoreboard.v1.ResolveDisputeRequest
 	29, // 34: scoreboard.v1.MatchService.CancelMatch:input_type -> scoreboard.v1.CancelMatchRequest
-	31, // 35: scoreboard.v1.MatchService.GetMatch:input_type -> scoreboard.v1.GetMatchRequest
-	33, // 36: scoreboard.v1.MatchService.ListMatches:input_type -> scoreboard.v1.ListMatchesRequest
-	1,  // 37: scoreboard.v1.MatchService.CreateMatch:output_type -> scoreboard.v1.CreateMatchResponse
-	3,  // 38: scoreboard.v1.MatchService.JoinMatch:output_type -> scoreboard.v1.JoinMatchResponse
-	5,  // 39: scoreboard.v1.MatchService.LeaveMatch:output_type -> scoreboard.v1.LeaveMatchResponse
-	7,  // 40: scoreboard.v1.MatchService.DeclineMatch:output_type -> scoreboard.v1.DeclineMatchResponse
-	9,  // 41: scoreboard.v1.MatchService.InvitePlayers:output_type -> scoreboard.v1.InvitePlayersResponse
-	12, // 42: scoreboard.v1.MatchService.SetTeams:output_type -> scoreboard.v1.SetTeamsResponse
-	14, // 43: scoreboard.v1.MatchService.SetContract:output_type -> scoreboard.v1.SetContractResponse
-	16, // 44: scoreboard.v1.MatchService.SetReady:output_type -> scoreboard.v1.SetReadyResponse
-	18, // 45: scoreboard.v1.MatchService.StartMatch:output_type -> scoreboard.v1.StartMatchResponse
-	20, // 46: scoreboard.v1.MatchService.ClaimVictory:output_type -> scoreboard.v1.ClaimVictoryResponse
-	22, // 47: scoreboard.v1.MatchService.WithdrawClaim:output_type -> scoreboard.v1.WithdrawClaimResponse
-	24, // 48: scoreboard.v1.MatchService.Concede:output_type -> scoreboard.v1.ConcedeResponse
-	26, // 49: scoreboard.v1.MatchService.DisputeMatch:output_type -> scoreboard.v1.DisputeMatchResponse
-	28, // 50: scoreboard.v1.MatchService.ResolveDispute:output_type -> scoreboard.v1.ResolveDisputeResponse
-	30, // 51: scoreboard.v1.MatchService.CancelMatch:output_type -> scoreboard.v1.CancelMatchResponse
-	32, // 52: scoreboard.v1.MatchService.GetMatch:output_type -> scoreboard.v1.GetMatchResponse
-	34, // 53: scoreboard.v1.MatchService.ListMatches:output_type -> scoreboard.v1.ListMatchesResponse
-	37, // [37:54] is the sub-list for method output_type
-	20, // [20:37] is the sub-list for method input_type
+	31, // 35: scoreboard.v1.MatchService.VoidMatch:input_type -> scoreboard.v1.VoidMatchRequest
+	33, // 36: scoreboard.v1.MatchService.GetMatch:input_type -> scoreboard.v1.GetMatchRequest
+	35, // 37: scoreboard.v1.MatchService.ListMatches:input_type -> scoreboard.v1.ListMatchesRequest
+	1,  // 38: scoreboard.v1.MatchService.CreateMatch:output_type -> scoreboard.v1.CreateMatchResponse
+	3,  // 39: scoreboard.v1.MatchService.JoinMatch:output_type -> scoreboard.v1.JoinMatchResponse
+	5,  // 40: scoreboard.v1.MatchService.LeaveMatch:output_type -> scoreboard.v1.LeaveMatchResponse
+	7,  // 41: scoreboard.v1.MatchService.DeclineMatch:output_type -> scoreboard.v1.DeclineMatchResponse
+	9,  // 42: scoreboard.v1.MatchService.InvitePlayers:output_type -> scoreboard.v1.InvitePlayersResponse
+	12, // 43: scoreboard.v1.MatchService.SetTeams:output_type -> scoreboard.v1.SetTeamsResponse
+	14, // 44: scoreboard.v1.MatchService.SetContract:output_type -> scoreboard.v1.SetContractResponse
+	16, // 45: scoreboard.v1.MatchService.SetReady:output_type -> scoreboard.v1.SetReadyResponse
+	18, // 46: scoreboard.v1.MatchService.StartMatch:output_type -> scoreboard.v1.StartMatchResponse
+	20, // 47: scoreboard.v1.MatchService.ClaimVictory:output_type -> scoreboard.v1.ClaimVictoryResponse
+	22, // 48: scoreboard.v1.MatchService.WithdrawClaim:output_type -> scoreboard.v1.WithdrawClaimResponse
+	24, // 49: scoreboard.v1.MatchService.Concede:output_type -> scoreboard.v1.ConcedeResponse
+	26, // 50: scoreboard.v1.MatchService.DisputeMatch:output_type -> scoreboard.v1.DisputeMatchResponse
+	28, // 51: scoreboard.v1.MatchService.ResolveDispute:output_type -> scoreboard.v1.ResolveDisputeResponse
+	30, // 52: scoreboard.v1.MatchService.CancelMatch:output_type -> scoreboard.v1.CancelMatchResponse
+	32, // 53: scoreboard.v1.MatchService.VoidMatch:output_type -> scoreboard.v1.VoidMatchResponse
+	34, // 54: scoreboard.v1.MatchService.GetMatch:output_type -> scoreboard.v1.GetMatchResponse
+	36, // 55: scoreboard.v1.MatchService.ListMatches:output_type -> scoreboard.v1.ListMatchesResponse
+	38, // [38:56] is the sub-list for method output_type
+	20, // [20:38] is the sub-list for method input_type
 	20, // [20:20] is the sub-list for extension type_name
 	20, // [20:20] is the sub-list for extension extendee
 	0,  // [0:20] is the sub-list for field type_name
@@ -1940,7 +2050,7 @@ func file_scoreboard_v1_match_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scoreboard_v1_match_proto_rawDesc), len(file_scoreboard_v1_match_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   35,
+			NumMessages:   37,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

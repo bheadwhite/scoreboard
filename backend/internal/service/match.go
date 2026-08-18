@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"log"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/auth"
 	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
@@ -17,75 +19,62 @@ type MatchService struct {
 	base
 }
 
-func NewMatchService(s *store.Store, hub *events.Hub, concedeWindow time.Duration) *MatchService {
-	return &MatchService{base: base{store: s, hub: hub, concedeWindow: concedeWindow}}
+func NewMatchService(
+	s *store.Store, hub *events.Hub, concedeWindow time.Duration, admins auth.Admins,
+) *MatchService {
+	return &MatchService{base: base{store: s, hub: hub, concedeWindow: concedeWindow, admins: admins}}
 }
 
 func (svc *MatchService) CreateMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.CreateMatchRequest],
 ) (*connect.Response[scoreboardv1.CreateMatchResponse], error) {
-	uid, err := caller(ctx)
-	if err != nil {
-		return nil, err
-	}
 	familyID := req.Msg.GetFamilyId()
-	role, err := svc.requireMember(ctx, familyID, uid)
+	v, err := svc.familyViewer(ctx, familyID)
 	if err != nil {
 		return nil, err
 	}
-	org := role == model.RoleOwner
 	if req.Msg.GetGameId() == "" {
 		return nil, invalid("pick a game")
 	}
 
-	m, err := svc.store.CreateMatch(ctx, familyID, req.Msg.GetGameId(), uid, req.Msg.GetInviteUserIds())
+	m, err := svc.store.CreateMatch(ctx, familyID, req.Msg.GetGameId(), v.id, req.Msg.GetInviteUserIds())
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(m.FamilyID, events.KindMatch, m.ID)
-	return connect.NewResponse(&scoreboardv1.CreateMatchResponse{Match: svc.matchPB(m, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.CreateMatchResponse{Match: svc.matchPB(m, v)}), nil
 }
 
 func (svc *MatchService) JoinMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.JoinMatchRequest],
 ) (*connect.Response[scoreboardv1.JoinMatchResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 
-	m, err := svc.store.JoinMatch(ctx, req.Msg.GetMatchId(), uid)
+	m, err := svc.store.JoinMatch(ctx, req.Msg.GetMatchId(), v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(m.FamilyID, events.KindMatch, m.ID)
-	return connect.NewResponse(&scoreboardv1.JoinMatchResponse{Match: svc.matchPB(m, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.JoinMatchResponse{Match: svc.matchPB(m, v)}), nil
 }
 
 func (svc *MatchService) LeaveMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.LeaveMatchRequest],
 ) (*connect.Response[scoreboardv1.LeaveMatchResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 
-	m, err := svc.store.LeaveMatch(ctx, req.Msg.GetMatchId(), uid)
+	m, err := svc.store.LeaveMatch(ctx, req.Msg.GetMatchId(), v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(m.FamilyID, events.KindMatch, m.ID)
-	return connect.NewResponse(&scoreboardv1.LeaveMatchResponse{Match: svc.matchPB(m, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.LeaveMatchResponse{Match: svc.matchPB(m, v)}), nil
 }
 
 // DeclineMatch turns down an invitation. Only the invited player can do this
@@ -93,37 +82,27 @@ func (svc *MatchService) LeaveMatch(
 func (svc *MatchService) DeclineMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.DeclineMatchRequest],
 ) (*connect.Response[scoreboardv1.DeclineMatchResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 
-	out, err := svc.store.DeclineMatch(ctx, req.Msg.GetMatchId(), uid)
+	out, err := svc.store.DeclineMatch(ctx, req.Msg.GetMatchId(), v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.DeclineMatchResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.DeclineMatchResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 func (svc *MatchService) InvitePlayers(
 	ctx context.Context, req *connect.Request[scoreboardv1.InvitePlayersRequest],
 ) (*connect.Response[scoreboardv1.InvitePlayersResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	if !isParticipant(m, uid) {
+	if !isParticipant(m, v.id) {
 		return nil, denied("only players in this match can invite others")
 	}
 	if len(req.Msg.GetUserIds()) == 0 {
@@ -135,26 +114,21 @@ func (svc *MatchService) InvitePlayers(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.InvitePlayersResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.InvitePlayersResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 func (svc *MatchService) SetTeams(
 	ctx context.Context, req *connect.Request[scoreboardv1.SetTeamsRequest],
 ) (*connect.Response[scoreboardv1.SetTeamsResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 	// Who you are partnered with is as much a term as what you are playing to,
 	// and it is affirmed the same way — changing it clears every ready. Letting
 	// anyone rearrange sides would let one player rewrite what the others
 	// already agreed to.
-	if m.CreatedBy != uid {
+	if m.CreatedBy != v.id {
 		return nil, denied("only whoever set this game up can set the teams")
 	}
 
@@ -171,7 +145,7 @@ func (svc *MatchService) SetTeams(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.SetTeamsResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.SetTeamsResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 const maxContractDetail = 140
@@ -179,20 +153,15 @@ const maxContractDetail = 140
 func (svc *MatchService) SetContract(
 	ctx context.Context, req *connect.Request[scoreboardv1.SetContractRequest],
 ) (*connect.Response[scoreboardv1.SetContractResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 	// One person owns the terms. With a ready check in front of starting, the
 	// group's agreement is expressed by affirming rather than by editing — and
 	// a contract that anyone can change out from under the people who already
 	// said yes is a worse kind of collaborative.
-	if m.CreatedBy != uid {
+	if m.CreatedBy != v.id {
 		return nil, denied("only whoever set this game up can set the contract")
 	}
 
@@ -232,7 +201,7 @@ func (svc *MatchService) SetContract(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.SetContractResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.SetContractResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 // SetReady affirms, or withdraws, that the caller is ready under the contract
@@ -240,39 +209,29 @@ func (svc *MatchService) SetContract(
 func (svc *MatchService) SetReady(
 	ctx context.Context, req *connect.Request[scoreboardv1.SetReadyRequest],
 ) (*connect.Response[scoreboardv1.SetReadyResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 
-	out, err := svc.store.SetReady(ctx, req.Msg.GetMatchId(), uid, req.Msg.GetReady())
+	out, err := svc.store.SetReady(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetReady())
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.SetReadyResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.SetReadyResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 func (svc *MatchService) StartMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.StartMatchRequest],
 ) (*connect.Response[scoreboardv1.StartMatchResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 	// Setting up is collaborative; committing everyone to play is not. One
 	// person calls it, and only once everybody has said they are ready.
-	if m.CreatedBy != uid {
+	if m.CreatedBy != v.id {
 		return nil, denied("only whoever set this game up can start it")
 	}
 
@@ -281,7 +240,7 @@ func (svc *MatchService) StartMatch(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.StartMatchResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.StartMatchResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 // ClaimVictory starts the concession clock. Everything downstream of this — the
@@ -290,25 +249,20 @@ func (svc *MatchService) StartMatch(
 func (svc *MatchService) ClaimVictory(
 	ctx context.Context, req *connect.Request[scoreboardv1.ClaimVictoryRequest],
 ) (*connect.Response[scoreboardv1.ClaimVictoryResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	if !isParticipant(m, uid) {
+	if !isParticipant(m, v.id) {
 		return nil, denied("only players in this match can claim it")
 	}
 
-	out, err := svc.store.ClaimVictory(ctx, req.Msg.GetMatchId(), uid, req.Msg.GetTeamId(), svc.concedeWindow)
+	out, err := svc.store.ClaimVictory(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetTeamId(), svc.concedeWindow)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.ClaimVictoryResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.ClaimVictoryResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 // WithdrawClaim takes a claim back off the table. Only the team that made it
@@ -317,25 +271,20 @@ func (svc *MatchService) ClaimVictory(
 func (svc *MatchService) WithdrawClaim(
 	ctx context.Context, req *connect.Request[scoreboardv1.WithdrawClaimRequest],
 ) (*connect.Response[scoreboardv1.WithdrawClaimResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	if !isParticipant(m, uid) {
+	if !isParticipant(m, v.id) {
 		return nil, denied("only players in this match can withdraw a claim")
 	}
 
-	out, err := svc.store.WithdrawClaim(ctx, req.Msg.GetMatchId(), uid)
+	out, err := svc.store.WithdrawClaim(ctx, req.Msg.GetMatchId(), v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.WithdrawClaimResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.WithdrawClaimResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 // Concede accepts the standing claim. It is also how an objection is taken
@@ -344,22 +293,17 @@ func (svc *MatchService) WithdrawClaim(
 func (svc *MatchService) Concede(
 	ctx context.Context, req *connect.Request[scoreboardv1.ConcedeRequest],
 ) (*connect.Response[scoreboardv1.ConcedeResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 
-	out, err := svc.store.Concede(ctx, req.Msg.GetMatchId(), uid, svc.concedeWindow)
+	out, err := svc.store.Concede(ctx, req.Msg.GetMatchId(), v.id, svc.concedeWindow)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.ConcedeResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.ConcedeResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 const maxDisputeReason = 280
@@ -367,40 +311,30 @@ const maxDisputeReason = 280
 func (svc *MatchService) DisputeMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.DisputeMatchRequest],
 ) (*connect.Response[scoreboardv1.DisputeMatchResponse], error) {
-	uid, err := caller(ctx)
+	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	_, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
 	if len([]rune(req.Msg.GetReason())) > maxDisputeReason {
 		return nil, invalid("keep the explanation short")
 	}
 
-	out, err := svc.store.Dispute(ctx, req.Msg.GetMatchId(), uid, req.Msg.GetReason(), svc.concedeWindow)
+	out, err := svc.store.Dispute(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetReason(), svc.concedeWindow)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.DisputeMatchResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.DisputeMatchResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 func (svc *MatchService) ResolveDispute(
 	ctx context.Context, req *connect.Request[scoreboardv1.ResolveDisputeRequest],
 ) (*connect.Response[scoreboardv1.ResolveDisputeResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	if err := svc.requireOwner(ctx, m.FamilyID, uid); err != nil {
+	if err := svc.requireOwner(ctx, m.FamilyID, v.id); err != nil {
 		return nil, err
 	}
 	// Being the organizer is not enough. While the players still have a move
@@ -419,7 +353,7 @@ func (svc *MatchService) ResolveDispute(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.ResolveDisputeResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.ResolveDisputeResponse{Match: svc.matchPB(out, v)}), nil
 }
 
 // CancelMatch abandons a match.
@@ -432,19 +366,14 @@ func (svc *MatchService) ResolveDispute(
 func (svc *MatchService) CancelMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.CancelMatchRequest],
 ) (*connect.Response[scoreboardv1.CancelMatchResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	if m.Status != model.StatusLobby && !org {
+	if m.Status != model.StatusLobby && !v.organizer {
 		return nil, denied("only the family organizer can cancel a match in play")
 	}
-	if m.Status == model.StatusLobby && m.CreatedBy != uid && !org {
+	if m.Status == model.StatusLobby && m.CreatedBy != v.id && !v.organizer {
 		return nil, denied("only whoever set this game up, or the family organizer, can call it off")
 	}
 
@@ -453,45 +382,96 @@ func (svc *MatchService) CancelMatch(
 		return nil, wrapErr(err)
 	}
 	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.CancelMatchResponse{Match: svc.matchPB(out, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.CancelMatchResponse{Match: svc.matchPB(out, v)}), nil
+}
+
+// VoidMatch erases a match. Administrators only.
+//
+// This is the one thing in the app that reaches into the permanent record and
+// takes something out of it, so it is worth being explicit about what it is
+// for. Not for a result somebody dislikes — that is what claiming, conceding
+// and disputing are for, and an organizer settling a deadlock still ends with
+// somebody named as the winner. This is for a match that should never have
+// existed at all: a test game played against real people, a claim the sweeper
+// ratified while everyone was away, a family created twice.
+//
+// It deletes rather than marks. A voided match kept as a row would be a fourth
+// thing every stats query has to remember to skip, and the day one of them
+// forgot, a match nobody can see would be back on the scoreboard. Deleting is
+// the version with no way to get that wrong — and everything derived from a
+// match is computed on read, so the row going is the whole cleanup.
+//
+// Ungated on status on purpose. A finalized match is precisely the one that
+// needs this, because nothing else in the app can touch it.
+//
+// Ungated on family membership too, which is the one place this departs from
+// every other handler in the file. Running the deployment is the authorization;
+// requiring membership on top would mean joining a household in order to tidy up
+// after it, and an administrator who has to become a player first is worse for
+// everyone's privacy than one who never appears on the scoreboard at all.
+func (svc *MatchService) VoidMatch(
+	ctx context.Context, req *connect.Request[scoreboardv1.VoidMatchRequest],
+) (*connect.Response[scoreboardv1.VoidMatchResponse], error) {
+	uid, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.requireAdmin(ctx, uid); err != nil {
+		return nil, err
+	}
+	if req.Msg.GetMatchId() == "" {
+		return nil, invalid("match_id is required")
+	}
+	reason := strings.TrimSpace(req.Msg.GetReason())
+	if len([]rune(reason)) > maxDisputeReason {
+		return nil, invalid("keep the explanation short")
+	}
+
+	out, err := svc.store.DeleteMatch(ctx, req.Msg.GetMatchId())
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	// The only trace this leaves. Written before announcing it, so the record of
+	// what happened exists even if everything after this fails.
+	game := ""
+	if out.Game != nil {
+		game = out.Game.Name
+	}
+	log.Printf("void: admin %s erased match %s (%s, %s, family %s, %d players) reason=%q",
+		uid, out.ID, game, out.Status, out.FamilyID, len(out.JoinedParticipants()), reason)
+
+	// Watchers re-read and are told it is gone. There is no match to send back.
+	svc.publish(out.FamilyID, events.KindMatch, out.ID)
+	return connect.NewResponse(&scoreboardv1.VoidMatchResponse{FamilyId: out.FamilyID}), nil
 }
 
 func (svc *MatchService) GetMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.GetMatchRequest],
 ) (*connect.Response[scoreboardv1.GetMatchResponse], error) {
-	uid, err := caller(ctx)
+	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
-	m, role, err := svc.matchForCaller(ctx, req.Msg.GetMatchId(), uid)
-	if err != nil {
-		return nil, err
-	}
-	org := role == model.RoleOwner
-	return connect.NewResponse(&scoreboardv1.GetMatchResponse{Match: svc.matchPB(m, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.GetMatchResponse{Match: svc.matchPB(m, v)}), nil
 }
 
 func (svc *MatchService) ListMatches(
 	ctx context.Context, req *connect.Request[scoreboardv1.ListMatchesRequest],
 ) (*connect.Response[scoreboardv1.ListMatchesResponse], error) {
-	uid, err := caller(ctx)
-	if err != nil {
-		return nil, err
-	}
 	familyID := req.Msg.GetFamilyId()
-	role, err := svc.requireMember(ctx, familyID, uid)
+	v, err := svc.familyViewer(ctx, familyID)
 	if err != nil {
 		return nil, err
 	}
-	org := role == model.RoleOwner
 
 	statuses := make([]string, 0, len(req.Msg.GetStatuses()))
 	for _, s := range req.Msg.GetStatuses() {
-		v, ok := statusFromPB(s)
+		value, ok := statusFromPB(s)
 		if !ok {
 			return nil, invalid("unknown match status")
 		}
-		statuses = append(statuses, string(v))
+		statuses = append(statuses, string(value))
 	}
 
 	matches, err := svc.store.ListMatches(ctx, store.ListMatchesFilter{
@@ -504,7 +484,7 @@ func (svc *MatchService) ListMatches(
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	return connect.NewResponse(&scoreboardv1.ListMatchesResponse{Matches: svc.matchesPB(matches, uid, org)}), nil
+	return connect.NewResponse(&scoreboardv1.ListMatchesResponse{Matches: svc.matchesPB(matches, v)}), nil
 }
 
 // isParticipant reports whether the caller actually joined. Holding an

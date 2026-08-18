@@ -34,46 +34,56 @@ func newInviteCode() (string, error) {
 // its owner.
 func (s *Store) CreateFamily(ctx context.Context, ownerID, name string) (model.Family, error) {
 	var f model.Family
-
 	err := s.tx(ctx, func(tx pgx.Tx) error {
-		// Retry on the astronomically unlikely code collision rather than
-		// failing the request.
-		for attempt := 0; attempt < 5; attempt++ {
-			code, err := newInviteCode()
-			if err != nil {
-				return err
-			}
-
-			const q = `
-				INSERT INTO families (name, invite_code, owner_id)
-				VALUES ($1, $2, $3)
-				ON CONFLICT (invite_code) DO NOTHING
-				RETURNING id, name, invite_code, owner_id, created_at`
-
-			err = tx.QueryRow(ctx, q, name, code, ownerID).
-				Scan(&f.ID, &f.Name, &f.InviteCode, &f.OwnerID, &f.CreatedAt)
-			if errors.Is(err, pgx.ErrNoRows) {
-				continue // code taken, try another
-			}
-			if err != nil {
-				return err
-			}
-
-			const member = `
-				INSERT INTO family_members (family_id, user_id, role)
-				VALUES ($1, $2, 'owner')`
-			if _, err := tx.Exec(ctx, member, f.ID, ownerID); err != nil {
-				return err
-			}
-
-			f.ViewerRole = model.RoleOwner
-			f.MemberCount = 1
-			return nil
-		}
-		return fmt.Errorf("could not allocate a unique invite code")
+		var err error
+		f, err = insertFamily(ctx, tx, ownerID, name, false)
+		return err
 	})
-
 	return f, err
+}
+
+// insertFamily writes the family row, its invite code and the owner's
+// membership. Shared by CreateFamily and by the sign-in path that mints the one
+// family on an empty database, so both end up with the same shape of row.
+//
+// It retries on the astronomically unlikely code collision rather than failing
+// the caller.
+func insertFamily(ctx context.Context, tx pgx.Tx, ownerID, name string, isDefault bool) (model.Family, error) {
+	var f model.Family
+
+	for attempt := 0; attempt < 5; attempt++ {
+		code, err := newInviteCode()
+		if err != nil {
+			return f, err
+		}
+
+		const q = `
+			INSERT INTO families (name, invite_code, owner_id, is_default)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (invite_code) DO NOTHING
+			RETURNING id, name, invite_code, owner_id, created_at`
+
+		err = tx.QueryRow(ctx, q, name, code, ownerID, isDefault).
+			Scan(&f.ID, &f.Name, &f.InviteCode, &f.OwnerID, &f.CreatedAt)
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue // code taken, try another
+		}
+		if err != nil {
+			return f, err
+		}
+
+		const member = `
+			INSERT INTO family_members (family_id, user_id, role)
+			VALUES ($1, $2, 'owner')`
+		if _, err := tx.Exec(ctx, member, f.ID, ownerID); err != nil {
+			return f, err
+		}
+
+		f.ViewerRole = model.RoleOwner
+		f.MemberCount = 1
+		return f, nil
+	}
+	return f, fmt.Errorf("could not allocate a unique invite code")
 }
 
 // JoinFamily adds a user to the family holding the given code. Joining twice is
@@ -268,4 +278,92 @@ func (s *Store) RegenerateInviteCode(ctx context.Context, familyID string) (stri
 		return out, nil
 	}
 	return "", fmt.Errorf("could not allocate a unique invite code")
+}
+
+// ── The one family ───────────────────────────────────────────────────────────
+//
+// The app is single-family: the UI never names a family, never offers to create
+// or join one, and signing in puts you in the one that exists. Rows are still
+// scoped by family_id — that stayed, because collapsing it would rewrite every
+// match and every stats query for no gain — so exactly one family carries the
+// is_default flag and everything lands in it.
+
+// DefaultFamily returns the family the app is. ErrNotFound means nobody has
+// ever signed in, which is only true of a brand new database.
+func (s *Store) DefaultFamily(ctx context.Context) (model.Family, error) {
+	const q = `
+		SELECT f.id, f.name, f.invite_code, f.owner_id, f.created_at,
+		       (SELECT count(*) FROM family_members x WHERE x.family_id = f.id)
+		FROM families f WHERE f.is_default`
+
+	var f model.Family
+	err := s.pool.QueryRow(ctx, q).
+		Scan(&f.ID, &f.Name, &f.InviteCode, &f.OwnerID, &f.CreatedAt, &f.MemberCount)
+	return f, noRows(err)
+}
+
+// EnsureDefaultMembership puts a user in the one family, creating it if there
+// is not one yet. Called on every sign-in, which is what makes onboarding
+// unnecessary: there is no screen to choose a family on because there is no
+// choice to make.
+//
+// On an empty database the first person to sign in creates the family and owns
+// it — the same bargain as before, minus the form. name is only ever read in
+// that case.
+//
+// Joining twice is a no-op, so this is safe to run on every sign-in forever.
+func (s *Store) EnsureDefaultMembership(ctx context.Context, userID, name string) (model.Family, error) {
+	var f model.Family
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		// Two people signing in for the first time on an empty database would
+		// otherwise race to create the family, and the partial unique index
+		// would fail one of their sign-ins. The lock is held to commit and
+		// costs one round trip on a path that already does several.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('scoreboard.default_family'))`); err != nil {
+			return err
+		}
+
+		const find = `
+			SELECT id, name, invite_code, owner_id, created_at
+			FROM families WHERE is_default`
+
+		err := tx.QueryRow(ctx, find).
+			Scan(&f.ID, &f.Name, &f.InviteCode, &f.OwnerID, &f.CreatedAt)
+		if errors.Is(err, pgx.ErrNoRows) {
+			f, err = insertFamily(ctx, tx, userID, name, true)
+			return err
+		}
+		if err != nil {
+			return err
+		}
+
+		const join = `
+			INSERT INTO family_members (family_id, user_id, role)
+			VALUES ($1, $2, 'member')
+			ON CONFLICT (family_id, user_id) DO NOTHING`
+		_, err = tx.Exec(ctx, join, f.ID, userID)
+		return err
+	})
+
+	return f, err
+}
+
+// SetDefaultFamily moves the designation, which only cmd/consolidate does. The
+// clear has to happen first: the database allows exactly one.
+func (s *Store) SetDefaultFamily(ctx context.Context, familyID string) error {
+	return s.tx(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx,
+			`UPDATE families SET is_default = false WHERE is_default AND id <> $1`, familyID); err != nil {
+			return err
+		}
+		tag, err := tx.Exec(ctx, `UPDATE families SET is_default = true WHERE id = $1`, familyID)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
 }

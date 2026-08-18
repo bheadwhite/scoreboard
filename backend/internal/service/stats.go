@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/auth"
 	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/stats"
@@ -18,8 +19,11 @@ type StatsService struct {
 	base
 }
 
-func NewStatsService(s *store.Store, hub *events.Hub) *StatsService {
-	return &StatsService{base: base{store: s, hub: hub}}
+// The concession window is not passed in: nothing here maps a live match, so
+// Deadlocked is never consulted. The admin list is, because the head-to-head
+// screen sends back recent meetings, and those carry viewer_may_void.
+func NewStatsService(s *store.Store, hub *events.Hub, admins auth.Admins) *StatsService {
+	return &StatsService{base: base{store: s, hub: hub, admins: admins}}
 }
 
 // How many recent meetings the head-to-head screen shows.
@@ -150,20 +154,15 @@ func (svc *StatsService) playedGames(
 func (svc *StatsService) GetHeadToHead(
 	ctx context.Context, req *connect.Request[scoreboardv1.GetHeadToHeadRequest],
 ) (*connect.Response[scoreboardv1.GetHeadToHeadResponse], error) {
-	uid, err := caller(ctx)
-	if err != nil {
-		return nil, err
-	}
 	familyID := req.Msg.GetFamilyId()
-	role, err := svc.requireMember(ctx, familyID, uid)
+	v, err := svc.familyViewer(ctx, familyID)
 	if err != nil {
 		return nil, err
 	}
-	org := role == model.RoleOwner
 
 	subject := req.Msg.GetUserId()
 	if subject == "" {
-		subject = uid
+		subject = v.id
 	}
 	opponent := req.Msg.GetOpponentId()
 	if opponent == "" {
@@ -202,7 +201,7 @@ func (svc *StatsService) GetHeadToHead(
 		TogetherWins:   h.TogetherWins,
 		TogetherLosses: h.TogetherLosses,
 		Games:          games,
-		RecentMatches:  svc.matchesPB(recent, uid, org),
+		RecentMatches:  svc.matchesPB(recent, v),
 		Streak:         h.Streak,
 	}), nil
 }

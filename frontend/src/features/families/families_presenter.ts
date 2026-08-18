@@ -4,41 +4,27 @@ import type { Domain } from "../../lib/domain/domain.js";
 import { messageOf } from "../match/match_presenter.js";
 
 /**
- * FamiliesPresenter handles everything about belonging to a family: the
- * onboarding choice between creating one and joining one, the member list, and
- * the invite code the organizer reads out loud.
+ * FamiliesPresenter is everything about the one family: who is in it, the
+ * invite link the organizer sends round, and the organizer's two controls.
+ *
+ * There is no creating, joining or switching. The app is a single scoreboard —
+ * signing in puts you in it, which is the whole of the onboarding this used to
+ * have a screen for.
  */
 export class FamiliesPresenter {
   private readonly _domain: Domain;
-  private readonly _onJoined: (familyId: string) => void;
   private _watching = "";
 
-  private readonly _name = new Signal<string>("");
-  private readonly _code = new Signal<string>("");
-  private readonly _mode = new Signal<"create" | "join">("create");
   private readonly _action = new Runner<void>(undefined);
   private readonly _error = new Signal<string | null>(null);
   private readonly _copied = new Signal<boolean>(false);
 
-  constructor(domain: Domain, onJoined: (familyId: string) => void) {
+  constructor(domain: Domain) {
     this._domain = domain;
-    this._onJoined = onJoined;
   }
 
   get families() {
     return this._domain.store.families;
-  }
-
-  get nameBroadcast() {
-    return this._name.broadcast;
-  }
-
-  get codeBroadcast() {
-    return this._code.broadcast;
-  }
-
-  get modeBroadcast() {
-    return this._mode.broadcast;
   }
 
   get actionBroadcast() {
@@ -78,72 +64,6 @@ export class FamiliesPresenter {
     ]).catch(() => {});
   }
 
-  setName = (name: string): void => {
-    this._name.set(name);
-  };
-
-  setCode = (code: string): void => {
-    // Invite codes are always upper case, so typing lower case still works.
-    this._code.set(code.toUpperCase());
-  };
-
-  setMode = (mode: "create" | "join"): void => {
-    this._mode.set(mode);
-    this._error.set(null);
-  };
-
-  create = async (): Promise<void> => {
-    const name = this._name.get().trim();
-    if (!name) {
-      this._error.set("Give your family a name.");
-      return;
-    }
-    await this._act(async () => {
-      const res = await this._domain.api.families.createFamily({ name });
-      // Force the reload and wait for it. The app decides between onboarding
-      // and the scoreboard by looking at this list, so handing over before it
-      // contains the new family strands the user on the onboarding screen.
-      await this._domain.store.families.load(true);
-      this._name.set("");
-      if (res.family) this._onJoined(res.family.id);
-    });
-  };
-
-  join = async (): Promise<void> => {
-    const code = this._code.get().trim();
-    if (!code) {
-      this._error.set("Enter the invite code.");
-      return;
-    }
-    await this._act(async () => {
-      const res = await this._domain.api.families.joinFamily({ inviteCode: code });
-      await this._domain.store.families.load(true);
-      if (res.family) {
-        // The roster this player just joined is stale by definition.
-        this._domain.store.members.invalidate(res.family.id);
-      }
-      this._code.set("");
-      if (res.family) this._onJoined(res.family.id);
-    });
-  };
-
-  /**
-   * Joins using a code from an invite link rather than the typed-in field.
-   * Resolves to the family id on success so the caller can select it.
-   */
-  joinWithCode = async (code: string): Promise<string | null> => {
-    let joined: string | null = null;
-    await this._act(async () => {
-      const res = await this._domain.api.families.joinFamily({ inviteCode: code.trim() });
-      await this._domain.store.families.load(true);
-      if (res.family) {
-        this._domain.store.members.invalidate(res.family.id);
-        joined = res.family.id;
-      }
-    });
-    return joined;
-  };
-
   /** The link you text to a relative. */
   inviteLink(code: string): string {
     return `${window.location.origin}/join/${encodeURIComponent(code)}`;
@@ -154,13 +74,13 @@ export class FamiliesPresenter {
    * is the whole point, since the link goes straight into a text message. Falls
    * back to the clipboard on desktop.
    */
-  shareInvite = async (familyName: string, code: string): Promise<void> => {
+  shareInvite = async (code: string): Promise<void> => {
     const url = this.inviteLink(code);
-    const text = `Join ${familyName} on Scoreboard`;
+    const text = "Join us on Gauntlet";
 
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "Scoreboard", text, url });
+        await navigator.share({ title: "Gauntlet", text, url });
         return;
       } catch {
         // Dismissing the share sheet throws; fall through to copying.
@@ -214,9 +134,6 @@ export class FamiliesPresenter {
 
   dispose(): void {
     this.stop();
-    this._name.dispose();
-    this._code.dispose();
-    this._mode.dispose();
     this._action.dispose();
     this._error.dispose();
     this._copied.dispose();

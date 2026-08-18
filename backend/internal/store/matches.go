@@ -863,6 +863,48 @@ func (s *Store) CancelMatch(ctx context.Context, matchID string) (model.Match, e
 	return out, err
 }
 
+// DeleteMatch erases a match and everything hanging off it, returning the match
+// as it last stood so the caller can announce and log what went.
+//
+// The only removal in the store, and the only exit from the permanent record.
+// Everything derived from a match is computed on read — LoadParticipations joins
+// matches, and nothing anywhere is materialized — so deleting the row is all it
+// takes for a finalized result to leave the standings, every head-to-head record
+// and both players' profiles at once. There is no counter to decrement and no
+// cache to rebuild.
+//
+// Children are deleted explicitly, in order, rather than left to the foreign
+// keys. Both would work: match_participants and match_teams cascade from
+// matches. But match_participants.team_id is ON DELETE SET NULL against
+// match_teams while the participant row is itself being cascade-deleted, and
+// spelling the order out means nobody has to work out what Postgres does with
+// that.
+func (s *Store) DeleteMatch(ctx context.Context, matchID string) (model.Match, error) {
+	var out model.Match
+
+	err := s.tx(ctx, func(tx pgx.Tx) error {
+		m, err := loadMatch(ctx, tx, matchID)
+		if err != nil {
+			return err
+		}
+
+		if _, err := tx.Exec(ctx, `DELETE FROM match_participants WHERE match_id = $1`, matchID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM match_teams WHERE match_id = $1`, matchID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM matches WHERE id = $1`, matchID); err != nil {
+			return err
+		}
+
+		out = m
+		return nil
+	})
+
+	return out, err
+}
+
 // GetMatch loads a match, finalizing it first if its concession clock has run
 // out. This lazy check keeps the record correct even if the sweeper is down.
 func (s *Store) GetMatch(ctx context.Context, matchID string) (model.Match, error) {

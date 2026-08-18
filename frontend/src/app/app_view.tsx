@@ -6,28 +6,29 @@ import { useAppPresenter } from "./app_context.js";
 import type { Route } from "./app_presenter.js";
 import { SignInView } from "../features/auth/sign_in_view.js";
 import { FamilyView } from "../features/families/family_view.js";
-import { InviteView } from "../features/families/invite_view.js";
-import { OnboardingView } from "../features/families/onboarding_view.js";
 import { HeadToHeadView } from "../features/head_to_head/head_to_head_view.js";
 import { MatchView } from "../features/match/match_view.js";
 import { NewMatchView } from "../features/match/new_match_view.js";
 import { ProfileView } from "../features/profile/profile_view.js";
 import { ScoreboardView } from "../features/scoreboard/scoreboard_view.js";
-import { Alert, Avatar } from "../components/ui.js";
+import { Alert, Avatar, Empty } from "../components/ui.js";
+import { UpdateBanner } from "./update_banner_view.js";
 
 /**
- * The shell. Decides between signing in, onboarding into a family, and the app
- * itself, then routes to the current screen.
+ * The shell. Decides between signing in and the app itself, then routes to the
+ * current screen.
+ *
+ * There is no third state any more. Signing in puts you on the one scoreboard,
+ * so there is nothing to onboard into and no invitation to accept — the empty
+ * case below is a fault, not a step.
  */
 export function AppView() {
   const app = useAppPresenter();
   const authStatus = useSignalValue(app.session.statusBroadcast);
   const bootStatus = useRunnerStatus(app.bootBroadcast);
   const families = useCollection(app.families.families);
-  const familyId = useSignalValue(app.familyIdBroadcast);
   const route = useSignalValue(app.routeBroadcast);
   const error = useSignalValue(app.errorBroadcast);
-  const invite = useSignalValue(app.inviteBroadcast);
 
   if (authStatus === "loading" || bootStatus === Status.PENDING) {
     return <div className="async-loading">Loading…</div>;
@@ -37,21 +38,24 @@ export function AppView() {
     return <SignInView session={app.session} />;
   }
 
-  // An invite outranks onboarding: someone who followed a link should be asked
-  // about that family, not prompted to start one of their own.
-  if (invite) {
-    return <InviteView app={app} />;
-  }
-
+  // Signing in joins the scoreboard, so being in no family means that failed.
+  // Saying so beats an empty scoreboard that looks like nobody has played yet.
   if (families.length === 0) {
-    return <OnboardingView presenter={app.families} />;
+    return (
+      <div className="app">
+        <Empty emoji="🤔">You are not on the scoreboard yet. Try signing in again.</Empty>
+        <button className="btn btn--ghost btn--block" onClick={() => void app.signOut()}>
+          Sign out
+        </button>
+      </div>
+    );
   }
-
-  const family = families.find((f) => f.id === familyId);
 
   return (
     <div className="app">
-      <TopBar route={route} title={family?.name ?? "Scoreboard"} />
+      <UpdateBanner />
+
+      <TopBar route={route} title="Gauntlet" />
 
       {error && <Alert message={error} />}
 
@@ -94,7 +98,10 @@ function TopBar({ route, title }: { route: Route; title: string }) {
         </button>
       )}
       <h1 className="topbar__title">
-        <span className="topbar__sub">{subtitleFor(route)}</span>
+        {/* The eyebrow names the route above whatever the screen is showing —
+            "Match" over "Catan". At home there is nothing to sit above: the
+            title is the route, and printing it twice is just a stutter. */}
+        {!atHome && <span className="topbar__sub">{subtitleFor(route)}</span>}
         {atHome ? title : screenTitle || titleFor(route)}
       </h1>
       {atHome && (
@@ -114,7 +121,7 @@ function TopBar({ route, title }: { route: Route; title: string }) {
 function subtitleFor(route: Route): string {
   switch (route.name) {
     case "scoreboard":
-      return "Scoreboard";
+      return ""; // never rendered — see TopBar
     case "new_match":
       return "New game";
     case "match":
@@ -135,7 +142,7 @@ function titleFor(route: Route): string {
     case "match":
       return "Match";
     case "player":
-      return "Record";
+      return "The record";
     case "head_to_head":
       return "The rivalry";
     case "family":

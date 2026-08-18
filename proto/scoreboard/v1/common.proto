@@ -220,4 +220,8 @@ message Match {
   // Whether the caller is on the team that claimed the win, and so answers for
   // the claim itself rather than owing a concession to it.
   bool viewer_is_claimant = 25;
+
+  // Whether the caller may erase this match outright. Service administrators
+  // only — this is not a family role, and no organizer ever gets it.
+  bool viewer_may_void = 26;
 }

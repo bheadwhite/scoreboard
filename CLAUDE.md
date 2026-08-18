@@ -1,9 +1,18 @@
-# Scoreboard
+# Gauntlet
 
-A family game scoreboard. Players join a family, log the games they play, and
-the app keeps a permanent record of who beat whom at what. The point is bragging
-rights — the headline stat is not "your win rate", it is "you have beaten Dad at
-Rook 14 times and he has beaten you 3 times."
+A scoreboard for everything you play. Everybody who signs in is on the same
+board — friends, family, whoever you play with — and the app keeps a permanent
+record of who beat whom at what. The point is bragging rights: the headline stat
+is not "your win rate", it is "you have beaten Dad at Rook 14 times and he has
+beaten you 3 times."
+
+**The product is called Gauntlet; the code is not.** The repository, the Go
+module (`github.com/bheadwhite/scoreboard`), the proto package (`scoreboard.v1`),
+the pnpm workspace (`@scoreboard/frontend`) and the Cloud Run service all still
+say scoreboard, deliberately — renaming the proto package regenerates both
+clients for nothing, and renaming the Cloud Run service changes the URL, which
+`APP_URL` and the OAuth redirect URI are both derived from. The name lives in
+what a player sees: the title, the manifest, the sign-in hero, the share sheet.
 
 **The mechanic that defines the app: nobody can declare their own win.** You
 claim victory, and the claim sits publicly pending until every opponent
@@ -59,12 +68,26 @@ make deploy      Cloud Run (see DEPLOY.md)
 make data                        show what is in the database
 make clear-family FAMILY="name"  delete one family and everything under it
 make clear-all                   delete every family, match and player
+
+make consolidate                 plan for folding every family into one
+make consolidate-apply           actually fold them together
 ```
 
 `backend/cmd/reset` is the maintenance CLI behind those last three. It is a dry
 run unless you pass `-yes`, it prints what it would delete first, and it never
 touches the built-in game catalog — that is schema, not data. Use it when test
 families end up in a database you also mean to use for real.
+
+`backend/cmd/consolidate` is the other one, and the other half of the app being
+single-family. It moves every other family's members, matches and games into one
+— `-into "<name or id>"`, or the family sign-in already uses — collapses custom
+games that are now duplicates, and deletes the emptied families. Dry run unless
+you pass `-yes`, safe to point at production, and nothing leaves the permanent
+record: the destination keeps its id, name and invite code, so no session and no
+link breaks. Run it once on a database that grew up multi-family, right after
+the deploy that carries the migration: until it runs, sign-in puts people in
+whichever family the migration found oldest, which may not be the one you want
+everybody in.
 
 Local development works without Google: set `AUTH_DEV_LOGIN=true` in
 `.env.local` and sign in at `/auth/dev/login?name=Bill`. The server refuses to
@@ -126,6 +149,41 @@ port **6543**, not 5432. Prepared statements are disabled
 different backend per transaction and Cloud Run multiplies instances. Changing
 either will produce "prepared statement does not exist" under load.
 
+**One family, and nothing in the UI says so.** The app was multi-family and is
+not any more: there is no onboarding, no invite prompt, no switcher, no family
+name on any screen. Rows are still scoped by `family_id` — collapsing that would
+rewrite every match and every stats query to buy nothing — so instead exactly one
+family carries `families.is_default`, and `EnsureDefaultMembership` puts every
+signing-in player into it, minting it (owned by the first person through, named
+`FAMILY_NAME`) if the database is empty. That call lives in the auth `lookup`
+closure in `cmd/server/main.go`, which is the whole of onboarding now. Two
+consequences worth knowing: *anyone who can sign in is on the scoreboard*, so the
+invite code is how people are told the app exists rather than what admits them;
+and a player whose session predates their membership is not fixed by a reload —
+the shell says so instead of showing an empty scoreboard. `FamilyService` still
+carries `CreateFamily` and `JoinFamily`; nothing calls them, and a second family
+made behind the app's back would be invisible to it.
+
+**Losing the same free-for-all is not a head-to-head result.** Every player gets
+a team of one when a game has no sides, so "on opposing teams" is true of
+everybody who did not win — and the obvious reading of that (you lost, they were
+opposite you, therefore they beat you) records a defeat to somebody who lost the
+same game. `HeadToHead` and `Rivalries` both skip a meeting where neither player
+won, and they have to agree: one of them counting it would put a rivalry on a
+profile that the rivalry screen then shows as 0–0. It is not a result, not a
+streak, and not a row in recent meetings.
+
+**The rivalry stats are absent until they are earned.** The drought, the
+unfinished business and the game kings are all optional fields, and `stats`
+returns them with a `false` rather than a zero value when nothing qualifies —
+two meetings minimum (`minMeetings`), a win before anybody owns a game. That is
+deliberate: "0 meetings since you last beat Dad" and a crown handed to somebody
+for one game are both worse than silence, and a screen that pads itself with
+non-facts stops being worth reading. Every one of them comes off the same
+`Rivalries()` pass over the same finalized participations, so adding another
+question of the form "who have I not beaten lately" costs a function, not a
+query.
+
 **Every participant always has a team**, including in free-for-all games, where
 each player gets a team of one. This collapses "concede to a player" and
 "concede to a team" into one code path. Do not add a parallel non-team path.
@@ -155,6 +213,16 @@ clock, so a disputer who goes quiet would otherwise freeze the match with no way
 to finish it. `ResolveDispute` enforces this server-side; the proto field
 `organizer_may_resolve` is only how the UI knows.
 
+**Voiding is the only exit from the permanent record, and it is a hard delete.**
+`MatchService.VoidMatch` erases the row; participants and teams go with it. That
+is deliberate — a voided match kept as a row would be a fourth status every stats
+query has to remember to skip. Because stats are computed on read, deleting the
+row *is* the whole cleanup: standings, head-to-head and profiles simply stop
+counting it. It is gated on `ADMIN_EMAILS` (a service administrator, checked
+against `users.email`), **not** on any family role, and unlike every other match
+handler it does not require family membership — running the deployment is the
+authorization. Organizers get `ResolveDispute`, which still names a winner.
+
 **Finalization happens in two places** — `finalizeIfRatified` (last concession
 lands) and `finalizeIfExpired` (clock ran out, checked lazily on read *and* by
 the sweeper). Both funnel through `finalize()`, which is the only place a match
@@ -182,6 +250,19 @@ Postgres host — the same way it is used in every other project here.
 `APP_URL` must exactly match the origin the app is served from, because the
 OAuth redirect URI is derived from it. A mismatch fails every sign-in with
 `redirect_uri_mismatch`; the deploy script warns when it drifts.
+
+**The update banner is a pair, and both halves come from the same build.**
+`vite.config.ts` stamps one timestamp into two places: `__BUILD_ID__`, frozen
+into the bundle by `define`, and `dist/version.json`, emitted as an asset and
+served by the Go binary as an ordinary static file. The app fetches that file
+`no-store` and offers a reload when the two disagree. Nothing in Go knows about
+any of it. Two things to keep in mind: it is a *timestamp* rather than a commit
+because `.git` is in `.dockerignore` and the Cloud Build container has no
+repository to ask; and `/version.json` is deliberately **not** in the Vite dev
+proxy, so in development it resolves to index.html, fails to parse, and reads as
+"no update" — proxying it to a stale `dist/` would show the banner permanently.
+Any deploy of a change to this mechanism reaches open tabs one deploy late,
+because the tab has to already be running the checking code to notice.
 
 **Frontend runtime config is injected, not compiled in.** `index.html` ships
 with `__GOOGLE_ENABLED__` / `__DEV_LOGIN__` placeholders that `spaHandler`

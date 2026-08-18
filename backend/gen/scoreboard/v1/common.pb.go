@@ -971,8 +971,11 @@ type Match struct {
 	// Whether the caller is on the team that claimed the win, and so answers for
 	// the claim itself rather than owing a concession to it.
 	ViewerIsClaimant bool `protobuf:"varint,25,opt,name=viewer_is_claimant,json=viewerIsClaimant,proto3" json:"viewer_is_claimant,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Whether the caller may erase this match outright. Service administrators
+	// only — this is not a family role, and no organizer ever gets it.
+	ViewerMayVoid bool `protobuf:"varint,26,opt,name=viewer_may_void,json=viewerMayVoid,proto3" json:"viewer_may_void,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Match) Reset() {
@@ -1180,6 +1183,13 @@ func (x *Match) GetViewerIsClaimant() bool {
 	return false
 }
 
+func (x *Match) GetViewerMayVoid() bool {
+	if x != nil {
+		return x.ViewerMayVoid
+	}
+	return false
+}
+
 var File_scoreboard_v1_common_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_common_proto_rawDesc = "" +
@@ -1244,7 +1254,8 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\fresponded_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vrespondedAt\x125\n" +
 	"\bready_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\areadyAt\x12%\n" +
-	"\x0edispute_reason\x18\v \x01(\tR\rdisputeReason\"\xe9\t\n" +
+	"\x0edispute_reason\x18\v \x01(\tR\rdisputeReason\"\x91\n" +
+	"\n" +
 	"\x05Match\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12'\n" +
@@ -1275,7 +1286,8 @@ const file_scoreboard_v1_common_proto_rawDesc = "" +
 	"\x0eawaiting_ready\x18\x16 \x03(\v2\x13.scoreboard.v1.UserR\rawaitingReady\x12*\n" +
 	"\x11viewer_is_creator\x18\x17 \x01(\bR\x0fviewerIsCreator\x122\n" +
 	"\x15organizer_may_resolve\x18\x18 \x01(\bR\x13organizerMayResolve\x12,\n" +
-	"\x12viewer_is_claimant\x18\x19 \x01(\bR\x10viewerIsClaimant*X\n" +
+	"\x12viewer_is_claimant\x18\x19 \x01(\bR\x10viewerIsClaimant\x12&\n" +
+	"\x0fviewer_may_void\x18\x1a \x01(\bR\rviewerMayVoid*X\n" +
 	"\n" +
 	"FamilyRole\x12\x1b\n" +
 	"\x17FAMILY_ROLE_UNSPECIFIED\x10\x00\x12\x16\n" +

@@ -38,6 +38,20 @@ func (s *Store) GetUser(ctx context.Context, id string) (model.User, error) {
 	return u, noRows(err)
 }
 
+// UserEmail returns the address a player signed in with.
+//
+// Separate from GetUser, and not a field on model.User, because model.User maps
+// straight to the proto User that travels inside every participant on every
+// match. This is only ever used to decide whether the caller runs the service;
+// it is never sent to a client.
+func (s *Store) UserEmail(ctx context.Context, id string) (string, error) {
+	const q = `SELECT email FROM users WHERE id = $1`
+
+	var email string
+	err := s.pool.QueryRow(ctx, q, id).Scan(&email)
+	return email, noRows(err)
+}
+
 func (s *Store) UpdateProfile(ctx context.Context, id, displayName, avatarURL string) (model.User, error) {
 	const q = `
 		UPDATE users SET display_name = $2, avatar_url = $3
