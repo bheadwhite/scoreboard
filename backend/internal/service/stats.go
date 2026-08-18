@@ -88,11 +88,59 @@ func (svc *StatsService) GetStandings(
 		seen[p.MatchID] = struct{}{}
 	}
 
+	// Kings come off the unnarrowed history on purpose: "who owns what" is a
+	// tour of every game, and filtering to one game would leave a section
+	// showing the single crown you already selected.
+	kings, err := svc.gameKings(ctx, familyID, all, users)
+	if err != nil {
+		return nil, err
+	}
+
 	return connect.NewResponse(&scoreboardv1.GetStandingsResponse{
 		Rows:         out,
 		TotalMatches: int32(len(seen)),
 		PlayedGames:  played,
+		GameKings:    kings,
 	}), nil
+}
+
+// gameKings resolves the per-game champions into proto, dropping any game or
+// player that has since been deleted.
+func (svc *StatsService) gameKings(
+	ctx context.Context, familyID string, ps []stats.Participation, users map[string]model.User,
+) ([]*scoreboardv1.GameKing, error) {
+	crowned := stats.GameKings(ps)
+	if len(crowned) == 0 {
+		return nil, nil
+	}
+
+	games, err := svc.store.ListGames(ctx, familyID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	byID := make(map[string]model.Game, len(games))
+	for _, g := range games {
+		byID[g.ID] = g
+	}
+
+	out := make([]*scoreboardv1.GameKing, 0, len(crowned))
+	for _, k := range crowned {
+		g, ok := byID[k.GameID]
+		if !ok {
+			continue
+		}
+		u, ok := users[k.UserID]
+		if !ok {
+			continue
+		}
+		out = append(out, &scoreboardv1.GameKing{
+			Game:   gamePB(g),
+			User:   userPB(u),
+			Wins:   k.Wins,
+			Losses: k.Losses,
+		})
+	}
+	return out, nil
 }
 
 // playedGames returns the games that appear in this history, most-played first,
@@ -203,6 +251,7 @@ func (svc *StatsService) GetHeadToHead(
 		Games:          games,
 		RecentMatches:  svc.matchesPB(recent, v),
 		Streak:         h.Streak,
+		Rivalry:        rivalryPB(stats.Rivalries(ps, subject)[opponent], users),
 	}), nil
 }
 
@@ -251,11 +300,18 @@ func (svc *StatsService) GetPlayerProfile(
 		res.Nemesis = userPB(u)
 		res.NemesisLosses = p.NemesisLosses
 		res.NemesisWins = p.NemesisWins
+		res.NemesisDebt = p.NemesisDebt
 	}
 	if u, ok := users[p.VictimID]; ok {
 		res.FavoriteVictim = userPB(u)
 		res.VictimWins = p.VictimWins
 		res.VictimLosses = p.VictimLosses
+	}
+	if p.HasDrought {
+		res.Drought = rivalryPB(p.Drought, users)
+	}
+	if p.HasUnfinished {
+		res.UnfinishedBusiness = rivalryPB(p.Unfinished, users)
 	}
 
 	return connect.NewResponse(res), nil

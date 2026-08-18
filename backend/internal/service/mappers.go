@@ -9,6 +9,7 @@ import (
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
+	"github.com/bheadwhite/scoreboard/backend/internal/stats"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
 
@@ -352,4 +353,32 @@ func rangeStart(r scoreboardv1.StatsRange, now time.Time) time.Time {
 	default:
 		return time.Time{}
 	}
+}
+
+// rivalryPB maps one pairing. Nil for an opponent who is no longer known, and
+// for the zero Rivalry — a pairing with no opponent id is the absence of a
+// rivalry, not a rivalry with nobody, and the screens read the field's presence
+// to decide whether to show the line at all.
+func rivalryPB(r stats.Rivalry, users map[string]model.User) *scoreboardv1.RivalryLine {
+	if r.OpponentID == "" {
+		return nil
+	}
+	u, ok := users[r.OpponentID]
+	if !ok {
+		return nil
+	}
+
+	out := &scoreboardv1.RivalryLine{
+		Opponent:             userPB(u),
+		Wins:                 r.Wins,
+		Losses:               r.Losses,
+		MeetingsSinceLastWin: r.MeetingsSinceLastWin,
+		NeverBeaten:          r.NeverBeaten,
+		Debt:                 r.Debt(),
+	}
+	// Seq is the finalization instant in microseconds — see store.LoadParticipations.
+	if !r.NeverBeaten && r.LastWinSeq > 0 {
+		out.LastWinAt = ts(time.UnixMicro(r.LastWinSeq))
+	}
+	return out
 }

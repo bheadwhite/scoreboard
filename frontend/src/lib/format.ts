@@ -136,3 +136,44 @@ export function rivalryVerdict(wins: number, losses: number, opponent: string): 
   }
   return margin <= -5 ? `${opponent} owns you.` : `${opponent} is ahead of you.`;
 }
+
+/**
+ * How long it has been, counted in meetings rather than days.
+ *
+ * Deliberately not a date. "Six meetings and counting" is the sentence that
+ * stings, and unlike a calendar it cannot be improved by avoiding somebody.
+ */
+export function droughtVerdict(
+  neverBeaten: boolean,
+  meetings: number,
+  opponent: string,
+  isMe: boolean,
+): string {
+  if (neverBeaten) {
+    return isMe
+      ? `You have never beaten ${opponent}.`
+      : `Has never beaten ${opponent}.`;
+  }
+  const since = `${meetings} meeting${meetings === 1 ? "" : "s"}`;
+  return isMe
+    ? `${since} since you last beat ${opponent}.`
+    : `${since} since they last beat ${opponent}.`;
+}
+
+/**
+ * What it would take to draw level — the number nobody wants read aloud.
+ * Empty when the record is level or ahead, because there is no debt to state.
+ */
+export function debtLine(debt: number, opponent: string, isMe: boolean): string {
+  if (debt <= 0) return "";
+  const wins = `${debt} straight win${debt === 1 ? "" : "s"}`;
+  return isMe
+    ? `${wins} to draw level with ${opponent}.`
+    : `${wins} behind ${opponent}.`;
+}
+
+/** A rivalry close enough that the next game decides something. */
+export function unfinishedLine(wins: number, losses: number, opponent: string): string {
+  if (wins === losses) return `Dead even with ${opponent} at ${wins}–${losses}.`;
+  return `${wins}–${losses} with ${opponent}. One game swings it.`;
+}

@@ -93,7 +93,7 @@ export function ScoreboardView({
 
       {settling.length > 0 && (
         <section className="stack">
-          <span className="section-label">Yours, not settled yet</span>
+          <span className="section-label">Waiting on a concession</span>
           <div className="card card--flush">
             {settling.map((match) => (
               <LiveRow
@@ -119,6 +119,10 @@ export function ScoreboardView({
       )}
 
       <section className="stack">
+        {(standings?.totalMatches ?? 0) > 0 && (
+          <span className="section-label">The pecking order</span>
+        )}
+
         {/* Only what this family has actually finished. Offering the whole
             catalog meant a dozen chips that every filtered to an empty table.
             With one game played there is nothing to choose between, so the row
@@ -165,7 +169,7 @@ export function ScoreboardView({
           <div className="card card--flush">
             {!standings || standings.rows.length === 0 ? (
               <Empty emoji="🎲">
-                <strong>No finalized games yet.</strong>
+                <strong>Nothing on the record yet.</strong>
                 <br />
                 Play something. The record starts when someone concedes.
               </Empty>
@@ -212,9 +216,41 @@ export function ScoreboardView({
         )}
       </section>
 
+      {/* A crown per game, not one overall. "Lisa owns Catan" is a claim
+          somebody can go and do something about tonight; a single champion is
+          just the top of the table restated. */}
+      {standings && standings.gameKings.length > 0 && (
+        <section className="stack">
+          <span className="section-label">Who owns what</span>
+          <div className="card card--flush">
+            {standings.gameKings.map((king) => (
+              <button
+                key={king.game?.id}
+                className="rowbtn"
+                onClick={() => king.user && app.openPlayer(king.user.id)}
+              >
+                <span className="rank">👑</span>
+                <Avatar user={king.user} size="sm" />
+                <span className="rowbtn__main">
+                  <span className="rowbtn__name">
+                    {displayName(king.user)}{" "}
+                    <span style={{ color: "var(--ink-faint)" }}>owns</span>{" "}
+                    {gameLabel(king.game)}
+                  </span>
+                  <span className="rowbtn__meta num">
+                    {winRateText(king.wins, king.losses)} at it
+                  </span>
+                </span>
+                <Record wins={king.wins} losses={king.losses} />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {recent.length > 0 && (
         <section className="stack">
-          <span className="section-label">Recently settled</span>
+          <span className="section-label">On the record</span>
           <div className="card card--flush">
             {recent.slice(0, 8).map((match) => (
               <button

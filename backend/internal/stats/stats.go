@@ -218,6 +218,18 @@ func HeadToHead(ps []Participation, userID, opponentID string) H2H {
 			continue
 		}
 
+		// Opposing teams, and both lost: a free-for-all somebody else won.
+		//
+		// Every player gets a team of one in a free-for-all, so "on opposing
+		// teams" is true of everybody who was not on the winning side — and
+		// counting that as a defeat would record Kaylee as having beaten Brent
+		// in a game she also lost. Neither of them beat the other, so this is
+		// not a meeting between them at all: not a result, not a streak, and
+		// not a row in their recent meetings.
+		if !mine.won() && !theirs.won() {
+			continue
+		}
+
 		if mine.won() {
 			out.Wins++
 		} else {
@@ -258,6 +270,17 @@ type Profile struct {
 	VictimWins   int32
 	VictimLosses int32
 
+	// Wins in a row needed to draw level with the nemesis.
+	NemesisDebt int32
+	// The opponent it has been longest since beating, and the closest rivalry
+	// still worth arguing about. Both are absent until earned — a player two
+	// matches into their history has no droughts and no unfinished business,
+	// and inventing one would be worse than showing nothing.
+	Drought       Rivalry
+	HasDrought    bool
+	Unfinished    Rivalry
+	HasUnfinished bool
+
 	Games []GameRecord
 }
 
@@ -288,32 +311,10 @@ func PlayerProfile(ps []Participation, userID string) Profile {
 	}
 	out.Games = rankGames(games)
 
-	// Head-to-head tallies against everyone this player has faced.
-	versus := map[string]*Record{}
-	for _, group := range byMatch(ps) {
-		var me *Participation
-		for i := range group {
-			if group[i].UserID == userID {
-				me = &group[i]
-				break
-			}
-		}
-		if me == nil {
-			continue
-		}
-		for i := range group {
-			other := group[i]
-			if other.UserID == userID || other.TeamID == me.TeamID {
-				continue
-			}
-			rec, ok := versus[other.UserID]
-			if !ok {
-				rec = &Record{}
-				versus[other.UserID] = rec
-			}
-			rec.add(me.won())
-		}
-	}
+	// Every pairing this player has, computed once. The nemesis, the favorite
+	// victim, the drought and the unfinished business are four questions asked
+	// of the same map.
+	versus := Rivalries(ps, userID)
 
 	// Nemesis: most losses to. Ties broken by fewer wins against them (a
 	// rivalry you are losing more lopsidedly is the better story), then by id.
@@ -337,6 +338,12 @@ func PlayerProfile(ps []Participation, userID string) Profile {
 			out.VictimID, out.VictimWins, out.VictimLosses = id, rec.Wins, rec.Losses
 		}
 	}
+
+	if out.NemesisID != "" {
+		out.NemesisDebt = versus[out.NemesisID].Debt()
+	}
+	out.Drought, out.HasDrought = Drought(versus)
+	out.Unfinished, out.HasUnfinished = UnfinishedBusiness(versus)
 
 	return out
 }

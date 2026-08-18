@@ -8,6 +8,8 @@ import { AsyncBoundary, Avatar, Empty, Record } from "../../components/ui.js";
 import {
   displayName,
   gameLabel,
+  debtLine,
+  droughtVerdict,
   rivalryVerdict,
   streakLabel,
   timeAgo,
@@ -71,6 +73,27 @@ export function HeadToHeadView({
                 </>
               )}
             </div>
+
+            {/* The verdict says who is ahead. These two say how long it has
+                been and what it would cost to fix — the part that decides
+                whether somebody sets the board back up tonight. */}
+            {record.rivalry && record.wins + record.losses > 0 && (
+              <div className="verdict__note">
+                {record.rivalry.meetingsSinceLastWin > 0 && (
+                  <div>
+                    {droughtVerdict(
+                      record.rivalry.neverBeaten,
+                      record.rivalry.meetingsSinceLastWin,
+                      displayName(record.opponent),
+                      true,
+                    )}
+                  </div>
+                )}
+                {record.rivalry.debt > 0 && (
+                  <div>{debtLine(record.rivalry.debt, displayName(record.opponent), true)}</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="chips" role="group" aria-label="Filter by game">
@@ -125,7 +148,7 @@ export function HeadToHeadView({
             <span className="section-label">Recent meetings</span>
             <div className="card card--flush">
               {record.recentMatches.length === 0 ? (
-                <Empty emoji="🤝">You two have never faced off.</Empty>
+                <Empty emoji="🤝">You two have never faced off. Somebody has to start it.</Empty>
               ) : (
                 record.recentMatches.map((match) => {
                   const players = winners(match);

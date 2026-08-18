@@ -25,6 +25,23 @@ func match(id string, seq int64, gameID string, winners, losers []string) []Part
 	return out
 }
 
+// freeForAll builds a match where every player is their own team, which is how
+// the app stores a game with no sides. winner beats everybody in losers, and
+// the losers did not beat each other.
+func freeForAll(id string, seq int64, gameID, winner string, losers ...string) []Participation {
+	out := []Participation{{
+		MatchID: id, UserID: winner, TeamID: id + "-" + winner, GameID: gameID,
+		Result: model.ResultWin, Seq: seq,
+	}}
+	for _, u := range losers {
+		out = append(out, Participation{
+			MatchID: id, UserID: u, TeamID: id + "-" + u, GameID: gameID,
+			Result: model.ResultLoss, Seq: seq,
+		})
+	}
+	return out
+}
+
 func concat(groups ...[]Participation) []Participation {
 	var out []Participation
 	for _, g := range groups {
@@ -254,5 +271,55 @@ func TestStandingsIsDeterministicAcrossRuns(t *testing.T) {
 					j, first[j].UserID, again[j].UserID)
 			}
 		}
+	}
+}
+
+func TestHeadToHeadIgnoresTwoPlayersWhoBothLost(t *testing.T) {
+	// Lisa wins a three-player game. Brent and Kaylee are on opposing teams —
+	// everyone is, in a free-for-all — but neither beat the other.
+	ps := freeForAll("m1", 1, "catan", "lisa", "brent", "kaylee")
+
+	h := HeadToHead(ps, "brent", "kaylee")
+	if h.Wins != 0 || h.Losses != 0 {
+		t.Errorf("brent vs kaylee = %d–%d, want 0–0: they both lost to lisa", h.Wins, h.Losses)
+	}
+	if h.Streak != 0 {
+		t.Errorf("streak = %d, want 0 — nothing happened between them", h.Streak)
+	}
+	if len(h.MatchIDs) != 0 {
+		t.Errorf("meetings = %v, want none", h.MatchIDs)
+	}
+	if len(h.Games) != 0 {
+		t.Errorf("per-game records = %v, want none", h.Games)
+	}
+
+	// The player who actually won it still counts, both ways.
+	won := HeadToHead(ps, "lisa", "brent")
+	if won.Wins != 1 || won.Losses != 0 {
+		t.Errorf("lisa vs brent = %d–%d, want 1–0", won.Wins, won.Losses)
+	}
+	lost := HeadToHead(ps, "brent", "lisa")
+	if lost.Wins != 0 || lost.Losses != 1 {
+		t.Errorf("brent vs lisa = %d–%d, want 0–1", lost.Wins, lost.Losses)
+	}
+}
+
+func TestPlayerProfileCoLosersAreNotNemeses(t *testing.T) {
+	// Two free-for-alls, both won by lisa. Brent and kaylee have never played
+	// each other in any sense that should show up on a profile.
+	ps := concat(
+		freeForAll("m1", 1, "catan", "lisa", "brent", "kaylee"),
+		freeForAll("m2", 2, "catan", "lisa", "brent", "kaylee"),
+	)
+
+	p := PlayerProfile(ps, "kaylee")
+	if p.NemesisID != "lisa" {
+		t.Errorf("nemesis = %q, want lisa — she is the one who won them", p.NemesisID)
+	}
+	if p.HasDrought && p.Drought.OpponentID == "brent" {
+		t.Error("brent is not a drought: he never beat kaylee")
+	}
+	if p.HasUnfinished && p.Unfinished.OpponentID == "brent" {
+		t.Error("brent is not unfinished business: they have never faced off")
 	}
 }

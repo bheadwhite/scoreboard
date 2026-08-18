@@ -4,7 +4,15 @@ import { useCollection } from "../../lib/domain/use_collection.js";
 import type { AppPresenter } from "../../app/app_presenter.js";
 import type { ProfilePresenter } from "./profile_presenter.js";
 import { AsyncBoundary, Avatar, Empty, Record } from "../../components/ui.js";
-import { displayName, gameLabel, streakLabel, winRateText } from "../../lib/format.js";
+import {
+  debtLine,
+  displayName,
+  droughtVerdict,
+  gameLabel,
+  streakLabel,
+  unfinishedLine,
+  winRateText,
+} from "../../lib/format.js";
 
 /**
  * One player's record inside a family. The nemesis and favorite-victim tiles
@@ -62,7 +70,7 @@ export function ProfileView({
               <div className="tile__value num">{winRateText(profile.wins, profile.losses)}</div>
             </div>
             <div className="tile">
-              <div className="tile__label">Best streak</div>
+              <div className="tile__label">Best run</div>
               <div className="tile__value num">{profile.longestWinStreak || "—"}</div>
             </div>
           </div>
@@ -85,6 +93,11 @@ export function ProfileView({
                     {profile.nemesisLosses === 1 ? "" : "s"}
                     {profile.nemesisWins > 0 && ` (${profile.nemesisWins} the other way)`}
                   </div>
+                  {profile.nemesisDebt > 0 && (
+                    <div className="tile__note">
+                      {debtLine(profile.nemesisDebt, displayName(profile.nemesis), presenter.isMe)}
+                    </div>
+                  )}
                 </div>
               </div>
             </button>
@@ -112,9 +125,65 @@ export function ProfileView({
             </button>
           )}
 
+          {profile.drought?.opponent && (
+            <button
+              className="tile"
+              style={{ textAlign: "left", cursor: "pointer" }}
+              onClick={() =>
+                profile.drought?.opponent && app.openRivalry(profile.drought.opponent.id)
+              }
+            >
+              <div className="tile__label">🌵 The drought</div>
+              <div className="row" style={{ marginTop: 6 }}>
+                <Avatar user={profile.drought.opponent} size="sm" />
+                <div style={{ minWidth: 0 }}>
+                  <div className="tile__value" style={{ fontSize: "1.2rem" }}>
+                    {displayName(profile.drought.opponent)}
+                  </div>
+                  <div className="tile__note">
+                    {droughtVerdict(
+                      profile.drought.neverBeaten,
+                      profile.drought.meetingsSinceLastWin,
+                      displayName(profile.drought.opponent),
+                      presenter.isMe,
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
+          )}
+
+          {profile.unfinishedBusiness?.opponent && (
+            <button
+              className="tile"
+              style={{ textAlign: "left", cursor: "pointer" }}
+              onClick={() =>
+                profile.unfinishedBusiness?.opponent &&
+                app.openRivalry(profile.unfinishedBusiness.opponent.id)
+              }
+            >
+              <div className="tile__label">⚖️ Unfinished business</div>
+              <div className="row" style={{ marginTop: 6 }}>
+                <Avatar user={profile.unfinishedBusiness.opponent} size="sm" />
+                <div style={{ minWidth: 0 }}>
+                  <div className="tile__value" style={{ fontSize: "1.2rem" }}>
+                    {displayName(profile.unfinishedBusiness.opponent)}
+                  </div>
+                  <div className="tile__note">
+                    {unfinishedLine(
+                      profile.unfinishedBusiness.wins,
+                      profile.unfinishedBusiness.losses,
+                      displayName(profile.unfinishedBusiness.opponent),
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
+          )}
+
           {profile.games.length > 0 && (
             <section className="stack">
-              <span className="section-label">By game</span>
+              <span className="section-label">Game by game</span>
               <div className="card card--flush">
                 {profile.games.map((g) => (
                   <div key={g.game?.id} className="rowbtn" style={{ cursor: "default" }}>
@@ -135,7 +204,7 @@ export function ProfileView({
             </span>
             <div className="card card--flush">
               {others.length === 0 ? (
-                <Empty emoji="👥">Nobody else in this family yet.</Empty>
+                <Empty emoji="👥">Nobody else here yet.</Empty>
               ) : (
                 others.map((m) => (
                   <button

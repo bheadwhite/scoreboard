@@ -4,6 +4,8 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Game, Match, User } from "./common_pb.js";
 import { file_scoreboard_v1_common } from "./common_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +14,105 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/stats.proto.
  */
 export const file_scoreboard_v1_stats: GenFile = /*@__PURE__*/
-  fileDesc("ChlzY29yZWJvYXJkL3YxL3N0YXRzLnByb3RvEg1zY29yZWJvYXJkLnYxIn8KDFN0YW5kaW5nc1JvdxIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFEhAKCHdpbl9yYXRlGAQgASgBEg4KBnN0cmVhaxgFIAEoBRIMCgRyYW5rGAYgASgFImMKE0dldFN0YW5kaW5nc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEg8KB2dhbWVfaWQYAiABKAkSKAoFcmFuZ2UYAyABKA4yGS5zY29yZWJvYXJkLnYxLlN0YXRzUmFuZ2UigwEKFEdldFN0YW5kaW5nc1Jlc3BvbnNlEikKBHJvd3MYASADKAsyGy5zY29yZWJvYXJkLnYxLlN0YW5kaW5nc1JvdxIVCg10b3RhbF9tYXRjaGVzGAIgASgFEikKDHBsYXllZF9nYW1lcxgDIAMoCzITLnNjb3JlYm9hcmQudjEuR2FtZSJRCg5IZWFkVG9IZWFkR2FtZRIhCgRnYW1lGAEgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFIooBChRHZXRIZWFkVG9IZWFkUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRITCgtvcHBvbmVudF9pZBgDIAEoCRIPCgdnYW1lX2lkGAQgASgJEigKBXJhbmdlGAUgASgOMhkuc2NvcmVib2FyZC52MS5TdGF0c1JhbmdlIpsCChVHZXRIZWFkVG9IZWFkUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIlCghvcHBvbmVudBgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAMgASgFEg4KBmxvc3NlcxgEIAEoBRIVCg10b2dldGhlcl93aW5zGAUgASgFEhcKD3RvZ2V0aGVyX2xvc3NlcxgGIAEoBRIsCgVnYW1lcxgHIAMoCzIdLnNjb3JlYm9hcmQudjEuSGVhZFRvSGVhZEdhbWUSLAoOcmVjZW50X21hdGNoZXMYCCADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoEg4KBnN0cmVhaxgJIAEoBSJnChdHZXRQbGF5ZXJQcm9maWxlUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIoCgVyYW5nZRgDIAEoDjIZLnNjb3JlYm9hcmQudjEuU3RhdHNSYW5nZSL9AgoYR2V0UGxheWVyUHJvZmlsZVJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDAoEd2lucxgCIAEoBRIOCgZsb3NzZXMYAyABKAUSEAoId2luX3JhdGUYBCABKAESFgoOY3VycmVudF9zdHJlYWsYBSABKAUSGgoSbG9uZ2VzdF93aW5fc3RyZWFrGAYgASgFEiQKB25lbWVzaXMYByABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISFgoObmVtZXNpc19sb3NzZXMYCCABKAUSFAoMbmVtZXNpc193aW5zGAkgASgFEiwKD2Zhdm9yaXRlX3ZpY3RpbRgKIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchITCgt2aWN0aW1fd2lucxgLIAEoBRIVCg12aWN0aW1fbG9zc2VzGAwgASgFEiwKBWdhbWVzGA0gAygLMh0uc2NvcmVib2FyZC52MS5IZWFkVG9IZWFkR2FtZSpwCgpTdGF0c1JhbmdlEhsKF1NUQVRTX1JBTkdFX1VOU1BFQ0lGSUVEEAASGAoUU1RBVFNfUkFOR0VfQUxMX1RJTUUQARIUChBTVEFUU19SQU5HRV9ZRUFSEAISFQoRU1RBVFNfUkFOR0VfTU9OVEgQAzKoAgoMU3RhdHNTZXJ2aWNlElcKDEdldFN0YW5kaW5ncxIiLnNjb3JlYm9hcmQudjEuR2V0U3RhbmRpbmdzUmVxdWVzdBojLnNjb3JlYm9hcmQudjEuR2V0U3RhbmRpbmdzUmVzcG9uc2USWgoNR2V0SGVhZFRvSGVhZBIjLnNjb3JlYm9hcmQudjEuR2V0SGVhZFRvSGVhZFJlcXVlc3QaJC5zY29yZWJvYXJkLnYxLkdldEhlYWRUb0hlYWRSZXNwb25zZRJjChBHZXRQbGF5ZXJQcm9maWxlEiYuc2NvcmVib2FyZC52MS5HZXRQbGF5ZXJQcm9maWxlUmVxdWVzdBonLnNjb3JlYm9hcmQudjEuR2V0UGxheWVyUHJvZmlsZVJlc3BvbnNlQr0BChFjb20uc2NvcmVib2FyZC52MUIKU3RhdHNQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
+  fileDesc("ChlzY29yZWJvYXJkL3YxL3N0YXRzLnByb3RvEg1zY29yZWJvYXJkLnYxIsgBCgtSaXZhbHJ5TGluZRIlCghvcHBvbmVudBgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAIgASgFEg4KBmxvc3NlcxgDIAEoBRIfChdtZWV0aW5nc19zaW5jZV9sYXN0X3dpbhgEIAEoBRIUCgxuZXZlcl9iZWF0ZW4YBSABKAgSLwoLbGFzdF93aW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGRlYnQYByABKAUibgoIR2FtZUtpbmcSIQoEZ2FtZRgBIAEoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIhCgR1c2VyGAIgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAyABKAUSDgoGbG9zc2VzGAQgASgFIn8KDFN0YW5kaW5nc1JvdxIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFEhAKCHdpbl9yYXRlGAQgASgBEg4KBnN0cmVhaxgFIAEoBRIMCgRyYW5rGAYgASgFImMKE0dldFN0YW5kaW5nc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEg8KB2dhbWVfaWQYAiABKAkSKAoFcmFuZ2UYAyABKA4yGS5zY29yZWJvYXJkLnYxLlN0YXRzUmFuZ2UisAEKFEdldFN0YW5kaW5nc1Jlc3BvbnNlEikKBHJvd3MYASADKAsyGy5zY29yZWJvYXJkLnYxLlN0YW5kaW5nc1JvdxIVCg10b3RhbF9tYXRjaGVzGAIgASgFEikKDHBsYXllZF9nYW1lcxgDIAMoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIrCgpnYW1lX2tpbmdzGAQgAygLMhcuc2NvcmVib2FyZC52MS5HYW1lS2luZyJRCg5IZWFkVG9IZWFkR2FtZRIhCgRnYW1lGAEgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFIooBChRHZXRIZWFkVG9IZWFkUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRITCgtvcHBvbmVudF9pZBgDIAEoCRIPCgdnYW1lX2lkGAQgASgJEigKBXJhbmdlGAUgASgOMhkuc2NvcmVib2FyZC52MS5TdGF0c1JhbmdlIsgCChVHZXRIZWFkVG9IZWFkUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIlCghvcHBvbmVudBgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAMgASgFEg4KBmxvc3NlcxgEIAEoBRIVCg10b2dldGhlcl93aW5zGAUgASgFEhcKD3RvZ2V0aGVyX2xvc3NlcxgGIAEoBRIsCgVnYW1lcxgHIAMoCzIdLnNjb3JlYm9hcmQudjEuSGVhZFRvSGVhZEdhbWUSLAoOcmVjZW50X21hdGNoZXMYCCADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoEg4KBnN0cmVhaxgJIAEoBRIrCgdyaXZhbHJ5GAogASgLMhouc2NvcmVib2FyZC52MS5SaXZhbHJ5TGluZSJnChdHZXRQbGF5ZXJQcm9maWxlUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIoCgVyYW5nZRgDIAEoDjIZLnNjb3JlYm9hcmQudjEuU3RhdHNSYW5nZSL5AwoYR2V0UGxheWVyUHJvZmlsZVJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDAoEd2lucxgCIAEoBRIOCgZsb3NzZXMYAyABKAUSEAoId2luX3JhdGUYBCABKAESFgoOY3VycmVudF9zdHJlYWsYBSABKAUSGgoSbG9uZ2VzdF93aW5fc3RyZWFrGAYgASgFEiQKB25lbWVzaXMYByABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISFgoObmVtZXNpc19sb3NzZXMYCCABKAUSFAoMbmVtZXNpc193aW5zGAkgASgFEiwKD2Zhdm9yaXRlX3ZpY3RpbRgKIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchITCgt2aWN0aW1fd2lucxgLIAEoBRIVCg12aWN0aW1fbG9zc2VzGAwgASgFEiwKBWdhbWVzGA0gAygLMh0uc2NvcmVib2FyZC52MS5IZWFkVG9IZWFkR2FtZRIUCgxuZW1lc2lzX2RlYnQYDiABKAUSKwoHZHJvdWdodBgPIAEoCzIaLnNjb3JlYm9hcmQudjEuUml2YWxyeUxpbmUSNwoTdW5maW5pc2hlZF9idXNpbmVzcxgQIAEoCzIaLnNjb3JlYm9hcmQudjEuUml2YWxyeUxpbmUqcAoKU3RhdHNSYW5nZRIbChdTVEFUU19SQU5HRV9VTlNQRUNJRklFRBAAEhgKFFNUQVRTX1JBTkdFX0FMTF9USU1FEAESFAoQU1RBVFNfUkFOR0VfWUVBUhACEhUKEVNUQVRTX1JBTkdFX01PTlRIEAMyqAIKDFN0YXRzU2VydmljZRJXCgxHZXRTdGFuZGluZ3MSIi5zY29yZWJvYXJkLnYxLkdldFN0YW5kaW5nc1JlcXVlc3QaIy5zY29yZWJvYXJkLnYxLkdldFN0YW5kaW5nc1Jlc3BvbnNlEloKDUdldEhlYWRUb0hlYWQSIy5zY29yZWJvYXJkLnYxLkdldEhlYWRUb0hlYWRSZXF1ZXN0GiQuc2NvcmVib2FyZC52MS5HZXRIZWFkVG9IZWFkUmVzcG9uc2USYwoQR2V0UGxheWVyUHJvZmlsZRImLnNjb3JlYm9hcmQudjEuR2V0UGxheWVyUHJvZmlsZVJlcXVlc3QaJy5zY29yZWJvYXJkLnYxLkdldFBsYXllclByb2ZpbGVSZXNwb25zZUK9AQoRY29tLnNjb3JlYm9hcmQudjFCClN0YXRzUHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_scoreboard_v1_common]);
+
+/**
+ * One pairing, from the viewer's point of view, phrased for the screens that
+ * needle people with it: the drought, the debt, the rivalry nobody has settled.
+ *
+ * Every field is derived from the same finalized matches the tallies are; this
+ * message exists so the client does not have to recompute "how long has it been"
+ * from a list of results.
+ *
+ * @generated from message scoreboard.v1.RivalryLine
+ */
+export type RivalryLine = Message<"scoreboard.v1.RivalryLine"> & {
+  /**
+   * @generated from field: scoreboard.v1.User opponent = 1;
+   */
+  opponent?: User | undefined;
+
+  /**
+   * @generated from field: int32 wins = 2;
+   */
+  wins: number;
+
+  /**
+   * @generated from field: int32 losses = 3;
+   */
+  losses: number;
+
+  /**
+   * Meetings since the viewer last beat this opponent. Zero means the most
+   * recent meeting was a win.
+   *
+   * @generated from field: int32 meetings_since_last_win = 4;
+   */
+  meetingsSinceLastWin: number;
+
+  /**
+   * True when the viewer has never beaten them at all, which no count of
+   * meetings can express — and which is the more damning line to print.
+   *
+   * @generated from field: bool never_beaten = 5;
+   */
+  neverBeaten: boolean;
+
+  /**
+   * When that last win landed. Unset when never_beaten.
+   *
+   * @generated from field: google.protobuf.Timestamp last_win_at = 6;
+   */
+  lastWinAt?: Timestamp | undefined;
+
+  /**
+   * Wins needed to draw level. Zero when already level or ahead.
+   *
+   * @generated from field: int32 debt = 7;
+   */
+  debt: number;
+};
+
+/**
+ * Describes the message scoreboard.v1.RivalryLine.
+ * Use `create(RivalryLineSchema)` to create a new message.
+ */
+export const RivalryLineSchema: GenMessage<RivalryLine> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_stats, 0);
+
+/**
+ * Who owns a game. One per game with a finalized match in range.
+ *
+ * @generated from message scoreboard.v1.GameKing
+ */
+export type GameKing = Message<"scoreboard.v1.GameKing"> & {
+  /**
+   * @generated from field: scoreboard.v1.Game game = 1;
+   */
+  game?: Game | undefined;
+
+  /**
+   * @generated from field: scoreboard.v1.User user = 2;
+   */
+  user?: User | undefined;
+
+  /**
+   * @generated from field: int32 wins = 3;
+   */
+  wins: number;
+
+  /**
+   * @generated from field: int32 losses = 4;
+   */
+  losses: number;
+};
+
+/**
+ * Describes the message scoreboard.v1.GameKing.
+ * Use `create(GameKingSchema)` to create a new message.
+ */
+export const GameKingSchema: GenMessage<GameKing> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_stats, 1);
 
 /**
  * @generated from message scoreboard.v1.StandingsRow
@@ -58,7 +158,7 @@ export type StandingsRow = Message<"scoreboard.v1.StandingsRow"> & {
  * Use `create(StandingsRowSchema)` to create a new message.
  */
 export const StandingsRowSchema: GenMessage<StandingsRow> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 0);
+  messageDesc(file_scoreboard_v1_stats, 2);
 
 /**
  * @generated from message scoreboard.v1.GetStandingsRequest
@@ -87,7 +187,7 @@ export type GetStandingsRequest = Message<"scoreboard.v1.GetStandingsRequest"> &
  * Use `create(GetStandingsRequestSchema)` to create a new message.
  */
 export const GetStandingsRequestSchema: GenMessage<GetStandingsRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 1);
+  messageDesc(file_scoreboard_v1_stats, 3);
 
 /**
  * @generated from message scoreboard.v1.GetStandingsResponse
@@ -115,6 +215,14 @@ export type GetStandingsResponse = Message<"scoreboard.v1.GetStandingsResponse">
    * @generated from field: repeated scoreboard.v1.Game played_games = 3;
    */
   playedGames: Game[];
+
+  /**
+   * Who owns each game that has been finished in range. One per game, and the
+   * reason the scoreboard can say "Lisa owns Catan" without a request per game.
+   *
+   * @generated from field: repeated scoreboard.v1.GameKing game_kings = 4;
+   */
+  gameKings: GameKing[];
 };
 
 /**
@@ -122,7 +230,7 @@ export type GetStandingsResponse = Message<"scoreboard.v1.GetStandingsResponse">
  * Use `create(GetStandingsResponseSchema)` to create a new message.
  */
 export const GetStandingsResponseSchema: GenMessage<GetStandingsResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 2);
+  messageDesc(file_scoreboard_v1_stats, 4);
 
 /**
  * One game's slice of a head-to-head record.
@@ -151,7 +259,7 @@ export type HeadToHeadGame = Message<"scoreboard.v1.HeadToHeadGame"> & {
  * Use `create(HeadToHeadGameSchema)` to create a new message.
  */
 export const HeadToHeadGameSchema: GenMessage<HeadToHeadGame> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 3);
+  messageDesc(file_scoreboard_v1_stats, 5);
 
 /**
  * @generated from message scoreboard.v1.GetHeadToHeadRequest
@@ -192,7 +300,7 @@ export type GetHeadToHeadRequest = Message<"scoreboard.v1.GetHeadToHeadRequest">
  * Use `create(GetHeadToHeadRequestSchema)` to create a new message.
  */
 export const GetHeadToHeadRequestSchema: GenMessage<GetHeadToHeadRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 4);
+  messageDesc(file_scoreboard_v1_stats, 6);
 
 /**
  * @generated from message scoreboard.v1.GetHeadToHeadResponse
@@ -252,6 +360,14 @@ export type GetHeadToHeadResponse = Message<"scoreboard.v1.GetHeadToHeadResponse
    * @generated from field: int32 streak = 9;
    */
   streak: number;
+
+  /**
+   * The same pairing as a story: how long since user last won, and what it
+   * would take to draw level.
+   *
+   * @generated from field: scoreboard.v1.RivalryLine rivalry = 10;
+   */
+  rivalry?: RivalryLine | undefined;
 };
 
 /**
@@ -259,7 +375,7 @@ export type GetHeadToHeadResponse = Message<"scoreboard.v1.GetHeadToHeadResponse
  * Use `create(GetHeadToHeadResponseSchema)` to create a new message.
  */
 export const GetHeadToHeadResponseSchema: GenMessage<GetHeadToHeadResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 5);
+  messageDesc(file_scoreboard_v1_stats, 7);
 
 /**
  * @generated from message scoreboard.v1.GetPlayerProfileRequest
@@ -286,7 +402,7 @@ export type GetPlayerProfileRequest = Message<"scoreboard.v1.GetPlayerProfileReq
  * Use `create(GetPlayerProfileRequestSchema)` to create a new message.
  */
 export const GetPlayerProfileRequestSchema: GenMessage<GetPlayerProfileRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 6);
+  messageDesc(file_scoreboard_v1_stats, 8);
 
 /**
  * @generated from message scoreboard.v1.GetPlayerProfileResponse
@@ -362,6 +478,30 @@ export type GetPlayerProfileResponse = Message<"scoreboard.v1.GetPlayerProfileRe
    * @generated from field: repeated scoreboard.v1.HeadToHeadGame games = 13;
    */
   games: HeadToHeadGame[];
+
+  /**
+   * Wins needed to draw level with the nemesis. Zero when there is no nemesis.
+   *
+   * @generated from field: int32 nemesis_debt = 14;
+   */
+  nemesisDebt: number;
+
+  /**
+   * The opponent it has been longest since beating — by meetings, not by
+   * calendar, because six meetings without a win is the sentence that stings.
+   * Unset when this player has beaten everyone they have recently faced.
+   *
+   * @generated from field: scoreboard.v1.RivalryLine drought = 15;
+   */
+  drought?: RivalryLine | undefined;
+
+  /**
+   * The closest rivalry with enough matches to argue about. Unset until some
+   * pairing qualifies.
+   *
+   * @generated from field: scoreboard.v1.RivalryLine unfinished_business = 16;
+   */
+  unfinishedBusiness?: RivalryLine | undefined;
 };
 
 /**
@@ -369,7 +509,7 @@ export type GetPlayerProfileResponse = Message<"scoreboard.v1.GetPlayerProfileRe
  * Use `create(GetPlayerProfileResponseSchema)` to create a new message.
  */
 export const GetPlayerProfileResponseSchema: GenMessage<GetPlayerProfileResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_stats, 7);
+  messageDesc(file_scoreboard_v1_stats, 9);
 
 /**
  * How far back to count.
