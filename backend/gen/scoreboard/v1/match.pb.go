@@ -138,8 +138,12 @@ func (x *CreateMatchResponse) GetMatch() *Match {
 }
 
 type JoinMatchRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	MatchId string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	// Who to put in. Empty means you, which is the ordinary case. Naming somebody
+	// else is the creator's alone, and only works on somebody with an unanswered
+	// invitation to this match.
+	UserId        string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,6 +181,13 @@ func (*JoinMatchRequest) Descriptor() ([]byte, []int) {
 func (x *JoinMatchRequest) GetMatchId() string {
 	if x != nil {
 		return x.MatchId
+	}
+	return ""
+}
+
+func (x *JoinMatchRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -1436,9 +1447,10 @@ const file_scoreboard_v1_match_proto_rawDesc = "" +
 	"\x0finvite_user_ids\x18\x03 \x03(\tR\rinviteUserIds\x123\n" +
 	"\bcontract\x18\x04 \x01(\v2\x17.scoreboard.v1.ContractR\bcontract\"A\n" +
 	"\x13CreateMatchResponse\x12*\n" +
-	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\"-\n" +
+	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\"F\n" +
 	"\x10JoinMatchRequest\x12\x19\n" +
-	"\bmatch_id\x18\x01 \x01(\tR\amatchId\"?\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"?\n" +
 	"\x11JoinMatchResponse\x12*\n" +
 	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\".\n" +
 	"\x11LeaveMatchRequest\x12\x19\n" +

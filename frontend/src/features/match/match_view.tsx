@@ -1073,27 +1073,34 @@ function Roster({
 
             Never selectable for pairing. They hold no team until they join,
             so there is nothing to put on a side. */}
-        {match.invited.map((p) => (
-          <button
-            key={p.user?.id}
-            className="rowbtn"
-            style={{
-              border: "1px solid",
-              borderColor: "var(--line)",
-              borderRadius: "var(--radius)",
-              cursor: "default",
-              minHeight: 54,
-              opacity: 0.72,
-            }}
-            disabled
-          >
-            <Avatar user={p.user} size="sm" />
-            <span className="rowbtn__main">
-              <span className="rowbtn__name">{displayName(p.user)}</span>
-            </span>
-            <span className="badge badge--wait">Pending</span>
-          </button>
-        ))}
+        {match.invited.map((p) => {
+          const id = p.user?.id ?? "";
+          return (
+            <button
+              key={id}
+              className="rowbtn"
+              style={{
+                border: "1px solid",
+                borderColor: "var(--line)",
+                borderRadius: "var(--radius)",
+                cursor: match.viewerIsCreator ? "pointer" : "default",
+                minHeight: 54,
+                opacity: match.viewerIsCreator ? 1 : 0.72,
+              }}
+              disabled={!match.viewerIsCreator || busy}
+              onClick={() => match.viewerIsCreator && void presenter.joinFor(id)}
+            >
+              <Avatar user={p.user} size="sm" />
+              <span className="rowbtn__main">
+                <span className="rowbtn__name">{displayName(p.user)}</span>
+                {match.viewerIsCreator && (
+                  <span className="rowbtn__meta">tap if they are here and playing</span>
+                )}
+              </span>
+              <span className="badge badge--wait">Pending</span>
+            </button>
+          );
+        })}
       </div>
 
       {canPair && (
@@ -1118,7 +1125,9 @@ function Roster({
 
       {match.invited.length > 0 && (
         <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-faint)" }}>
-          Pending players can still join any time before somebody calls the win.
+          {match.viewerIsCreator
+            ? "They can join themselves any time before somebody calls the win — or tap them in if they are sitting right there. They still get asked to agree with however it ends."
+            : "Pending players can still join any time before somebody calls the win."}
         </p>
       )}
 

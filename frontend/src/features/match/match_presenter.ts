@@ -185,6 +185,18 @@ export class MatchPresenter {
   join = (): Promise<void> =>
     this._run(() => this._domain.api.matches.joinMatch({ matchId: this._matchId }));
 
+  /**
+   * Puts somebody the host invited into the game on their behalf.
+   *
+   * The one place this app adds a player who did not say yes themselves, and it
+   * is narrow on purpose: only an unanswered invitation, never a refusal, and
+   * the server enforces both. It buys a game that can start when everybody is at
+   * the table and nobody has picked up their phone — not a result, since anyone
+   * put in this way still owes a claim the same answer as anybody else.
+   */
+  joinFor = (userId: string): Promise<void> =>
+    this._run(() => this._domain.api.matches.joinMatch({ matchId: this._matchId, userId }));
+
   /** Turn down an invitation. The match carries on without you. */
   decline = (): Promise<void> =>
     this._run(() => this._domain.api.matches.declineMatch({ matchId: this._matchId }));

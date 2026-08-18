@@ -91,15 +91,33 @@ func parseContract(in *scoreboardv1.Contract) (model.Contract, error) {
 	return model.Contract{Kind: kind, Target: target, Detail: detail}, nil
 }
 
+// JoinMatch puts somebody in the game — normally the caller, saying they are
+// playing.
+//
+// The host may also do it for somebody they invited. That is a real exception to
+// "nobody is dragged into a game", and it exists because the alternative is
+// worse: four people around a table, one of them has posted the match, and the
+// game cannot begin until the other three find their phones. The exception is
+// kept as narrow as it can be — an unanswered invitation only, never a refusal —
+// and it buys a game that can start rather than a result that can be
+// manufactured, because everybody put in this way still has to answer the claim.
 func (svc *MatchService) JoinMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.JoinMatchRequest],
 ) (*connect.Response[scoreboardv1.JoinMatchResponse], error) {
-	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
+	m0, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := svc.store.JoinMatch(ctx, req.Msg.GetMatchId(), v.id)
+	target, byCreator := v.id, false
+	if id := req.Msg.GetUserId(); id != "" && id != v.id {
+		if m0.CreatedBy != v.id {
+			return nil, denied("only whoever set this game up can put somebody else in")
+		}
+		target, byCreator = id, true
+	}
+
+	m, err := svc.store.JoinMatch(ctx, req.Msg.GetMatchId(), target, byCreator)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

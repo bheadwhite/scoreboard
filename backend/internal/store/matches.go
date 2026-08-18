@@ -273,7 +273,19 @@ func rosterOpen(m model.Match) error {
 //
 // Open until a winner is named, so somebody who joins the table halfway through
 // the evening is on the scoreboard for it.
-func (s *Store) JoinMatch(ctx context.Context, matchID, userID string) (model.Match, error) {
+//
+// byCreator is set when the host is doing this on somebody else's behalf, which
+// is how a game gets going when everybody is sitting at the table and nobody has
+// picked up their phone. It is narrower than joining yourself in one specific
+// way, and the narrowing is the point: it only works on an invitation nobody has
+// answered. Somebody who declined stays declined — the host can start a game
+// past people who are not paying attention, never past a no.
+//
+// What it deliberately does not buy is a result. Anybody put in this way still
+// owes a claim an answer exactly like a player who joined themselves, so a host
+// who conscripts the table and then names a winner has to wait out the same
+// concessions or the same week.
+func (s *Store) JoinMatch(ctx context.Context, matchID, userID string, byCreator bool) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -283,6 +295,25 @@ func (s *Store) JoinMatch(ctx context.Context, matchID, userID string) (model.Ma
 		}
 		if err := rosterOpen(m); err != nil {
 			return err
+		}
+		if byCreator {
+			var status string
+			err := tx.QueryRow(ctx,
+				`SELECT status FROM match_participants WHERE match_id = $1 AND user_id = $2`,
+				matchID, userID).Scan(&status)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return fmt.Errorf("%w: invite them first", ErrConflict)
+			}
+			if err != nil {
+				return err
+			}
+			switch status {
+			case model.InviteJoined:
+				out = m // already playing
+				return nil
+			case model.InviteDeclined:
+				return fmt.Errorf("%w: they said no — that is theirs to change", ErrConflict)
+			}
 		}
 		if err := joinParticipant(ctx, tx, matchID, userID); err != nil {
 			return err

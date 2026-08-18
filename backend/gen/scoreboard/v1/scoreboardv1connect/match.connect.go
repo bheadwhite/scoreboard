@@ -78,6 +78,13 @@ type MatchServiceClient interface {
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
 	// Confirms you are playing, under the contract as posted. This is the only
 	// commitment step there is. Open until a winner is named, so latecomers count.
+	//
+	// Whoever posted the match may also do this for somebody they invited, which
+	// is how a game gets under way when everybody is at the table and nobody has
+	// picked up their phone. It converts a pending invitation into a player and
+	// nothing more: a refusal cannot be overridden, and the person put in still
+	// owes any claim an answer, so this buys the host a game that can start, not
+	// a result they can manufacture.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.
@@ -320,6 +327,13 @@ type MatchServiceHandler interface {
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
 	// Confirms you are playing, under the contract as posted. This is the only
 	// commitment step there is. Open until a winner is named, so latecomers count.
+	//
+	// Whoever posted the match may also do this for somebody they invited, which
+	// is how a game gets under way when everybody is at the table and nobody has
+	// picked up their phone. It converts a pending invitation into a player and
+	// nothing more: a refusal cannot be overridden, and the person put in still
+	// owes any claim an answer, so this buys the host a game that can start, not
+	// a result they can manufacture.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.

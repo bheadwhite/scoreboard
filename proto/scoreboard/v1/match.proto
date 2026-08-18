@@ -37,6 +37,13 @@ service MatchService {
   rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
   // Confirms you are playing, under the contract as posted. This is the only
   // commitment step there is. Open until a winner is named, so latecomers count.
+  //
+  // Whoever posted the match may also do this for somebody they invited, which
+  // is how a game gets under way when everybody is at the table and nobody has
+  // picked up their phone. It converts a pending invitation into a player and
+  // nothing more: a refusal cannot be overridden, and the person put in still
+  // owes any claim an answer, so this buys the host a game that can start, not
+  // a result they can manufacture.
   rpc JoinMatch(JoinMatchRequest) returns (JoinMatchResponse);
   rpc LeaveMatch(LeaveMatchRequest) returns (LeaveMatchResponse);
   // Turn down an invitation. The match carries on without you.
@@ -107,6 +114,10 @@ message CreateMatchResponse {
 
 message JoinMatchRequest {
   string match_id = 1;
+  // Who to put in. Empty means you, which is the ordinary case. Naming somebody
+  // else is the creator's alone, and only works on somebody with an unanswered
+  // invitation to this match.
+  string user_id = 2;
 }
 
 message JoinMatchResponse {
