@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRunnerStatus, useSignalValue } from "@tcn/state/react";
+import { useCollection } from "../../lib/domain/use_collection.js";
 import { Status } from "@tcn/state/core";
 
 import type { AppPresenter } from "../../app/app_presenter.js";
@@ -1090,6 +1091,136 @@ function Roster({
           any time before somebody calls it.
         </p>
       )}
+
+      {inMatch && <InvitePlayers presenter={presenter} match={match} busy={busy} />}
     </div>
+  );
+}
+
+/**
+ * Asking more people into a game that is already posted.
+ *
+ * This screen went without it for a while, which made posting a game a
+ * one-shot: forget somebody at the New game screen and your only recourse was
+ * hoping they spotted the match under "Happening now" and joined themselves.
+ * Setting a game up is the moment you are least likely to have everybody's
+ * name straight, so the ask has to stay available afterward.
+ *
+ * Open to any player in the match rather than only whoever posted it. Inviting
+ * somebody is not a claim on the result and it costs the invitee nothing to
+ * decline, so gating it behind the host would just mean waiting for the host.
+ */
+function InvitePlayers({
+  presenter,
+  match,
+  busy,
+}: {
+  presenter: MatchPresenter;
+  match: Match;
+  busy: boolean;
+}) {
+  const members = useCollection(presenter.members(match));
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+
+  const candidates = presenter.invitable(match, members);
+
+  const addPlaceholder = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    void presenter.addPlaceholder(match, trimmed);
+    setName("");
+    setAdding(false);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button className="btn btn--block btn--sm" disabled={busy} onClick={() => setOpen(true)}>
+        Ask someone to join
+      </button>
+
+      {open && (
+        <Sheet title="Ask someone to join" onDismiss={() => setOpen(false)}>
+          <h2>Who else is playing?</h2>
+          <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
+            They decide for themselves — the game carries on without the ones who never answer.
+          </p>
+
+          <div className="stack" style={{ gap: 6 }}>
+            {candidates.map((m) => {
+              const id = m.user?.id ?? "";
+              return (
+                <button
+                  key={id}
+                  className="rowbtn"
+                  disabled={busy}
+                  onClick={() => {
+                    void presenter.invitePlayers([id]);
+                    setOpen(false);
+                  }}
+                >
+                  <Avatar user={m.user} size="sm" />
+                  <span className="rowbtn__main">
+                    <span className="rowbtn__name">{displayName(m.user)}</span>
+                    {/* Picking them puts them straight in rather than asking,
+                        because there is no device to ask. */}
+                    {m.user?.placeholder && (
+                      <span className="rowbtn__meta">not on the app · added, not asked</span>
+                    )}
+                  </span>
+                  <span style={{ color: "var(--ink-faint)" }}>+</span>
+                </button>
+              );
+            })}
+
+            {candidates.length === 0 && (
+              <p style={{ margin: 0, color: "var(--ink-dim)", fontSize: "0.9rem" }}>
+                Everybody on the scoreboard is already in this one, or has answered it.
+              </p>
+            )}
+          </div>
+
+          {adding ? (
+            <div className="stack">
+              <div className="field">
+                <label className="field__label" htmlFor="match-placeholder-name">
+                  Their name
+                </label>
+                <input
+                  id="match-placeholder-name"
+                  className="input"
+                  placeholder="Grandma"
+                  value={name}
+                  autoFocus
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addPlaceholder()}
+                />
+              </div>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
+                They get a real spot on the scoreboard, but they cannot concede or object to
+                anything — so they go straight into the game rather than being asked.
+              </p>
+              <button
+                className="btn btn--primary btn--block"
+                disabled={busy || name.trim() === ""}
+                onClick={addPlaceholder}
+              >
+                Add {name.trim() || "them"}
+              </button>
+            </div>
+          ) : (
+            <button className="btn btn--block" disabled={busy} onClick={() => setAdding(true)}>
+              Someone who is not on the app
+            </button>
+          )}
+
+          <button className="btn btn--ghost btn--block" onClick={() => setOpen(false)}>
+            Done
+          </button>
+        </Sheet>
+      )}
+    </>
   );
 }

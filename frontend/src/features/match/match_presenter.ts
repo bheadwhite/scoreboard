@@ -2,7 +2,11 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { Runner, Signal } from "@tcn/state/core";
 
 import type { Domain } from "../../lib/domain/domain.js";
-import type { Match, MatchParticipant } from "../../gen/scoreboard/v1/common_pb.js";
+import type {
+  FamilyMember,
+  Match,
+  MatchParticipant,
+} from "../../gen/scoreboard/v1/common_pb.js";
 import { MatchStatus } from "../../gen/scoreboard/v1/common_pb.js";
 
 /**
@@ -189,6 +193,62 @@ export class MatchPresenter {
     this._run(() =>
       this._domain.api.matches.invitePlayers({ matchId: this._matchId, userIds }),
     );
+
+  /**
+   * The family roster, so the match screen can ask more people in.
+   *
+   * Keyed on the match's own family rather than the app's current one: this
+   * presenter is handed a match id and nothing else, and reading a family id
+   * from somewhere else is how a screen ends up offering the wrong household's
+   * players.
+   */
+  members(match: Match) {
+    return this._domain.store.members.for(match.familyId);
+  }
+
+  /**
+   * Who is left to ask: everybody in the family who is not already playing,
+   * already invited, or already said no.
+   *
+   * Declining is remembered on purpose — somebody who turned this game down
+   * should not reappear in the list of people to pester, which is the whole
+   * reason a declined invitation is kept as a row rather than deleted.
+   */
+  invitable(match: Match, members: FamilyMember[]): FamilyMember[] {
+    const spoken = new Set(match.participants.map((p) => p.user?.id));
+    return members.filter((m) => m.user && !spoken.has(m.user.id));
+  }
+
+  /**
+   * Adds somebody who has not signed up, straight into this match.
+   *
+   * They are joined rather than invited — the server does that, because an
+   * invitation to somebody with no device would sit unanswered forever — so
+   * this is one call to mint them and one to put them in.
+   */
+  addPlaceholder = async (match: Match, displayName: string): Promise<void> => {
+    this._error.set(null);
+    try {
+      await this._action.execute(async () => {
+        const res = await this._domain.api.families.addPlaceholderPlayer({
+          familyId: match.familyId,
+          displayName,
+        });
+        if (!res.user) return;
+        this._domain.store.members.invalidate(match.familyId);
+        const out = await this._domain.api.matches.invitePlayers({
+          matchId: this._matchId,
+          userIds: [res.user.id],
+        });
+        if (out.match) {
+          this._match.set(out.match);
+          this._afterUpdate(out.match);
+        }
+      });
+    } catch (e) {
+      this._error.set(messageOf(e));
+    }
+  };
 
   leave = (): Promise<void> =>
     this._run(() => this._domain.api.matches.leaveMatch({ matchId: this._matchId }));
