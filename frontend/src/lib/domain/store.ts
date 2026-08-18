@@ -10,13 +10,15 @@ import type {
 import { Collection } from "./collection.js";
 import { KeyedCollection } from "./keyed_collection.js";
 
-/** The statuses that mean "a game is happening right now". */
-export const LIVE_STATUSES = [
-  MatchStatus.LOBBY,
-  MatchStatus.IN_PROGRESS,
-  MatchStatus.CLAIMED,
-  MatchStatus.DISPUTED,
-];
+/**
+ * The statuses that mean "a game is happening right now".
+ *
+ * Two shorter than it used to be, and neither loss is a narrowing. A match is
+ * in play from the moment it is posted, so there is no lobby to list; and an
+ * objection marks a match rather than moving it, so a contested one is either
+ * still CLAIMED or already FINAL depending on whether everyone has answered.
+ */
+export const LIVE_STATUSES = [MatchStatus.IN_PROGRESS, MatchStatus.CLAIMED];
 
 /** What both Collection and KeyedCollection offer the store's bulk operations. */
 interface Invalidatable {

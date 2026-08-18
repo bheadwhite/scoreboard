@@ -5,12 +5,23 @@ import type { Domain } from "../../lib/domain/domain.js";
 import type { Match, MatchParticipant } from "../../gen/scoreboard/v1/common_pb.js";
 import { MatchStatus } from "../../gen/scoreboard/v1/common_pb.js";
 
-/** One player's standing position on a claim. Every one of them is changeable. */
-export type Answer = "claimant" | "conceded" | "disputed" | "silent";
+/**
+ * One player's standing position on a claim. Every one of them is changeable —
+ * except "absent", which is not a position at all.
+ *
+ * "absent" is a player with no account. They are not sitting on an unanswered
+ * question, they have no way to answer one, and showing them as silent would
+ * report a wait that is never going to end. The claim does not wait for them.
+ */
+export type Answer = "claimant" | "conceded" | "disputed" | "silent" | "absent";
 
 /**
- * MatchPresenter drives one match all the way through: lobby, teams, contract,
- * play, the claim, and the concessions that ratify it.
+ * MatchPresenter drives one match all the way through: joining, teams, the
+ * claim, and the answers that settle it.
+ *
+ * There is no lobby stage and no ready stage. The contract is declared when the
+ * match is posted, so joining is the only commitment anybody makes, and the
+ * match is in play from the moment it exists.
  *
  * This is a dynamic child — the app presenter creates it when a match is opened
  * and disposes it on the way out.
@@ -30,6 +41,8 @@ export class MatchPresenter {
   private readonly _gone = new Signal<boolean>(false);
 
   private _settled = false;
+  /** Whether the scoreboard has already been told this one landed. */
+  private _announced = false;
   private _unsubscribe: (() => void) | null = null;
   /** Last status and headcount seen, to notice when the lists behind us go stale. */
   private _seen = "";
@@ -127,43 +140,43 @@ export class MatchPresenter {
   }
 
   /**
-   * Reacts to a new view of the match. Once it is settled there is nothing left
-   * to poll for, and the scoreboard behind it needs to be refreshed.
+   * Reacts to a new view of the match: refresh what is behind it, and notice
+   * when the result lands.
    */
   private _afterUpdate(match: Match | undefined): void {
     if (!match) return;
 
-    // Anything that changes how this match reads in a list — it started, it was
-    // claimed, somebody joined — makes the scoreboard behind us wrong. Only
-    // finalizing used to invalidate anything, so a started match kept showing
-    // as "Not started" with its original headcount until a full reload.
-    const signature = `${match.status}:${match.joined.length}:${match.invited.length}`;
+    // Anything that changes how this match reads in a list — somebody joined,
+    // it was claimed, somebody objected — makes the scoreboard behind us wrong.
+    // Contested is in the signature because it moves the result between the
+    // clean numbers and the contested ones, which is exactly the kind of change
+    // a list showing those numbers has to be told about.
+    const signature =
+      `${match.status}:${match.joined.length}:${match.invited.length}:${match.contested}`;
     if (signature !== this._seen) {
       this._seen = signature;
       this._domain.store.invalidateMatches(match.familyId);
     }
 
-    const settled =
-      match.status === MatchStatus.FINAL || match.status === MatchStatus.CANCELED;
-    if (settled && !this._settled) {
+    // Settling is worth announcing once — the standings behind this screen just
+    // changed. It is not worth stopping for: a settled match can still be
+    // objected to, and the objection can be taken back again, so the screen
+    // keeps listening until the match is called off or erased.
+    if (match.status === MatchStatus.FINAL && !this._announced) {
+      this._announced = true;
+      this._onSettled();
+    }
+    if (match.status === MatchStatus.CANCELED && !this._settled) {
       this._settled = true;
       this.stop();
       this._onSettled();
     }
   }
 
-  // ── The lobby ──────────────────────────────────────────────────────────────
+  // ── The roster ─────────────────────────────────────────────────────────────
 
   setTeams = (teams: { name: string; userIds: string[] }[]): Promise<void> =>
     this._run(() => this._domain.api.matches.setTeams({ matchId: this._matchId, teams }));
-
-  setContract = (kind: number, target: number, detail: string): Promise<void> =>
-    this._run(() =>
-      this._domain.api.matches.setContract({
-        matchId: this._matchId,
-        contract: { kind, target, detail },
-      }),
-    );
 
   join = (): Promise<void> =>
     this._run(() => this._domain.api.matches.joinMatch({ matchId: this._matchId }));
@@ -180,21 +193,18 @@ export class MatchPresenter {
   leave = (): Promise<void> =>
     this._run(() => this._domain.api.matches.leaveMatch({ matchId: this._matchId }));
 
-  /** Affirm, or withdraw, that you are ready under the current contract. */
-  setReady = (ready: boolean): Promise<void> =>
-    this._run(() => this._domain.api.matches.setReady({ matchId: this._matchId, ready }));
-
-  start_ = (): Promise<void> =>
-    this._run(() => this._domain.api.matches.startMatch({ matchId: this._matchId }));
-
   cancel = (): Promise<void> =>
     this._run(() => this._domain.api.matches.cancelMatch({ matchId: this._matchId }));
 
   // ── The concession protocol ────────────────────────────────────────────────
 
   /**
-   * Claims victory for a team. This does not record a win — it opens the claim
-   * for the other side to answer.
+   * Names a team as the winner. This does not record a win — it opens the claim
+   * for everybody else to answer.
+   *
+   * Any player may name their own side; only whoever posted the match may name
+   * anybody else's. The server enforces both, and `canClaimForOthers` mirrors
+   * the rule so the UI knows whether to offer the choice.
    */
   claimVictory = (teamId: string): Promise<void> =>
     this._run(() =>
@@ -202,9 +212,14 @@ export class MatchPresenter {
     );
 
   /**
-   * Takes back a claim your own team made. The match goes back to being in play
+   * Takes the claim back off the table. The match goes back to being in play
    * with no winner — this is "never mind", not "you won". Handing the win over
-   * is not something a claimant can do: only the other side can claim it.
+   * is not something a claimant can do: only somebody entitled to name that
+   * side can.
+   *
+   * Open to whoever made the claim and to anyone on the side it named, so being
+   * handed a win you did not earn can be refused outright rather than only
+   * objected to.
    */
   withdrawClaim = (): Promise<void> =>
     this._run(() => this._domain.api.matches.withdrawClaim({ matchId: this._matchId }));
@@ -259,15 +274,6 @@ export class MatchPresenter {
     return true;
   };
 
-  resolveDispute = (winningTeamId: string, voidMatch = false): Promise<void> =>
-    this._run(() =>
-      this._domain.api.matches.resolveDispute({
-        matchId: this._matchId,
-        winningTeamId,
-        voidMatch,
-      }),
-    );
-
   // ── Read helpers the views need ────────────────────────────────────────────
 
   /**
@@ -289,10 +295,10 @@ export class MatchPresenter {
   /**
    * Where every player stands on the claim, opponents first.
    *
-   * "silent" covers two cases the viewer usually cannot tell apart: nobody home,
-   * and an objection the server redacted. Who called foul is sent only to the
-   * organizer, so this deliberately does not guess — the view says so rather
-   * than reporting someone as unanswered when they have in fact answered.
+   * "silent" means exactly what it says now. Objections used to be redacted to
+   * everyone but the organizer, so this list had to hedge about whether a quiet
+   * player was quiet or merely censored; nobody adjudicates an objection any
+   * more, so nothing is hidden and the board is simply true.
    */
   answers(match: Match): { user: MatchParticipant["user"]; state: Answer }[] {
     return match.joined
@@ -304,23 +310,65 @@ export class MatchPresenter {
             ? "disputed"
             : p.concededAt
               ? "conceded"
-              : "silent";
+              : p.user?.placeholder
+                ? "absent"
+                : "silent";
         return { user: p.user, state };
       })
       .sort((a, b) => Number(a.state === "claimant") - Number(b.state === "claimant"));
   }
 
+  /** Whether anybody in this match has no way to answer. */
+  hasAbsentPlayers(match: Match): boolean {
+    return match.joined.some(
+      (p) => p.user?.placeholder && p.teamId !== match.claimedByTeamId,
+    );
+  }
+
   /**
-   * Whether the viewer's concession would be the one that ends it. The last
-   * concession finalizes in the same transaction, and finalizing is the only
+   * Whether the viewer's answer would be the last one outstanding. The final
+   * answer settles the match in the same transaction, and settling is the only
    * step in this whole protocol that cannot be taken back — so it is worth
    * saying out loud before they tap.
    *
-   * Only sound when no objection stands, which is exactly when it is asked:
-   * an objection stops finalization regardless of who else concedes.
+   * True of an objection as well as a concession, which is the change that
+   * follows from objections no longer blocking: a last objection settles the
+   * match exactly as promptly, contested.
    */
-  concessionWouldSettleIt(match: Match): boolean {
+  answerWouldSettleIt(match: Match): boolean {
     return match.status === MatchStatus.CLAIMED && match.awaitingConcession.length <= 1;
+  }
+
+  /**
+   * Whether the viewer may name somebody else the winner — the short circuit
+   * for a game that is plainly over and where the winner is not the one holding
+   * the phone. Mirrors the server rule: creator only.
+   */
+  canClaimForOthers(match: Match): boolean {
+    return match.viewerIsCreator && this.amIn(match);
+  }
+
+  /**
+   * Whether the viewer may still answer this result — at any point in the
+   * match's life, including long after it settled, which is when most people
+   * first see a result they disagree with.
+   *
+   * Once it has settled that includes the named winner. While the claim is live
+   * they have a better door (`withdrawClaim`, which takes the whole thing off
+   * the table rather than flagging a result that then stands anyway); after it
+   * settles that door is shut, and they would otherwise be the only player in
+   * the match unable to say the result is wrong — which matters, because the
+   * creator can hand somebody a win they never asked for.
+   */
+  canAnswer(match: Match): boolean {
+    if (match.status === MatchStatus.FINAL) return this.amIn(match);
+    if (match.status !== MatchStatus.CLAIMED) return false;
+    return this.amIn(match) && !match.viewerIsClaimant;
+  }
+
+  /** The objections standing against the result, with who made them and why. */
+  objections(match: Match): MatchParticipant[] {
+    return match.joined.filter((p) => p.disputedAt != null);
   }
 
   /** Participants grouped by team, in team order. */
@@ -372,22 +420,25 @@ export class MatchPresenter {
    * On what footing, if any, the viewer may call this match off. Mirrors the
    * server rule exactly.
    *
-   * Before it starts, whoever set it up can drop it — that is their own game, so
-   * it is an ordinary lobby action. Once play begins only the family organizer
-   * can, and that is deliberate: a player who is losing must not be able to
-   * erase the game rather than concede it. That would undo the entire point of
-   * the app. A finalized match cannot be cancelled by anyone — disputing it is
-   * the route, and the organizer resolves that.
+   * It used to split on the lobby: your own game before it started, the
+   * organizer's call afterward. There is no lobby to split on now, so it splits
+   * on whether anybody else has actually joined — which is the thing the old
+   * rule was really about. A match nobody has joined is a post the host can
+   * delete. Past that, calling it off takes the game away from other people,
+   * and only the organizer does that: a player who is losing must never be able
+   * to erase a game rather than lose it, which would undo the entire point of
+   * the app. A settled match cannot be called off by anyone — objecting to it
+   * is the route, and nobody overrules that.
    *
-   * The two are separated because the organizer deleting somebody else's game is
-   * not the same act as the host dropping their own, and it should not be
+   * The two are separated because the organizer deleting somebody else's game
+   * is not the same act as the host dropping their own, and it should not be
    * offered by the same one-tap button sitting next to Join.
    */
   cancelAuthority(match: Match): "none" | "creator" | "organizer" {
     const me = this._domain.session.user?.id;
     if (!me) return "none";
     if (match.status === MatchStatus.FINAL || match.status === MatchStatus.CANCELED) return "none";
-    if (match.status === MatchStatus.LOBBY && match.createdBy === me) return "creator";
+    if (match.joined.length <= 1 && match.createdBy === me) return "creator";
     return this.isOrganizer ? "organizer" : "none";
   }
 

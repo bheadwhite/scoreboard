@@ -25,6 +25,15 @@ func NewMatchService(
 	return &MatchService{base: base{store: s, hub: hub, concedeWindow: concedeWindow, admins: admins}}
 }
 
+const maxContractDetail = 140
+
+// CreateMatch posts a match. It is live from here: there is no lobby, no ready
+// check and nothing to start, because the only thing any of those were waiting
+// on was people agreeing to play, and joining says that on its own.
+//
+// The contract is validated here and set once. That is what makes joining a
+// complete act of consent — the terms are on the screen before anybody taps,
+// and nobody can edit them afterward.
 func (svc *MatchService) CreateMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.CreateMatchRequest],
 ) (*connect.Response[scoreboardv1.CreateMatchResponse], error) {
@@ -36,13 +45,50 @@ func (svc *MatchService) CreateMatch(
 	if req.Msg.GetGameId() == "" {
 		return nil, invalid("pick a game")
 	}
+	contract, err := parseContract(req.Msg.GetContract())
+	if err != nil {
+		return nil, err
+	}
 
-	m, err := svc.store.CreateMatch(ctx, familyID, req.Msg.GetGameId(), v.id, req.Msg.GetInviteUserIds())
+	m, err := svc.store.CreateMatch(
+		ctx, familyID, req.Msg.GetGameId(), v.id, contract, req.Msg.GetInviteUserIds())
 	if err != nil {
 		return nil, wrapErr(err)
 	}
 	svc.publish(m.FamilyID, events.KindMatch, m.ID)
 	return connect.NewResponse(&scoreboardv1.CreateMatchResponse{Match: svc.matchPB(m, v)}), nil
+}
+
+// parseContract validates the terms a match is posted under.
+func parseContract(in *scoreboardv1.Contract) (model.Contract, error) {
+	if in == nil {
+		return model.Contract{}, invalid("say how this one is won")
+	}
+	kind, ok := contractKindFromPB(in.GetKind())
+	if !ok {
+		return model.Contract{}, invalid("pick how this game is won")
+	}
+
+	detail := strings.TrimSpace(in.GetDetail())
+	if len([]rune(detail)) > maxContractDetail {
+		return model.Contract{}, invalid("keep the contract description short")
+	}
+
+	target := in.GetTarget()
+	switch kind {
+	case model.ContractFirstToScore, model.ContractBestOf:
+		if target <= 0 {
+			return model.Contract{}, invalid("set the number to play to")
+		}
+	case model.ContractCustom:
+		if detail == "" {
+			return model.Contract{}, invalid("describe how this game is won")
+		}
+		target = 0
+	default:
+		target = 0
+	}
+	return model.Contract{Kind: kind, Target: target, Detail: detail}, nil
 }
 
 func (svc *MatchService) JoinMatch(
@@ -124,10 +170,9 @@ func (svc *MatchService) SetTeams(
 	if err != nil {
 		return nil, err
 	}
-	// Who you are partnered with is as much a term as what you are playing to,
-	// and it is affirmed the same way — changing it clears every ready. Letting
-	// anyone rearrange sides would let one player rewrite what the others
-	// already agreed to.
+	// One person owns the shape of the match, the same way they own its terms.
+	// Letting anyone rearrange sides would let one player decide who is going
+	// to owe the eventual claim an answer.
 	if m.CreatedBy != v.id {
 		return nil, denied("only whoever set this game up can set the teams")
 	}
@@ -148,104 +193,12 @@ func (svc *MatchService) SetTeams(
 	return connect.NewResponse(&scoreboardv1.SetTeamsResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-const maxContractDetail = 140
-
-func (svc *MatchService) SetContract(
-	ctx context.Context, req *connect.Request[scoreboardv1.SetContractRequest],
-) (*connect.Response[scoreboardv1.SetContractResponse], error) {
-	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
-	if err != nil {
-		return nil, err
-	}
-	// One person owns the terms. With a ready check in front of starting, the
-	// group's agreement is expressed by affirming rather than by editing — and
-	// a contract that anyone can change out from under the people who already
-	// said yes is a worse kind of collaborative.
-	if m.CreatedBy != v.id {
-		return nil, denied("only whoever set this game up can set the contract")
-	}
-
-	in := req.Msg.GetContract()
-	if in == nil {
-		return nil, invalid("contract is required")
-	}
-	kind, ok := contractKindFromPB(in.GetKind())
-	if !ok {
-		return nil, invalid("pick how this game is won")
-	}
-
-	detail := strings.TrimSpace(in.GetDetail())
-	if len([]rune(detail)) > maxContractDetail {
-		return nil, invalid("keep the contract description short")
-	}
-
-	target := in.GetTarget()
-	switch kind {
-	case model.ContractFirstToScore, model.ContractBestOf:
-		if target <= 0 {
-			return nil, invalid("set the number to play to")
-		}
-	case model.ContractCustom:
-		if detail == "" {
-			return nil, invalid("describe how this game is won")
-		}
-		target = 0
-	default:
-		target = 0
-	}
-
-	out, err := svc.store.SetContract(ctx, req.Msg.GetMatchId(), model.Contract{
-		Kind: kind, Target: target, Detail: detail,
-	})
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.SetContractResponse{Match: svc.matchPB(out, v)}), nil
-}
-
-// SetReady affirms, or withdraws, that the caller is ready under the contract
-// as it currently stands. Only for yourself — nobody vouches for anyone else.
-func (svc *MatchService) SetReady(
-	ctx context.Context, req *connect.Request[scoreboardv1.SetReadyRequest],
-) (*connect.Response[scoreboardv1.SetReadyResponse], error) {
-	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := svc.store.SetReady(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetReady())
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.SetReadyResponse{Match: svc.matchPB(out, v)}), nil
-}
-
-func (svc *MatchService) StartMatch(
-	ctx context.Context, req *connect.Request[scoreboardv1.StartMatchRequest],
-) (*connect.Response[scoreboardv1.StartMatchResponse], error) {
-	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
-	if err != nil {
-		return nil, err
-	}
-	// Setting up is collaborative; committing everyone to play is not. One
-	// person calls it, and only once everybody has said they are ready.
-	if m.CreatedBy != v.id {
-		return nil, denied("only whoever set this game up can start it")
-	}
-
-	out, err := svc.store.StartMatch(ctx, req.Msg.GetMatchId())
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.StartMatchResponse{Match: svc.matchPB(out, v)}), nil
-}
-
-// ClaimVictory starts the concession clock. Everything downstream of this — the
-// concessions, the timeout, the eventual place in the record — is the point of
-// the app, so it is deliberately not a plain "record the score" call.
+// ClaimVictory names the winner and starts the clock. Everything downstream of
+// this — the answers, the timeout, the eventual place in the record — is the
+// point of the app, so it is deliberately not a plain "record the score" call.
+//
+// Who may name whom is enforced in the store, where the teams are: your own
+// side is anybody's to claim, and any side at all is the creator's.
 func (svc *MatchService) ClaimVictory(
 	ctx context.Context, req *connect.Request[scoreboardv1.ClaimVictoryRequest],
 ) (*connect.Response[scoreboardv1.ClaimVictoryResponse], error) {
@@ -265,9 +218,9 @@ func (svc *MatchService) ClaimVictory(
 	return connect.NewResponse(&scoreboardv1.ClaimVictoryResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-// WithdrawClaim takes a claim back off the table. Only the team that made it
-// can, and only before the match finalizes — after that the record is the
-// record, and disputing it is the route.
+// WithdrawClaim takes a claim back off the table. Whoever made it and whoever
+// it named can, and only before the match settles — after that the record is
+// the record, and objecting to it is the route.
 func (svc *MatchService) WithdrawClaim(
 	ctx context.Context, req *connect.Request[scoreboardv1.WithdrawClaimRequest],
 ) (*connect.Response[scoreboardv1.WithdrawClaimResponse], error) {
@@ -287,9 +240,9 @@ func (svc *MatchService) WithdrawClaim(
 	return connect.NewResponse(&scoreboardv1.WithdrawClaimResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-// Concede accepts the standing claim. It is also how an objection is taken
-// back, which is why it is reachable on a disputed match and not only a claimed
-// one — see answerable in the store.
+// Concede accepts the claim. It is also how an objection is taken back, which
+// is why it is reachable on a settled match and not only a claimed one — see
+// answerable in the store.
 func (svc *MatchService) Concede(
 	ctx context.Context, req *connect.Request[scoreboardv1.ConcedeRequest],
 ) (*connect.Response[scoreboardv1.ConcedeResponse], error) {
@@ -308,6 +261,13 @@ func (svc *MatchService) Concede(
 
 const maxDisputeReason = 280
 
+// DisputeMatch marks the result contested. It does not stop the clock, does not
+// stop the match settling, and is not routed to anybody for a ruling — it holds
+// the result off the clean scoreboard for exactly as long as the objection
+// stands, and the objector can take it down whenever they like.
+//
+// Reachable on a settled match, which is where most real objections will be
+// raised: people notice a wrong result when they see it in the standings.
 func (svc *MatchService) DisputeMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.DisputeMatchRequest],
 ) (*connect.Response[scoreboardv1.DisputeMatchResponse], error) {
@@ -327,42 +287,14 @@ func (svc *MatchService) DisputeMatch(
 	return connect.NewResponse(&scoreboardv1.DisputeMatchResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-func (svc *MatchService) ResolveDispute(
-	ctx context.Context, req *connect.Request[scoreboardv1.ResolveDisputeRequest],
-) (*connect.Response[scoreboardv1.ResolveDisputeResponse], error) {
-	m, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
-	if err != nil {
-		return nil, err
-	}
-	if err := svc.requireOwner(ctx, m.FamilyID, v.id); err != nil {
-		return nil, err
-	}
-	// Being the organizer is not enough. While the players still have a move
-	// left — somebody yet to answer, an objection its author could withdraw —
-	// the disagreement is theirs to finish, and ruling on it early is exactly
-	// the shortcut this app exists to refuse.
-	if !m.Deadlocked(svc.concedeWindow) {
-		return nil, denied("this one is still between the players — step in once they are stuck")
-	}
-	if !req.Msg.GetVoidMatch() && req.Msg.GetWinningTeamId() == "" {
-		return nil, invalid("name the winning team, or void the match")
-	}
-
-	out, err := svc.store.ResolveDispute(ctx, req.Msg.GetMatchId(), req.Msg.GetWinningTeamId(), req.Msg.GetVoidMatch())
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-	svc.publish(out.FamilyID, events.KindMatch, out.ID)
-	return connect.NewResponse(&scoreboardv1.ResolveDisputeResponse{Match: svc.matchPB(out, v)}), nil
-}
-
 // CancelMatch abandons a match.
 //
-// Cancelling is destructive in a way the other lobby actions are not: it takes
-// the game away from everyone else waiting in it. Setting the contract or the
-// teams is collaborative and open to any player, but only whoever set the game
-// up — or the family organizer — can delete it. A player who does not want to
-// play leaves; that is what Leave is for.
+// Cancelling is destructive in a way joining and leaving are not: it takes the
+// game away from everybody else in it. So it splits on whether there is anybody
+// else — the host of a match nobody has joined is deleting their own post, and
+// past that only the family organizer can, because a player who is losing must
+// never be able to erase a game rather than lose it. A player who does not want
+// to play leaves; that is what Leave is for.
 func (svc *MatchService) CancelMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.CancelMatchRequest],
 ) (*connect.Response[scoreboardv1.CancelMatchResponse], error) {
@@ -370,10 +302,14 @@ func (svc *MatchService) CancelMatch(
 	if err != nil {
 		return nil, err
 	}
-	if m.Status != model.StatusLobby && !v.organizer {
-		return nil, denied("only the family organizer can cancel a match in play")
+	// Nobody has staked anything on a match nobody has joined yet, so the host
+	// can drop their own. Once other people are in it, calling it off takes the
+	// game away from them, and only the organizer does that.
+	alone := len(m.JoinedParticipants()) <= 1
+	if !alone && !v.organizer {
+		return nil, denied("only the family organizer can call off a game other people are in")
 	}
-	if m.Status == model.StatusLobby && m.CreatedBy != v.id && !v.organizer {
+	if alone && m.CreatedBy != v.id && !v.organizer {
 		return nil, denied("only whoever set this game up, or the family organizer, can call it off")
 	}
 

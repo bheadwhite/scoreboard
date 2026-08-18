@@ -4,17 +4,42 @@ package scoreboard.v1;
 
 import "scoreboard/v1/common.proto";
 
-// UserService manages the caller's own profile. Identity itself comes from the
-// Supabase JWT; the first authenticated call upserts a row here.
+// UserService manages who somebody is. Identity itself comes from the OAuth
+// flow the server runs; the first authenticated call upserts a row here.
 service UserService {
   rpc GetMe(GetMeRequest) returns (GetMeResponse);
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+
+  // Declares that a placeholder and a real account are the same person, and
+  // makes it true: everything the placeholder did becomes the account's, and
+  // the placeholder stops existing.
+  //
+  // Service administrator only, and gated on ADMIN_EMAILS rather than on any
+  // family role — the same gate as MatchService.VoidMatch, for the same reason.
+  // Both rewrite the permanent record, and moving somebody's wins onto another
+  // player is not something a family organizer should be able to do to the
+  // people they play against.
+  //
+  // Irreversible, and the rewrite runs the whole way: participations, the
+  // matches they set up, the claims they made, the games they added, their
+  // membership. The account's own id is what survives, because it is the one
+  // tied to a sign-in. Nothing is left pointing at the placeholder afterward
+  // because the placeholder is deleted.
+  //
+  // Refused outright when the two are both in the same match. That is either a
+  // person entered twice or a placeholder that is not who somebody thinks it
+  // is, and neither can be resolved by guessing which row to keep.
+  rpc LinkPlaceholder(LinkPlaceholderRequest) returns (LinkPlaceholderResponse);
 }
 
 message GetMeRequest {}
 
 message GetMeResponse {
   User user = 1;
+  // Whether this caller runs the service. The only capability the client is
+  // told about outside the context of a particular match, and what the profile
+  // screen reads to decide whether to offer linking.
+  bool admin = 2;
 }
 
 message UpdateProfileRequest {
@@ -24,4 +49,19 @@ message UpdateProfileRequest {
 
 message UpdateProfileResponse {
   User user = 1;
+}
+
+message LinkPlaceholderRequest {
+  // The player with no account, whose history is being handed over.
+  string placeholder_id = 1;
+  // The account that turns out to be them. Must be a real signed-up player.
+  string user_id = 2;
+}
+
+message LinkPlaceholderResponse {
+  // The surviving account, with everything now attributed to it.
+  User user = 1;
+  // How many participations moved. Worth reporting: it is the size of what just
+  // happened, and there is no undo to check it against.
+  int32 matches_moved = 2;
 }

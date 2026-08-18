@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ContractKind } from "../gen/scoreboard/v1/common_pb.js";
 import { messageOf } from "../features/match/match_presenter.js";
 import {
+  contestedLine,
   contractText,
   debtLine,
   droughtVerdict,
@@ -158,5 +159,18 @@ describe("unfinishedLine", () => {
 
   it("points at the game that swings it", () => {
     expect(unfinishedLine(3, 2, "Dad")).toBe("3–2 with Dad. One game swings it.");
+  });
+});
+
+describe("contestedLine", () => {
+  it("names both sides when there are both", () => {
+    expect(contestedLine(1, 2)).toBe("1 win and 2 losses");
+  });
+
+  it("does not imply losses when there are none", () => {
+    // "3 games contested" reads as three defeats being argued about. It is the
+    // reason this spells the split out rather than counting matches.
+    expect(contestedLine(3, 0)).toBe("3 wins");
+    expect(contestedLine(0, 1)).toBe("1 loss");
   });
 });

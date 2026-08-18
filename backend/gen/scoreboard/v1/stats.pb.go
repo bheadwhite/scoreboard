@@ -249,17 +249,24 @@ func (x *GameKing) GetLosses() int32 {
 }
 
 type StandingsRow struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	User   *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	Wins   int32                  `protobuf:"varint,2,opt,name=wins,proto3" json:"wins,omitempty"`
-	Losses int32                  `protobuf:"varint,3,opt,name=losses,proto3" json:"losses,omitempty"`
-	// 0..1. Zero when the player has no finalized matches.
+	state protoimpl.MessageState `protogen:"open.v1"`
+	User  *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Clean results only.
+	Wins   int32 `protobuf:"varint,2,opt,name=wins,proto3" json:"wins,omitempty"`
+	Losses int32 `protobuf:"varint,3,opt,name=losses,proto3" json:"losses,omitempty"`
+	// 0..1, over the clean results. Zero when the player has none.
 	WinRate float64 `protobuf:"fixed64,4,opt,name=win_rate,json=winRate,proto3" json:"win_rate,omitempty"`
-	// Positive for an active winning streak, negative for a losing one.
-	Streak        int32 `protobuf:"varint,5,opt,name=streak,proto3" json:"streak,omitempty"`
-	Rank          int32 `protobuf:"varint,6,opt,name=rank,proto3" json:"rank,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Positive for an active winning streak, negative for a losing one. Contested
+	// matches do not break a streak any more than they extend one — they are not
+	// in the sequence at all.
+	Streak int32 `protobuf:"varint,5,opt,name=streak,proto3" json:"streak,omitempty"`
+	Rank   int32 `protobuf:"varint,6,opt,name=rank,proto3" json:"rank,omitempty"`
+	// Settled matches this player was in that somebody is objecting to. Counted
+	// in neither wins nor losses.
+	ContestedWins   int32 `protobuf:"varint,7,opt,name=contested_wins,json=contestedWins,proto3" json:"contested_wins,omitempty"`
+	ContestedLosses int32 `protobuf:"varint,8,opt,name=contested_losses,json=contestedLosses,proto3" json:"contested_losses,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *StandingsRow) Reset() {
@@ -330,6 +337,20 @@ func (x *StandingsRow) GetStreak() int32 {
 func (x *StandingsRow) GetRank() int32 {
 	if x != nil {
 		return x.Rank
+	}
+	return 0
+}
+
+func (x *StandingsRow) GetContestedWins() int32 {
+	if x != nil {
+		return x.ContestedWins
+	}
+	return 0
+}
+
+func (x *StandingsRow) GetContestedLosses() int32 {
+	if x != nil {
+		return x.ContestedLosses
 	}
 	return 0
 }
@@ -409,9 +430,13 @@ type GetStandingsResponse struct {
 	PlayedGames []*Game `protobuf:"bytes,3,rep,name=played_games,json=playedGames,proto3" json:"played_games,omitempty"`
 	// Who owns each game that has been finished in range. One per game, and the
 	// reason the scoreboard can say "Lisa owns Catan" without a request per game.
-	GameKings     []*GameKing `protobuf:"bytes,4,rep,name=game_kings,json=gameKings,proto3" json:"game_kings,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	GameKings []*GameKing `protobuf:"bytes,4,rep,name=game_kings,json=gameKings,proto3" json:"game_kings,omitempty"`
+	// Settled matches in range that somebody is objecting to. Not included in
+	// total_matches, and the reason the two numbers can disagree with a raw count
+	// of the match list.
+	ContestedMatches int32 `protobuf:"varint,5,opt,name=contested_matches,json=contestedMatches,proto3" json:"contested_matches,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetStandingsResponse) Reset() {
@@ -470,6 +495,13 @@ func (x *GetStandingsResponse) GetGameKings() []*GameKing {
 		return x.GameKings
 	}
 	return nil
+}
+
+func (x *GetStandingsResponse) GetContestedMatches() int32 {
+	if x != nil {
+		return x.ContestedMatches
+	}
+	return 0
 }
 
 // One game's slice of a head-to-head record.
@@ -629,9 +661,13 @@ type GetHeadToHeadResponse struct {
 	Streak int32 `protobuf:"varint,9,opt,name=streak,proto3" json:"streak,omitempty"`
 	// The same pairing as a story: how long since user last won, and what it
 	// would take to draw level.
-	Rivalry       *RivalryLine `protobuf:"bytes,10,opt,name=rivalry,proto3" json:"rivalry,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Rivalry *RivalryLine `protobuf:"bytes,10,opt,name=rivalry,proto3" json:"rivalry,omitempty"`
+	// Meetings on opposing teams that somebody is objecting to. Held out of wins,
+	// losses, games, streak and rivalry alike.
+	ContestedWins   int32 `protobuf:"varint,11,opt,name=contested_wins,json=contestedWins,proto3" json:"contested_wins,omitempty"`
+	ContestedLosses int32 `protobuf:"varint,12,opt,name=contested_losses,json=contestedLosses,proto3" json:"contested_losses,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *GetHeadToHeadResponse) Reset() {
@@ -734,6 +770,20 @@ func (x *GetHeadToHeadResponse) GetRivalry() *RivalryLine {
 	return nil
 }
 
+func (x *GetHeadToHeadResponse) GetContestedWins() int32 {
+	if x != nil {
+		return x.ContestedWins
+	}
+	return 0
+}
+
+func (x *GetHeadToHeadResponse) GetContestedLosses() int32 {
+	if x != nil {
+		return x.ContestedLosses
+	}
+	return 0
+}
+
 type GetPlayerProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FamilyId      string                 `protobuf:"bytes,1,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
@@ -821,8 +871,17 @@ type GetPlayerProfileResponse struct {
 	// The closest rivalry with enough matches to argue about. Unset until some
 	// pairing qualifies.
 	UnfinishedBusiness *RivalryLine `protobuf:"bytes,16,opt,name=unfinished_business,json=unfinishedBusiness,proto3" json:"unfinished_business,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Settled matches this player was in that somebody is objecting to. Held out
+	// of every other number here, including the nemesis and the drought.
+	ContestedWins   int32 `protobuf:"varint,17,opt,name=contested_wins,json=contestedWins,proto3" json:"contested_wins,omitempty"`
+	ContestedLosses int32 `protobuf:"varint,18,opt,name=contested_losses,json=contestedLosses,proto3" json:"contested_losses,omitempty"`
+	// Whether the caller may link this player to an account. True only when the
+	// subject is a placeholder and the caller runs the service — the profile
+	// screen is where a placeholder is actually looked at, so it is where the
+	// administrator is offered the link.
+	ViewerMayLink bool `protobuf:"varint,19,opt,name=viewer_may_link,json=viewerMayLink,proto3" json:"viewer_may_link,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPlayerProfileResponse) Reset() {
@@ -967,6 +1026,27 @@ func (x *GetPlayerProfileResponse) GetUnfinishedBusiness() *RivalryLine {
 	return nil
 }
 
+func (x *GetPlayerProfileResponse) GetContestedWins() int32 {
+	if x != nil {
+		return x.ContestedWins
+	}
+	return 0
+}
+
+func (x *GetPlayerProfileResponse) GetContestedLosses() int32 {
+	if x != nil {
+		return x.ContestedLosses
+	}
+	return 0
+}
+
+func (x *GetPlayerProfileResponse) GetViewerMayLink() bool {
+	if x != nil {
+		return x.ViewerMayLink
+	}
+	return false
+}
+
 var File_scoreboard_v1_stats_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_stats_proto_rawDesc = "" +
@@ -984,24 +1064,27 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x04game\x18\x01 \x01(\v2\x13.scoreboard.v1.GameR\x04game\x12'\n" +
 	"\x04user\x18\x02 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x12\n" +
 	"\x04wins\x18\x03 \x01(\x05R\x04wins\x12\x16\n" +
-	"\x06losses\x18\x04 \x01(\x05R\x06losses\"\xaa\x01\n" +
+	"\x06losses\x18\x04 \x01(\x05R\x06losses\"\xfc\x01\n" +
 	"\fStandingsRow\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x12\n" +
 	"\x04wins\x18\x02 \x01(\x05R\x04wins\x12\x16\n" +
 	"\x06losses\x18\x03 \x01(\x05R\x06losses\x12\x19\n" +
 	"\bwin_rate\x18\x04 \x01(\x01R\awinRate\x12\x16\n" +
 	"\x06streak\x18\x05 \x01(\x05R\x06streak\x12\x12\n" +
-	"\x04rank\x18\x06 \x01(\x05R\x04rank\"|\n" +
+	"\x04rank\x18\x06 \x01(\x05R\x04rank\x12%\n" +
+	"\x0econtested_wins\x18\a \x01(\x05R\rcontestedWins\x12)\n" +
+	"\x10contested_losses\x18\b \x01(\x05R\x0fcontestedLosses\"|\n" +
 	"\x13GetStandingsRequest\x12\x1b\n" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\x12\x17\n" +
 	"\agame_id\x18\x02 \x01(\tR\x06gameId\x12/\n" +
-	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xdc\x01\n" +
+	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\x89\x02\n" +
 	"\x14GetStandingsResponse\x12/\n" +
 	"\x04rows\x18\x01 \x03(\v2\x1b.scoreboard.v1.StandingsRowR\x04rows\x12#\n" +
 	"\rtotal_matches\x18\x02 \x01(\x05R\ftotalMatches\x126\n" +
 	"\fplayed_games\x18\x03 \x03(\v2\x13.scoreboard.v1.GameR\vplayedGames\x126\n" +
 	"\n" +
-	"game_kings\x18\x04 \x03(\v2\x17.scoreboard.v1.GameKingR\tgameKings\"e\n" +
+	"game_kings\x18\x04 \x03(\v2\x17.scoreboard.v1.GameKingR\tgameKings\x12+\n" +
+	"\x11contested_matches\x18\x05 \x01(\x05R\x10contestedMatches\"e\n" +
 	"\x0eHeadToHeadGame\x12'\n" +
 	"\x04game\x18\x01 \x01(\v2\x13.scoreboard.v1.GameR\x04game\x12\x12\n" +
 	"\x04wins\x18\x02 \x01(\x05R\x04wins\x12\x16\n" +
@@ -1012,7 +1095,7 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\vopponent_id\x18\x03 \x01(\tR\n" +
 	"opponentId\x12\x17\n" +
 	"\agame_id\x18\x04 \x01(\tR\x06gameId\x12/\n" +
-	"\x05range\x18\x05 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xab\x03\n" +
+	"\x05range\x18\x05 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xfd\x03\n" +
 	"\x15GetHeadToHeadResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12/\n" +
 	"\bopponent\x18\x02 \x01(\v2\x13.scoreboard.v1.UserR\bopponent\x12\x12\n" +
@@ -1024,11 +1107,13 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x0erecent_matches\x18\b \x03(\v2\x14.scoreboard.v1.MatchR\rrecentMatches\x12\x16\n" +
 	"\x06streak\x18\t \x01(\x05R\x06streak\x124\n" +
 	"\arivalry\x18\n" +
-	" \x01(\v2\x1a.scoreboard.v1.RivalryLineR\arivalry\"\x80\x01\n" +
+	" \x01(\v2\x1a.scoreboard.v1.RivalryLineR\arivalry\x12%\n" +
+	"\x0econtested_wins\x18\v \x01(\x05R\rcontestedWins\x12)\n" +
+	"\x10contested_losses\x18\f \x01(\x05R\x0fcontestedLosses\"\x80\x01\n" +
 	"\x17GetPlayerProfileRequest\x12\x1b\n" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12/\n" +
-	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xb7\x05\n" +
+	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xb1\x06\n" +
 	"\x18GetPlayerProfileResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x12\n" +
 	"\x04wins\x18\x02 \x01(\x05R\x04wins\x12\x16\n" +
@@ -1047,7 +1132,10 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x05games\x18\r \x03(\v2\x1d.scoreboard.v1.HeadToHeadGameR\x05games\x12!\n" +
 	"\fnemesis_debt\x18\x0e \x01(\x05R\vnemesisDebt\x124\n" +
 	"\adrought\x18\x0f \x01(\v2\x1a.scoreboard.v1.RivalryLineR\adrought\x12K\n" +
-	"\x13unfinished_business\x18\x10 \x01(\v2\x1a.scoreboard.v1.RivalryLineR\x12unfinishedBusiness*p\n" +
+	"\x13unfinished_business\x18\x10 \x01(\v2\x1a.scoreboard.v1.RivalryLineR\x12unfinishedBusiness\x12%\n" +
+	"\x0econtested_wins\x18\x11 \x01(\x05R\rcontestedWins\x12)\n" +
+	"\x10contested_losses\x18\x12 \x01(\x05R\x0fcontestedLosses\x12&\n" +
+	"\x0fviewer_may_link\x18\x13 \x01(\bR\rviewerMayLink*p\n" +
 	"\n" +
 	"StatsRange\x12\x1b\n" +
 	"\x17STATS_RANGE_UNSPECIFIED\x10\x00\x12\x18\n" +

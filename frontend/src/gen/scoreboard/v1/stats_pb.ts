@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/stats.proto.
  */
 export const file_scoreboard_v1_stats: GenFile = /*@__PURE__*/
-  fileDesc("ChlzY29yZWJvYXJkL3YxL3N0YXRzLnByb3RvEg1zY29yZWJvYXJkLnYxIsgBCgtSaXZhbHJ5TGluZRIlCghvcHBvbmVudBgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAIgASgFEg4KBmxvc3NlcxgDIAEoBRIfChdtZWV0aW5nc19zaW5jZV9sYXN0X3dpbhgEIAEoBRIUCgxuZXZlcl9iZWF0ZW4YBSABKAgSLwoLbGFzdF93aW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGRlYnQYByABKAUibgoIR2FtZUtpbmcSIQoEZ2FtZRgBIAEoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIhCgR1c2VyGAIgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAyABKAUSDgoGbG9zc2VzGAQgASgFIn8KDFN0YW5kaW5nc1JvdxIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFEhAKCHdpbl9yYXRlGAQgASgBEg4KBnN0cmVhaxgFIAEoBRIMCgRyYW5rGAYgASgFImMKE0dldFN0YW5kaW5nc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEg8KB2dhbWVfaWQYAiABKAkSKAoFcmFuZ2UYAyABKA4yGS5zY29yZWJvYXJkLnYxLlN0YXRzUmFuZ2UisAEKFEdldFN0YW5kaW5nc1Jlc3BvbnNlEikKBHJvd3MYASADKAsyGy5zY29yZWJvYXJkLnYxLlN0YW5kaW5nc1JvdxIVCg10b3RhbF9tYXRjaGVzGAIgASgFEikKDHBsYXllZF9nYW1lcxgDIAMoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIrCgpnYW1lX2tpbmdzGAQgAygLMhcuc2NvcmVib2FyZC52MS5HYW1lS2luZyJRCg5IZWFkVG9IZWFkR2FtZRIhCgRnYW1lGAEgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFIooBChRHZXRIZWFkVG9IZWFkUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRITCgtvcHBvbmVudF9pZBgDIAEoCRIPCgdnYW1lX2lkGAQgASgJEigKBXJhbmdlGAUgASgOMhkuc2NvcmVib2FyZC52MS5TdGF0c1JhbmdlIsgCChVHZXRIZWFkVG9IZWFkUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIlCghvcHBvbmVudBgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAMgASgFEg4KBmxvc3NlcxgEIAEoBRIVCg10b2dldGhlcl93aW5zGAUgASgFEhcKD3RvZ2V0aGVyX2xvc3NlcxgGIAEoBRIsCgVnYW1lcxgHIAMoCzIdLnNjb3JlYm9hcmQudjEuSGVhZFRvSGVhZEdhbWUSLAoOcmVjZW50X21hdGNoZXMYCCADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoEg4KBnN0cmVhaxgJIAEoBRIrCgdyaXZhbHJ5GAogASgLMhouc2NvcmVib2FyZC52MS5SaXZhbHJ5TGluZSJnChdHZXRQbGF5ZXJQcm9maWxlUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIoCgVyYW5nZRgDIAEoDjIZLnNjb3JlYm9hcmQudjEuU3RhdHNSYW5nZSL5AwoYR2V0UGxheWVyUHJvZmlsZVJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDAoEd2lucxgCIAEoBRIOCgZsb3NzZXMYAyABKAUSEAoId2luX3JhdGUYBCABKAESFgoOY3VycmVudF9zdHJlYWsYBSABKAUSGgoSbG9uZ2VzdF93aW5fc3RyZWFrGAYgASgFEiQKB25lbWVzaXMYByABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISFgoObmVtZXNpc19sb3NzZXMYCCABKAUSFAoMbmVtZXNpc193aW5zGAkgASgFEiwKD2Zhdm9yaXRlX3ZpY3RpbRgKIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchITCgt2aWN0aW1fd2lucxgLIAEoBRIVCg12aWN0aW1fbG9zc2VzGAwgASgFEiwKBWdhbWVzGA0gAygLMh0uc2NvcmVib2FyZC52MS5IZWFkVG9IZWFkR2FtZRIUCgxuZW1lc2lzX2RlYnQYDiABKAUSKwoHZHJvdWdodBgPIAEoCzIaLnNjb3JlYm9hcmQudjEuUml2YWxyeUxpbmUSNwoTdW5maW5pc2hlZF9idXNpbmVzcxgQIAEoCzIaLnNjb3JlYm9hcmQudjEuUml2YWxyeUxpbmUqcAoKU3RhdHNSYW5nZRIbChdTVEFUU19SQU5HRV9VTlNQRUNJRklFRBAAEhgKFFNUQVRTX1JBTkdFX0FMTF9USU1FEAESFAoQU1RBVFNfUkFOR0VfWUVBUhACEhUKEVNUQVRTX1JBTkdFX01PTlRIEAMyqAIKDFN0YXRzU2VydmljZRJXCgxHZXRTdGFuZGluZ3MSIi5zY29yZWJvYXJkLnYxLkdldFN0YW5kaW5nc1JlcXVlc3QaIy5zY29yZWJvYXJkLnYxLkdldFN0YW5kaW5nc1Jlc3BvbnNlEloKDUdldEhlYWRUb0hlYWQSIy5zY29yZWJvYXJkLnYxLkdldEhlYWRUb0hlYWRSZXF1ZXN0GiQuc2NvcmVib2FyZC52MS5HZXRIZWFkVG9IZWFkUmVzcG9uc2USYwoQR2V0UGxheWVyUHJvZmlsZRImLnNjb3JlYm9hcmQudjEuR2V0UGxheWVyUHJvZmlsZVJlcXVlc3QaJy5zY29yZWJvYXJkLnYxLkdldFBsYXllclByb2ZpbGVSZXNwb25zZUK9AQoRY29tLnNjb3JlYm9hcmQudjFCClN0YXRzUHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_scoreboard_v1_common]);
+  fileDesc("ChlzY29yZWJvYXJkL3YxL3N0YXRzLnByb3RvEg1zY29yZWJvYXJkLnYxIsgBCgtSaXZhbHJ5TGluZRIlCghvcHBvbmVudBgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAIgASgFEg4KBmxvc3NlcxgDIAEoBRIfChdtZWV0aW5nc19zaW5jZV9sYXN0X3dpbhgEIAEoBRIUCgxuZXZlcl9iZWF0ZW4YBSABKAgSLwoLbGFzdF93aW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGRlYnQYByABKAUibgoIR2FtZUtpbmcSIQoEZ2FtZRgBIAEoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIhCgR1c2VyGAIgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEgwKBHdpbnMYAyABKAUSDgoGbG9zc2VzGAQgASgFIrEBCgxTdGFuZGluZ3NSb3cSIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAIgASgFEg4KBmxvc3NlcxgDIAEoBRIQCgh3aW5fcmF0ZRgEIAEoARIOCgZzdHJlYWsYBSABKAUSDAoEcmFuaxgGIAEoBRIWCg5jb250ZXN0ZWRfd2lucxgHIAEoBRIYChBjb250ZXN0ZWRfbG9zc2VzGAggASgFImMKE0dldFN0YW5kaW5nc1JlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEg8KB2dhbWVfaWQYAiABKAkSKAoFcmFuZ2UYAyABKA4yGS5zY29yZWJvYXJkLnYxLlN0YXRzUmFuZ2UiywEKFEdldFN0YW5kaW5nc1Jlc3BvbnNlEikKBHJvd3MYASADKAsyGy5zY29yZWJvYXJkLnYxLlN0YW5kaW5nc1JvdxIVCg10b3RhbF9tYXRjaGVzGAIgASgFEikKDHBsYXllZF9nYW1lcxgDIAMoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIrCgpnYW1lX2tpbmdzGAQgAygLMhcuc2NvcmVib2FyZC52MS5HYW1lS2luZxIZChFjb250ZXN0ZWRfbWF0Y2hlcxgFIAEoBSJRCg5IZWFkVG9IZWFkR2FtZRIhCgRnYW1lGAEgASgLMhMuc2NvcmVib2FyZC52MS5HYW1lEgwKBHdpbnMYAiABKAUSDgoGbG9zc2VzGAMgASgFIooBChRHZXRIZWFkVG9IZWFkUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRITCgtvcHBvbmVudF9pZBgDIAEoCRIPCgdnYW1lX2lkGAQgASgJEigKBXJhbmdlGAUgASgOMhkuc2NvcmVib2FyZC52MS5TdGF0c1JhbmdlIvoCChVHZXRIZWFkVG9IZWFkUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIlCghvcHBvbmVudBgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAMgASgFEg4KBmxvc3NlcxgEIAEoBRIVCg10b2dldGhlcl93aW5zGAUgASgFEhcKD3RvZ2V0aGVyX2xvc3NlcxgGIAEoBRIsCgVnYW1lcxgHIAMoCzIdLnNjb3JlYm9hcmQudjEuSGVhZFRvSGVhZEdhbWUSLAoOcmVjZW50X21hdGNoZXMYCCADKAsyFC5zY29yZWJvYXJkLnYxLk1hdGNoEg4KBnN0cmVhaxgJIAEoBRIrCgdyaXZhbHJ5GAogASgLMhouc2NvcmVib2FyZC52MS5SaXZhbHJ5TGluZRIWCg5jb250ZXN0ZWRfd2lucxgLIAEoBRIYChBjb250ZXN0ZWRfbG9zc2VzGAwgASgFImcKF0dldFBsYXllclByb2ZpbGVSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEigKBXJhbmdlGAMgASgOMhkuc2NvcmVib2FyZC52MS5TdGF0c1JhbmdlIsQEChhHZXRQbGF5ZXJQcm9maWxlUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIMCgR3aW5zGAIgASgFEg4KBmxvc3NlcxgDIAEoBRIQCgh3aW5fcmF0ZRgEIAEoARIWCg5jdXJyZW50X3N0cmVhaxgFIAEoBRIaChJsb25nZXN0X3dpbl9zdHJlYWsYBiABKAUSJAoHbmVtZXNpcxgHIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIWCg5uZW1lc2lzX2xvc3NlcxgIIAEoBRIUCgxuZW1lc2lzX3dpbnMYCSABKAUSLAoPZmF2b3JpdGVfdmljdGltGAogASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEhMKC3ZpY3RpbV93aW5zGAsgASgFEhUKDXZpY3RpbV9sb3NzZXMYDCABKAUSLAoFZ2FtZXMYDSADKAsyHS5zY29yZWJvYXJkLnYxLkhlYWRUb0hlYWRHYW1lEhQKDG5lbWVzaXNfZGVidBgOIAEoBRIrCgdkcm91Z2h0GA8gASgLMhouc2NvcmVib2FyZC52MS5SaXZhbHJ5TGluZRI3ChN1bmZpbmlzaGVkX2J1c2luZXNzGBAgASgLMhouc2NvcmVib2FyZC52MS5SaXZhbHJ5TGluZRIWCg5jb250ZXN0ZWRfd2lucxgRIAEoBRIYChBjb250ZXN0ZWRfbG9zc2VzGBIgASgFEhcKD3ZpZXdlcl9tYXlfbGluaxgTIAEoCCpwCgpTdGF0c1JhbmdlEhsKF1NUQVRTX1JBTkdFX1VOU1BFQ0lGSUVEEAASGAoUU1RBVFNfUkFOR0VfQUxMX1RJTUUQARIUChBTVEFUU19SQU5HRV9ZRUFSEAISFQoRU1RBVFNfUkFOR0VfTU9OVEgQAzKoAgoMU3RhdHNTZXJ2aWNlElcKDEdldFN0YW5kaW5ncxIiLnNjb3JlYm9hcmQudjEuR2V0U3RhbmRpbmdzUmVxdWVzdBojLnNjb3JlYm9hcmQudjEuR2V0U3RhbmRpbmdzUmVzcG9uc2USWgoNR2V0SGVhZFRvSGVhZBIjLnNjb3JlYm9hcmQudjEuR2V0SGVhZFRvSGVhZFJlcXVlc3QaJC5zY29yZWJvYXJkLnYxLkdldEhlYWRUb0hlYWRSZXNwb25zZRJjChBHZXRQbGF5ZXJQcm9maWxlEiYuc2NvcmVib2FyZC52MS5HZXRQbGF5ZXJQcm9maWxlUmVxdWVzdBonLnNjb3JlYm9hcmQudjEuR2V0UGxheWVyUHJvZmlsZVJlc3BvbnNlQr0BChFjb20uc2NvcmVib2FyZC52MUIKU3RhdHNQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_scoreboard_v1_common]);
 
 /**
  * One pairing, from the viewer's point of view, phrased for the screens that
@@ -124,6 +124,8 @@ export type StandingsRow = Message<"scoreboard.v1.StandingsRow"> & {
   user?: User | undefined;
 
   /**
+   * Clean results only.
+   *
    * @generated from field: int32 wins = 2;
    */
   wins: number;
@@ -134,14 +136,16 @@ export type StandingsRow = Message<"scoreboard.v1.StandingsRow"> & {
   losses: number;
 
   /**
-   * 0..1. Zero when the player has no finalized matches.
+   * 0..1, over the clean results. Zero when the player has none.
    *
    * @generated from field: double win_rate = 4;
    */
   winRate: number;
 
   /**
-   * Positive for an active winning streak, negative for a losing one.
+   * Positive for an active winning streak, negative for a losing one. Contested
+   * matches do not break a streak any more than they extend one — they are not
+   * in the sequence at all.
    *
    * @generated from field: int32 streak = 5;
    */
@@ -151,6 +155,19 @@ export type StandingsRow = Message<"scoreboard.v1.StandingsRow"> & {
    * @generated from field: int32 rank = 6;
    */
   rank: number;
+
+  /**
+   * Settled matches this player was in that somebody is objecting to. Counted
+   * in neither wins nor losses.
+   *
+   * @generated from field: int32 contested_wins = 7;
+   */
+  contestedWins: number;
+
+  /**
+   * @generated from field: int32 contested_losses = 8;
+   */
+  contestedLosses: number;
 };
 
 /**
@@ -223,6 +240,15 @@ export type GetStandingsResponse = Message<"scoreboard.v1.GetStandingsResponse">
    * @generated from field: repeated scoreboard.v1.GameKing game_kings = 4;
    */
   gameKings: GameKing[];
+
+  /**
+   * Settled matches in range that somebody is objecting to. Not included in
+   * total_matches, and the reason the two numbers can disagree with a raw count
+   * of the match list.
+   *
+   * @generated from field: int32 contested_matches = 5;
+   */
+  contestedMatches: number;
 };
 
 /**
@@ -368,6 +394,19 @@ export type GetHeadToHeadResponse = Message<"scoreboard.v1.GetHeadToHeadResponse
    * @generated from field: scoreboard.v1.RivalryLine rivalry = 10;
    */
   rivalry?: RivalryLine | undefined;
+
+  /**
+   * Meetings on opposing teams that somebody is objecting to. Held out of wins,
+   * losses, games, streak and rivalry alike.
+   *
+   * @generated from field: int32 contested_wins = 11;
+   */
+  contestedWins: number;
+
+  /**
+   * @generated from field: int32 contested_losses = 12;
+   */
+  contestedLosses: number;
 };
 
 /**
@@ -502,6 +541,29 @@ export type GetPlayerProfileResponse = Message<"scoreboard.v1.GetPlayerProfileRe
    * @generated from field: scoreboard.v1.RivalryLine unfinished_business = 16;
    */
   unfinishedBusiness?: RivalryLine | undefined;
+
+  /**
+   * Settled matches this player was in that somebody is objecting to. Held out
+   * of every other number here, including the nemesis and the drought.
+   *
+   * @generated from field: int32 contested_wins = 17;
+   */
+  contestedWins: number;
+
+  /**
+   * @generated from field: int32 contested_losses = 18;
+   */
+  contestedLosses: number;
+
+  /**
+   * Whether the caller may link this player to an account. True only when the
+   * subject is a placeholder and the caller runs the service — the profile
+   * screen is where a placeholder is actually looked at, so it is where the
+   * administrator is offered the link.
+   *
+   * @generated from field: bool viewer_may_link = 19;
+   */
+  viewerMayLink: boolean;
 };
 
 /**
@@ -547,6 +609,19 @@ export const StatsRangeSchema: GenEnum<StatsRange> = /*@__PURE__*/
 /**
  * StatsService is the bragging-rights layer. Everything here is computed on
  * read from finalized matches; nothing is materialized.
+ *
+ * Every tally in this file counts clean results only. A finalized match with an
+ * objection standing on it is contested, and contested matches are held out of
+ * the wins, the losses, the streaks, the rivalries and the game kings alike —
+ * they are reported separately, as a count, so a record reads "14–3, plus 2
+ * contested" rather than quietly folding a disputed win into a number somebody
+ * is going to quote at dinner.
+ *
+ * Contested counts are not a second scoreboard. They exist so the clean number
+ * can be trusted and so a result nobody agrees about is still visible instead of
+ * vanishing. An objection is retractable at any time, so a match can move
+ * between the two at any time, and every one of these numbers is recomputed on
+ * read anyway.
  *
  * @generated from service scoreboard.v1.StatsService
  */

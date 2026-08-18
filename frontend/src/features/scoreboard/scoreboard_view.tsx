@@ -53,8 +53,7 @@ export function ScoreboardView({
 
   const me = app.domain.session.user?.id;
   const mine = (m: Match) => m.joined.some((p) => p.user?.id === me);
-  const unsettled = (m: Match) =>
-    m.status === MatchStatus.CLAIMED || m.status === MatchStatus.DISPUTED;
+  const unsettled = (m: Match) => m.status === MatchStatus.CLAIMED;
 
   const needsYou = live.filter((m) => m.viewerOwesConcession);
   const invitations = live.filter((m) => m.viewerIsInvited && !m.viewerOwesConcession);
@@ -208,10 +207,19 @@ export function ScoreboardView({
           </div>
         </AsyncBoundary>
 
-        {standings && standings.totalMatches > 0 && (
+        {standings && standings.totalMatches + standings.contestedMatches > 0 && (
           <p style={{ margin: 0, textAlign: "center", color: "var(--ink-faint)", fontSize: "0.82rem" }}>
             <span className="num">{standings.totalMatches}</span> game
             {standings.totalMatches === 1 ? "" : "s"} on the record
+            {/* Contested games are held out of every number above. Saying so
+                here is the only thing standing between "the table is wrong" and
+                "the table is right and two results are being argued about". */}
+            {standings.contestedMatches > 0 && (
+              <>
+                {" · "}
+                <span className="num">{standings.contestedMatches}</span> contested and not counted
+              </>
+            )}
           </p>
         )}
       </section>
@@ -358,21 +366,22 @@ function LiveRow({
   onOpen: () => void;
   yourAnswer?: string | null;
 }) {
-  const lobby = match.status === MatchStatus.LOBBY;
   const contractSet = match.contract && match.contract.kind !== ContractKind.UNSPECIFIED;
+  // Posted, but nobody has joined yet. Not a status — every match is in play
+  // from the moment it exists — but it is the difference between a game running
+  // and a game waiting for someone to show up, and the row is telling you
+  // whether to go and do something about it.
+  const waiting = match.status === MatchStatus.IN_PROGRESS && match.joined.length < 2;
 
-  // A lobby nobody has started is not live, and saying so is misleading when
-  // the row is telling you whether to go and do something about it.
   const badge = () => {
+    if (match.contested) return <span className="badge badge--wait">⚑ Contested</span>;
     switch (match.status) {
-      case MatchStatus.DISPUTED:
-        return <span className="badge badge--wait">⚖️ Disputed</span>;
       case MatchStatus.CLAIMED:
         return <span className="badge badge--wait">⏳ Claimed</span>;
-      case MatchStatus.LOBBY:
-        return <span className="badge">Not started</span>;
       default:
-        return (
+        return waiting ? (
+          <span className="badge">Waiting for players</span>
+        ) : (
           <span className="badge badge--live">
             <span className="dot" /> Live
           </span>
@@ -390,7 +399,7 @@ function LiveRow({
         <span className="rowbtn__meta">
           {yourAnswer
             ? `${yourAnswer} · tap to change it`
-            : lobby
+            : waiting
               ? `${players}${pending}`
               : `${players} · ${contractSet ? contractText(match.contract) : "no contract"}`}
         </span>

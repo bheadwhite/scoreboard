@@ -22,8 +22,8 @@ import (
 type Kind string
 
 const (
-	// KindMatch covers a match being created, joined, declined, started,
-	// claimed, conceded, disputed, resolved or cancelled.
+	// KindMatch covers a match being posted, joined, declined, claimed,
+	// conceded, objected to or cancelled.
 	KindMatch Kind = "match"
 	// KindFamily covers membership: somebody joined, left, or was removed.
 	KindFamily Kind = "family"

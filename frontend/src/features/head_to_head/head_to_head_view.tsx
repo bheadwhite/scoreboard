@@ -6,6 +6,7 @@ import type { AppPresenter } from "../../app/app_presenter.js";
 import type { HeadToHeadPresenter } from "./head_to_head_presenter.js";
 import { AsyncBoundary, Avatar, Empty, Record } from "../../components/ui.js";
 import {
+  contestedLine,
   displayName,
   gameLabel,
   debtLine,
@@ -73,6 +74,19 @@ export function HeadToHeadView({
                 </>
               )}
             </div>
+
+            {/* Meetings one of them is still objecting to. Said out loud
+                rather than silently dropped: the alternative is a record that
+                does not match the games people remember playing, with no
+                explanation on the screen for why. */}
+            {record.contestedWins + record.contestedLosses > 0 && (
+              <div className="verdict__note">
+                <div>
+                  ⚑ {contestedLine(record.contestedWins, record.contestedLosses)} contested, and
+                  not counted above.
+                </div>
+              </div>
+            )}
 
             {/* The verdict says who is ahead. These two say how long it has
                 been and what it would cost to fix — the part that decides

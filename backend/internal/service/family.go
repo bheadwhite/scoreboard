@@ -210,3 +210,43 @@ func (svc *FamilyService) RegenerateInviteCode(
 	svc.publish(familyID, events.KindFamily, "")
 	return connect.NewResponse(&scoreboardv1.RegenerateInviteCodeResponse{InviteCode: code}), nil
 }
+
+// AddPlaceholderPlayer adds somebody who has not signed up, so a game they were
+// actually in can be recorded with everybody in it.
+//
+// Open to any member of the family, deliberately. The moment you need one is
+// while you are setting up a game with the person sitting across from you, and
+// routing that through an organizer means the game gets entered wrong or not
+// entered at all — which is how the scoreboard ends up quietly disagreeing with
+// what everybody remembers playing.
+//
+// What that permits is one player asserting that another person exists and
+// played. It is a real assertion about somebody else and it is not checked here,
+// because there is nobody to check it with. What checks it is the other end:
+// once the person signs up and an administrator links them, they inherit the
+// history and can object to any part of it, since an objection outlives
+// finalization. That is the deal, and it is why linking is administrator-only
+// while this is not.
+func (svc *FamilyService) AddPlaceholderPlayer(
+	ctx context.Context, req *connect.Request[scoreboardv1.AddPlaceholderPlayerRequest],
+) (*connect.Response[scoreboardv1.AddPlaceholderPlayerResponse], error) {
+	familyID := req.Msg.GetFamilyId()
+	if _, err := svc.familyViewer(ctx, familyID); err != nil {
+		return nil, err
+	}
+
+	name := strings.TrimSpace(req.Msg.GetDisplayName())
+	if name == "" {
+		return nil, invalid("what should we call them?")
+	}
+	if len([]rune(name)) > maxDisplayName {
+		return nil, invalid("that name is too long")
+	}
+
+	u, err := svc.store.AddPlaceholderPlayer(ctx, familyID, name)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	svc.publish(familyID, events.KindFamily, "")
+	return connect.NewResponse(&scoreboardv1.AddPlaceholderPlayerResponse{User: userPB(u)}), nil
+}

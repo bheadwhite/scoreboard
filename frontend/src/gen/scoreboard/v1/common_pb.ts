@@ -12,10 +12,10 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/common.proto.
  */
 export const file_scoreboard_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSJsCgRVc2VyEgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRISCgphdmF0YXJfdXJsGAMgASgJEi4KCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIr8BCgZGYW1pbHkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtpbnZpdGVfY29kZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIuCgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgt2aWV3ZXJfcm9sZRgGIAEoDjIZLnNjb3JlYm9hcmQudjEuRmFtaWx5Um9sZRIUCgxtZW1iZXJfY291bnQYByABKAUiiQEKDEZhbWlseU1lbWJlchIhCgR1c2VyGAEgASgLMhMuc2NvcmVib2FyZC52MS5Vc2VyEicKBHJvbGUYAiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSLQoJam9pbmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKwAQoER2FtZRIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRINCgVlbW9qaRgEIAEoCRISCgp0ZWFtX2Jhc2VkGAUgASgIEhMKC21pbl9wbGF5ZXJzGAYgASgFEhMKC21heF9wbGF5ZXJzGAcgASgFEi4KCmNyZWF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKCENvbnRyYWN0EikKBGtpbmQYASABKA4yGy5zY29yZWJvYXJkLnYxLkNvbnRyYWN0S2luZBIOCgZ0YXJnZXQYAiABKAUSDgoGZGV0YWlsGAMgASgJIkgKCU1hdGNoVGVhbRIKCgJpZBgBIAEoCRIQCghtYXRjaF9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEg8KB29yZGluYWwYBCABKAUixgMKEE1hdGNoUGFydGljaXBhbnQSEAoIbWF0Y2hfaWQYASABKAkSIQoEdXNlchgCIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIPCgd0ZWFtX2lkGAMgASgJEjAKBnJlc3VsdBgEIAEoDjIgLnNjb3JlYm9hcmQudjEuUGFydGljaXBhbnRSZXN1bHQSLwoLY29uY2VkZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2Rpc3B1dGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgZzdGF0dXMYByABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50U3RhdHVzEi4KCmludml0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDHJlc3BvbmRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIcmVhZHlfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRpc3B1dGVfcmVhc29uGAsgASgJIsAHCgVNYXRjaBIKCgJpZBgBIAEoCRIRCglmYW1pbHlfaWQYAiABKAkSIQoEZ2FtZRgDIAEoCzITLnNjb3JlYm9hcmQudjEuR2FtZRIqCgZzdGF0dXMYBCABKA4yGi5zY29yZWJvYXJkLnYxLk1hdGNoU3RhdHVzEikKCGNvbnRyYWN0GAUgASgLMhcuc2NvcmVib2FyZC52MS5Db250cmFjdBISCgpjcmVhdGVkX2J5GAYgASgJEicKBXRlYW1zGAcgAygLMhguc2NvcmVib2FyZC52MS5NYXRjaFRlYW0SNQoMcGFydGljaXBhbnRzGAggAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50Ei4KCmNyZWF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnN0YXJ0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCmNsYWltZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmNsYWltZWRfYnlfdGVhbV9pZBgMIAEoCRI0ChBjb25jZWRlX2RlYWRsaW5lGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxmaW5hbGl6ZWRfYXQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKE2F3YWl0aW5nX2NvbmNlc3Npb24YDyADKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISHgoWdmlld2VyX293ZXNfY29uY2Vzc2lvbhgQIAEoCBIvCgZqb2luZWQYESADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSMAoHaW52aXRlZBgSIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIZChF2aWV3ZXJfaXNfaW52aXRlZBgTIAEoCBIXCg92aWV3ZXJfaXNfcmVhZHkYFCABKAgSEQoJYWxsX3JlYWR5GBUgASgIEisKDmF3YWl0aW5nX3JlYWR5GBYgAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEhkKEXZpZXdlcl9pc19jcmVhdG9yGBcgASgIEh0KFW9yZ2FuaXplcl9tYXlfcmVzb2x2ZRgYIAEoCBIaChJ2aWV3ZXJfaXNfY2xhaW1hbnQYGSABKAgSFwoPdmlld2VyX21heV92b2lkGBogASgIKlgKCkZhbWlseVJvbGUSGwoXRkFNSUxZX1JPTEVfVU5TUEVDSUZJRUQQABIWChJGQU1JTFlfUk9MRV9NRU1CRVIQARIVChFGQU1JTFlfUk9MRV9PV05FUhACKsQBCgxDb250cmFjdEtpbmQSHQoZQ09OVFJBQ1RfS0lORF9VTlNQRUNJRklFRBAAEiAKHENPTlRSQUNUX0tJTkRfRklSU1RfVE9fU0NPUkUQARIZChVDT05UUkFDVF9LSU5EX0JFU1RfT0YQAhIfChtDT05UUkFDVF9LSU5EX0xBU1RfU1RBTkRJTkcQAxIdChlDT05UUkFDVF9LSU5EX1NJTkdMRV9HQU1FEAQSGAoUQ09OVFJBQ1RfS0lORF9DVVNUT00QBSrJAQoLTWF0Y2hTdGF0dXMSHAoYTUFUQ0hfU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSTUFUQ0hfU1RBVFVTX0xPQkJZEAESHAoYTUFUQ0hfU1RBVFVTX0lOX1BST0dSRVNTEAISGAoUTUFUQ0hfU1RBVFVTX0NMQUlNRUQQAxIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfRElTUFVURUQQBRIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiqXAQoRUGFydGljaXBhbnRTdGF0dXMSIgoeUEFSVElDSVBBTlRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHgoaUEFSVElDSVBBTlRfU1RBVFVTX0lOVklURUQQARIdChlQQVJUSUNJUEFOVF9TVEFUVVNfSk9JTkVEEAISHwobUEFSVElDSVBBTlRfU1RBVFVTX0RFQ0xJTkVEEAMqkAEKEVBhcnRpY2lwYW50UmVzdWx0EiIKHlBBUlRJQ0lQQU5UX1JFU1VMVF9VTlNQRUNJRklFRBAAEh4KGlBBUlRJQ0lQQU5UX1JFU1VMVF9QRU5ESU5HEAESGgoWUEFSVElDSVBBTlRfUkVTVUxUX1dJThACEhsKF1BBUlRJQ0lQQU5UX1JFU1VMVF9MT1NTEANCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtDb21tb25Qcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSKBAQoEVXNlchIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEgoKYXZhdGFyX3VybBgDIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtwbGFjZWhvbGRlchgFIAEoCCK/AQoGRmFtaWx5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLaW52aXRlX2NvZGUYAyABKAkSEAoIb3duZXJfaWQYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoLdmlld2VyX3JvbGUYBiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSFAoMbWVtYmVyX2NvdW50GAcgASgFIokBCgxGYW1pbHlNZW1iZXISIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchInCgRyb2xlGAIgASgOMhkuc2NvcmVib2FyZC52MS5GYW1pbHlSb2xlEi0KCWpvaW5lZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAisAEKBEdhbWUSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEgwKBG5hbWUYAyABKAkSDQoFZW1vamkYBCABKAkSEgoKdGVhbV9iYXNlZBgFIAEoCBITCgttaW5fcGxheWVycxgGIAEoBRITCgttYXhfcGxheWVycxgHIAEoBRIuCgpjcmVhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCghDb250cmFjdBIpCgRraW5kGAEgASgOMhsuc2NvcmVib2FyZC52MS5Db250cmFjdEtpbmQSDgoGdGFyZ2V0GAIgASgFEg4KBmRldGFpbBgDIAEoCSJICglNYXRjaFRlYW0SCgoCaWQYASABKAkSEAoIbWF0Y2hfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdvcmRpbmFsGAQgASgFIqgDChBNYXRjaFBhcnRpY2lwYW50EhAKCG1hdGNoX2lkGAEgASgJEiEKBHVzZXIYAiABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDwoHdGVhbV9pZBgDIAEoCRIwCgZyZXN1bHQYBCABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50UmVzdWx0Ei8KC2NvbmNlZGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkaXNwdXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoGc3RhdHVzGAcgASgOMiAuc2NvcmVib2FyZC52MS5QYXJ0aWNpcGFudFN0YXR1cxIuCgppbnZpdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxyZXNwb25kZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRpc3B1dGVfcmVhc29uGAsgASgJSgQIChALUghyZWFkeV9hdCKTCAoFTWF0Y2gSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEiEKBGdhbWUYAyABKAsyEy5zY29yZWJvYXJkLnYxLkdhbWUSKgoGc3RhdHVzGAQgASgOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIpCghjb250cmFjdBgFIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QSEgoKY3JlYXRlZF9ieRgGIAEoCRInCgV0ZWFtcxgHIAMoCzIYLnNjb3JlYm9hcmQudjEuTWF0Y2hUZWFtEjUKDHBhcnRpY2lwYW50cxgIIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpzdGFydGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjbGFpbWVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJjbGFpbWVkX2J5X3RlYW1faWQYDCABKAkSNAoQY29uY2VkZV9kZWFkbGluZRgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZmluYWxpemVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwChNhd2FpdGluZ19jb25jZXNzaW9uGA8gAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEh4KFnZpZXdlcl9vd2VzX2NvbmNlc3Npb24YECABKAgSLwoGam9pbmVkGBEgAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50EjAKB2ludml0ZWQYEiADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSGQoRdmlld2VyX2lzX2ludml0ZWQYEyABKAgSGQoRdmlld2VyX2lzX2NyZWF0b3IYFyABKAgSGgoSdmlld2VyX2lzX2NsYWltYW50GBkgASgIEhcKD3ZpZXdlcl9tYXlfdm9pZBgaIAEoCBIaChJjbGFpbWVkX2J5X3VzZXJfaWQYGyABKAkSEQoJY29udGVzdGVkGBwgASgIEiYKCW9iamVjdG9ycxgdIAMoCzITLnNjb3JlYm9hcmQudjEuVXNlchIXCg92aWV3ZXJfb2JqZWN0ZWQYHiABKAhKBAgUEBVKBAgVEBZKBAgWEBdKBAgYEBlSD3ZpZXdlcl9pc19yZWFkeVIJYWxsX3JlYWR5Ug5hd2FpdGluZ19yZWFkeVIVb3JnYW5pemVyX21heV9yZXNvbHZlKlgKCkZhbWlseVJvbGUSGwoXRkFNSUxZX1JPTEVfVU5TUEVDSUZJRUQQABIWChJGQU1JTFlfUk9MRV9NRU1CRVIQARIVChFGQU1JTFlfUk9MRV9PV05FUhACKsQBCgxDb250cmFjdEtpbmQSHQoZQ09OVFJBQ1RfS0lORF9VTlNQRUNJRklFRBAAEiAKHENPTlRSQUNUX0tJTkRfRklSU1RfVE9fU0NPUkUQARIZChVDT05UUkFDVF9LSU5EX0JFU1RfT0YQAhIfChtDT05UUkFDVF9LSU5EX0xBU1RfU1RBTkRJTkcQAxIdChlDT05UUkFDVF9LSU5EX1NJTkdMRV9HQU1FEAQSGAoUQ09OVFJBQ1RfS0lORF9DVVNUT00QBSrNAQoLTWF0Y2hTdGF0dXMSHAoYTUFUQ0hfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYTUFUQ0hfU1RBVFVTX0lOX1BST0dSRVNTEAISGAoUTUFUQ0hfU1RBVFVTX0NMQUlNRUQQAxIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiIECAEQASIECAUQBSoSTUFUQ0hfU1RBVFVTX0xPQkJZKhVNQVRDSF9TVEFUVVNfRElTUFVURUQqlwEKEVBhcnRpY2lwYW50U3RhdHVzEiIKHlBBUlRJQ0lQQU5UX1NUQVRVU19VTlNQRUNJRklFRBAAEh4KGlBBUlRJQ0lQQU5UX1NUQVRVU19JTlZJVEVEEAESHQoZUEFSVElDSVBBTlRfU1RBVFVTX0pPSU5FRBACEh8KG1BBUlRJQ0lQQU5UX1NUQVRVU19ERUNMSU5FRBADKpABChFQYXJ0aWNpcGFudFJlc3VsdBIiCh5QQVJUSUNJUEFOVF9SRVNVTFRfVU5TUEVDSUZJRUQQABIeChpQQVJUSUNJUEFOVF9SRVNVTFRfUEVORElORxABEhoKFlBBUlRJQ0lQQU5UX1JFU1VMVF9XSU4QAhIbChdQQVJUSUNJUEFOVF9SRVNVTFRfTE9TUxADQr4BChFjb20uc2NvcmVib2FyZC52MUILQ29tbW9uUHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
- * A player. Mirrors a Supabase auth user; the id is the Supabase user id.
+ * A player.
  *
  * @generated from message scoreboard.v1.User
  */
@@ -39,6 +39,26 @@ export type User = Message<"scoreboard.v1.User"> & {
    * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Timestamp | undefined;
+
+  /**
+   * True for somebody who has not signed up — a player another player added so
+   * that a game they were actually in could be recorded honestly.
+   *
+   * A placeholder is a player in every way the scoreboard cares about: they
+   * join matches, hold a team, win, lose, appear in the standings and turn up
+   * in head-to-head records. What they cannot do is answer a claim, because
+   * there is no device to answer from. The protocol therefore never asks them
+   * — see Match.awaiting_concession — and a claim only they could have answered
+   * settles on the clock instead of on anybody's word.
+   *
+   * Their agreement is deferred rather than assumed. When the person behind the
+   * placeholder signs up, an administrator links the two, and since an
+   * objection outlives finalization they can go back and flag anything in the
+   * history they just inherited.
+   *
+   * @generated from field: bool placeholder = 5;
+   */
+  placeholder: boolean;
 };
 
 /**
@@ -281,14 +301,19 @@ export type MatchParticipant = Message<"scoreboard.v1.MatchParticipant"> & {
   result: ParticipantResult;
 
   /**
-   * When this player acknowledged the claim. Unset if they have not.
+   * When this player accepted the claim. Unset if they have not.
    *
    * @generated from field: google.protobuf.Timestamp conceded_at = 5;
    */
   concededAt?: Timestamp | undefined;
 
   /**
-   * When this player disputed the claim. Unset if they have not.
+   * When this player objected to the claim. Unset if they have not.
+   *
+   * An objection outlives the claim it answers: a match can be settled and
+   * still carry one, which is what keeps it off the clean scoreboard. It is
+   * still not permanent — conceding withdraws it at any point, including years
+   * later.
    *
    * @generated from field: google.protobuf.Timestamp disputed_at = 6;
    */
@@ -310,18 +335,11 @@ export type MatchParticipant = Message<"scoreboard.v1.MatchParticipant"> & {
   respondedAt?: Timestamp | undefined;
 
   /**
-   * When this player affirmed they are ready to play under the contract as it
-   * then stood. Cleared whenever the contract or the teams change, so it always
-   * refers to the terms currently on screen.
-   *
-   * @generated from field: google.protobuf.Timestamp ready_at = 10;
-   */
-  readyAt?: Timestamp | undefined;
-
-  /**
-   * Why this player objected to the claim. Sent only to the family organizer,
-   * who has to settle it, and back to the player who wrote it. Everyone else
-   * gets an empty string — see the note on matchPB.
+   * Why this player objected. Public, unlike in earlier versions of this app:
+   * an objection used to be routed to the organizer to settle, so the name and
+   * the grounds were kept between the two of them. Nobody settles it now — the
+   * flag is the outcome — and a mark on a result that nobody can read the
+   * reasons for is worse than no mark at all.
    *
    * @generated from field: string dispute_reason = 11;
    */
@@ -360,6 +378,9 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   status: MatchStatus;
 
   /**
+   * Declared when the match is posted and fixed from then on. Joining is
+   * agreeing to it, which is why there is nothing to affirm separately.
+   *
    * @generated from field: scoreboard.v1.Contract contract = 5;
    */
   contract?: Contract | undefined;
@@ -385,29 +406,35 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   createdAt?: Timestamp | undefined;
 
   /**
+   * When play began, which is when the match was posted. Kept as its own field
+   * because every stats query and every list already reads it.
+   *
    * @generated from field: google.protobuf.Timestamp started_at = 10;
    */
   startedAt?: Timestamp | undefined;
 
   /**
-   * Set when victory is claimed.
+   * Set when somebody names a winner.
    *
    * @generated from field: google.protobuf.Timestamp claimed_at = 11;
    */
   claimedAt?: Timestamp | undefined;
 
   /**
+   * The team said to have won.
+   *
    * @generated from field: string claimed_by_team_id = 12;
    */
   claimedByTeamId: string;
 
   /**
-   * After this instant, outstanding concessions are assumed and the match
-   * finalizes on its own. A dispute clears this and stops the clock.
+   * After this instant, players who never answered are taken to have accepted
+   * it and the match settles on its own.
    *
-   * This is a backstop for a match everyone abandoned, not a countdown anybody
-   * is meant to race — it is a week by default, and the claim sits on every
-   * player's list for all of it.
+   * A backstop for a match everybody walked away from, not a countdown anyone
+   * is meant to race — it is a week by default, the claim sits on every
+   * player's list for all of it, and an objection no longer stops it, because
+   * objecting no longer needs to win an argument to have its effect.
    *
    * @generated from field: google.protobuf.Timestamp concede_deadline = 13;
    */
@@ -419,15 +446,22 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   finalizedAt?: Timestamp | undefined;
 
   /**
-   * Convenience for the UI: opponents of the claiming team who have not yet
-   * conceded or disputed.
+   * Convenience for the UI: players who owe the claim an answer and have not
+   * given one.
+   *
+   * Never includes a placeholder. Somebody with no account has no way to answer,
+   * so listing them as outstanding would report a wait that is never going to
+   * end — and would make every game they are in look stalled. What actually
+   * happens is that the claim settles when the players who *can* answer have,
+   * and a claim nobody could answer settles on the clock. See
+   * model.Match.Answerable.
    *
    * @generated from field: repeated scoreboard.v1.User awaiting_concession = 15;
    */
   awaitingConcession: User[];
 
   /**
-   * Whether the caller personally still owes a concession.
+   * Whether the caller personally still owes one.
    *
    * @generated from field: bool viewer_owes_concession = 16;
    */
@@ -455,49 +489,16 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   viewerIsInvited: boolean;
 
   /**
-   * Whether the caller has affirmed the current contract.
-   *
-   * @generated from field: bool viewer_is_ready = 20;
-   */
-  viewerIsReady: boolean;
-
-  /**
-   * Whether every joined player has. Until this is true, nobody can start.
-   *
-   * @generated from field: bool all_ready = 21;
-   */
-  allReady: boolean;
-
-  /**
-   * Joined players who have not affirmed the current contract yet.
-   *
-   * @generated from field: repeated scoreboard.v1.User awaiting_ready = 22;
-   */
-  awaitingReady: User[];
-
-  /**
-   * Whether the caller set this match up. Only they may start it.
+   * Whether the caller posted this match. Only they may name a winner other
+   * than their own side, and only they may set the teams.
    *
    * @generated from field: bool viewer_is_creator = 23;
    */
   viewerIsCreator: boolean;
 
   /**
-   * Whether the family organizer may step in and settle this match now.
-   *
-   * Deliberately not "is this disputed". An organizer ruling on a disagreement
-   * the players are still having takes the argument away from them, and the
-   * argument is the point. It only opens once the match is genuinely stuck:
-   * everybody has had their say and they still disagree, or the claim has stood
-   * unanswered for longer than the concession window.
-   *
-   * @generated from field: bool organizer_may_resolve = 24;
-   */
-  organizerMayResolve: boolean;
-
-  /**
-   * Whether the caller is on the team that claimed the win, and so answers for
-   * the claim itself rather than owing a concession to it.
+   * Whether the caller is on the team said to have won, and so answers for the
+   * claim rather than owing it an answer.
    *
    * @generated from field: bool viewer_is_claimant = 25;
    */
@@ -510,6 +511,42 @@ export type Match = Message<"scoreboard.v1.Match"> & {
    * @generated from field: bool viewer_may_void = 26;
    */
   viewerMayVoid: boolean;
+
+  /**
+   * Who said the winner won. Usually somebody on the winning side; when the
+   * creator settles a game on everyone's behalf it is them, and then their own
+   * claim counts as their answer to it.
+   *
+   * @generated from field: string claimed_by_user_id = 27;
+   */
+  claimedByUserId: string;
+
+  /**
+   * Whether an objection stands against the claim. Derived from the answers,
+   * not stored, and true at any stage including MATCH_STATUS_FINAL — a settled
+   * match can be contested and a contested match can stop being contested, so
+   * this is read fresh every time rather than latched.
+   *
+   * A contested result still exists and is still shown; it is simply kept out
+   * of the numbers people argue about. See the stats messages.
+   *
+   * @generated from field: bool contested = 28;
+   */
+  contested: boolean;
+
+  /**
+   * The players objecting, if any. Everyone can see who and why.
+   *
+   * @generated from field: repeated scoreboard.v1.User objectors = 29;
+   */
+  objectors: User[];
+
+  /**
+   * Whether the caller is one of them.
+   *
+   * @generated from field: bool viewer_objected = 30;
+   */
+  viewerObjected: boolean;
 };
 
 /**
@@ -538,7 +575,8 @@ export enum FamilyRole {
   MEMBER = 1,
 
   /**
-   * Can remove members, resolve disputes, and rotate the invite code.
+   * Can remove members, call off a match in play, and rotate the invite code.
+   * Notably cannot settle an argument about a result — nobody can.
    *
    * @generated from enum value: FAMILY_ROLE_OWNER = 2;
    */
@@ -552,8 +590,10 @@ export const FamilyRoleSchema: GenEnum<FamilyRole> = /*@__PURE__*/
   enumDesc(file_scoreboard_v1_common, 0);
 
 /**
- * How victory is defined for a match. Declared before play begins and locked
- * once the match starts, so the win condition cannot be relitigated afterward.
+ * How victory is defined for a match. Declared when the match is posted and
+ * never editable, so the win condition cannot be relitigated afterward — and so
+ * that joining, which is the only commitment anybody makes, is unambiguously a
+ * commitment to these terms.
  *
  * @generated from enum scoreboard.v1.ContractKind
  */
@@ -609,6 +649,14 @@ export const ContractKindSchema: GenEnum<ContractKind> = /*@__PURE__*/
  * Where a match is in its lifecycle. Only MATCH_STATUS_FINAL matches count
  * toward the scoreboard.
  *
+ * Two values are gone from earlier versions of this app and their numbers are
+ * reserved. LOBBY went when joining became the commitment — there is no
+ * staging area to sit in any more, so a match is in play from the moment it is
+ * posted. DISPUTED went when an objection stopped blocking anything: a
+ * contested match is an ordinary match carrying a flag, at every stage of its
+ * life including after it finalizes, so being contested is a property rather
+ * than a place in this list.
+ *
  * @generated from enum scoreboard.v1.MatchStatus
  */
 export enum MatchStatus {
@@ -618,46 +666,30 @@ export enum MatchStatus {
   UNSPECIFIED = 0,
 
   /**
-   * Players are still joining and the contract is not locked.
-   *
-   * @generated from enum value: MATCH_STATUS_LOBBY = 1;
-   */
-  LOBBY = 1,
-
-  /**
-   * Contract locked, play underway.
+   * Posted and open. Players are joining, and any of them may claim the win.
    *
    * @generated from enum value: MATCH_STATUS_IN_PROGRESS = 2;
    */
   IN_PROGRESS = 2,
 
   /**
-   * Someone claimed victory; opponents owe a concession. Nobody is locked into
-   * the answer they gave — an answer stands until its author changes it, and
-   * the claimant can withdraw the claim outright.
+   * Someone has named a winner; everyone else is being asked. Nobody is locked
+   * into the answer they gave — an answer stands until its author changes it,
+   * and the claimant can withdraw the claim outright.
    *
    * @generated from enum value: MATCH_STATUS_CLAIMED = 3;
    */
   CLAIMED = 3,
 
   /**
-   * Ratified. Counts on the scoreboard.
+   * Settled. Counts on the scoreboard, unless it is contested.
    *
    * @generated from enum value: MATCH_STATUS_FINAL = 4;
    */
   FINAL = 4,
 
   /**
-   * At least one opponent is rejecting the claim. The clock is stopped, and it
-   * stays stopped until either the objection is withdrawn — which puts the
-   * match back to CLAIMED — or the family owner settles a genuine deadlock.
-   *
-   * @generated from enum value: MATCH_STATUS_DISPUTED = 5;
-   */
-  DISPUTED = 5,
-
-  /**
-   * Abandoned before finalizing. Never counts.
+   * Abandoned before settling. Never counts.
    *
    * @generated from enum value: MATCH_STATUS_CANCELED = 6;
    */
@@ -676,6 +708,10 @@ export const MatchStatusSchema: GenEnum<MatchStatus> = /*@__PURE__*/
  * PARTICIPANT_STATUS_JOINED players take teams, claim, concede, or appear in
  * the record.
  *
+ * Joining is the whole of the commitment. There is no second step where you
+ * affirm you are ready: the match is already under way, and tapping join on
+ * your own device is you saying you are playing under the posted contract.
+ *
  * @generated from enum scoreboard.v1.ParticipantStatus
  */
 export enum ParticipantStatus {
@@ -692,7 +728,8 @@ export enum ParticipantStatus {
   INVITED = 1,
 
   /**
-   * In. Holds a team and counts toward starting.
+   * In, and playing. Holds a team, may claim or answer a claim, and reaches
+   * the record.
    *
    * @generated from enum value: PARTICIPANT_STATUS_JOINED = 2;
    */

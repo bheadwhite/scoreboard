@@ -153,7 +153,7 @@ export class AppPresenter {
       // are signed in is to ask. A rejected GetMe means no valid session.
       try {
         const me = await this.domain.api.users.getMe({});
-        this.domain.session.setUser(me.user ?? null);
+        this.domain.session.setUser(me.user ?? null, me.admin);
       } catch {
         this.domain.session.setSignedOut();
         return;
@@ -197,6 +197,15 @@ export class AppPresenter {
         case "family":
           this.domain.store.members.invalidate(familyId);
           this.domain.store.families.invalidate();
+          // The derived caches go too, because one of the things this event
+          // announces is an administrator linking a placeholder to an account —
+          // which moves a whole history from one name to another and changes
+          // the standings, both profiles and every head-to-head record touching
+          // either of them. Membership changes on their own would not need
+          // this, and they are rare enough that paying for it is fine.
+          this.domain.store.standings.invalidateAll();
+          this.domain.store.headToHead.invalidateAll();
+          this.domain.store.profiles.invalidateAll();
           break;
         case "games":
           this.domain.store.games.invalidate(familyId);

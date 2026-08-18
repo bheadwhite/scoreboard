@@ -19,9 +19,9 @@ type StatsService struct {
 	base
 }
 
-// The concession window is not passed in: nothing here maps a live match, so
-// Deadlocked is never consulted. The admin list is, because the head-to-head
-// screen sends back recent meetings, and those carry viewer_may_void.
+// The concession window is not passed in: nothing here needs it. The admin list
+// is, because the head-to-head screen sends back recent meetings, and those
+// carry viewer_may_void.
 func NewStatsService(s *store.Store, hub *events.Hub, admins auth.Admins) *StatsService {
 	return &StatsService{base: base{store: s, hub: hub, admins: admins}}
 }
@@ -49,7 +49,7 @@ func (svc *StatsService) GetStandings(
 		return nil, err
 	}
 
-	played, err := svc.playedGames(ctx, familyID, all)
+	playedGames, err := svc.playedGames(ctx, familyID, all)
 	if err != nil {
 		return nil, err
 	}
@@ -72,21 +72,23 @@ func (svc *StatsService) GetStandings(
 			continue
 		}
 		out = append(out, &scoreboardv1.StandingsRow{
-			User:    userPB(u),
-			Wins:    r.Wins,
-			Losses:  r.Losses,
-			WinRate: r.WinRate(),
-			Streak:  r.Streak,
-			Rank:    int32(i + 1),
+			User:            userPB(u),
+			Wins:            r.Wins,
+			Losses:          r.Losses,
+			WinRate:         r.WinRate(),
+			Streak:          r.Streak,
+			Rank:            int32(i + 1),
+			ContestedWins:   r.ContestedWins,
+			ContestedLosses: r.ContestedLosses,
 		})
 	}
 
 	// Every match contributes one participation per player, so the distinct
-	// match count is what "matches played" means here.
-	seen := map[string]struct{}{}
-	for _, p := range ps {
-		seen[p.MatchID] = struct{}{}
-	}
+	// match count is what "matches played" means here. Counted over the clean
+	// and contested halves separately, because the headline number has to agree
+	// with the wins and losses beside it, and those exclude the contested ones.
+	clean, contested := stats.Split(ps)
+	played, disputed := distinctMatches(clean), distinctMatches(contested)
 
 	// Kings come off the unnarrowed history on purpose: "who owns what" is a
 	// tour of every game, and filtering to one game would leave a section
@@ -97,11 +99,21 @@ func (svc *StatsService) GetStandings(
 	}
 
 	return connect.NewResponse(&scoreboardv1.GetStandingsResponse{
-		Rows:         out,
-		TotalMatches: int32(len(seen)),
-		PlayedGames:  played,
-		GameKings:    kings,
+		Rows:             out,
+		TotalMatches:     played,
+		PlayedGames:      playedGames,
+		GameKings:        kings,
+		ContestedMatches: disputed,
 	}), nil
+}
+
+// distinctMatches counts matches rather than participations.
+func distinctMatches(ps []stats.Participation) int32 {
+	seen := map[string]struct{}{}
+	for _, p := range ps {
+		seen[p.MatchID] = struct{}{}
+	}
+	return int32(len(seen))
 }
 
 // gameKings resolves the per-game champions into proto, dropping any game or
@@ -242,16 +254,18 @@ func (svc *StatsService) GetHeadToHead(
 	}
 
 	return connect.NewResponse(&scoreboardv1.GetHeadToHeadResponse{
-		User:           userPB(users[subject]),
-		Opponent:       userPB(users[opponent]),
-		Wins:           h.Wins,
-		Losses:         h.Losses,
-		TogetherWins:   h.TogetherWins,
-		TogetherLosses: h.TogetherLosses,
-		Games:          games,
-		RecentMatches:  svc.matchesPB(recent, v),
-		Streak:         h.Streak,
-		Rivalry:        rivalryPB(stats.Rivalries(ps, subject)[opponent], users),
+		User:            userPB(users[subject]),
+		Opponent:        userPB(users[opponent]),
+		Wins:            h.Wins,
+		Losses:          h.Losses,
+		TogetherWins:    h.TogetherWins,
+		TogetherLosses:  h.TogetherLosses,
+		Games:           games,
+		RecentMatches:   svc.matchesPB(recent, v),
+		Streak:          h.Streak,
+		Rivalry:         rivalryPB(stats.Rivalries(ps, subject)[opponent], users),
+		ContestedWins:   h.ContestedWins,
+		ContestedLosses: h.ContestedLosses,
 	}), nil
 }
 
@@ -264,6 +278,10 @@ func (svc *StatsService) GetPlayerProfile(
 	}
 	familyID := req.Msg.GetFamilyId()
 	if _, err := svc.requireMember(ctx, familyID, uid); err != nil {
+		return nil, err
+	}
+	v, err := svc.familyViewer(ctx, familyID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -291,6 +309,8 @@ func (svc *StatsService) GetPlayerProfile(
 		CurrentStreak:    p.CurrentStreak,
 		LongestWinStreak: p.LongestWin,
 		Games:            games,
+		ContestedWins:    p.ContestedWins,
+		ContestedLosses:  p.ContestedLosses,
 	}
 	total := p.Wins + p.Losses
 	if total > 0 {
@@ -313,6 +333,11 @@ func (svc *StatsService) GetPlayerProfile(
 	if p.HasUnfinished {
 		res.UnfinishedBusiness = rivalryPB(p.Unfinished, users)
 	}
+	// A placeholder's profile is where an administrator actually looks at one,
+	// so it is where the link is offered. Both halves are required: there is
+	// nothing to link on a player who already has an account, and nobody but a
+	// service administrator may move a history between names.
+	res.ViewerMayLink = users[subject].Placeholder && v.admin
 
 	return connect.NewResponse(res), nil
 }

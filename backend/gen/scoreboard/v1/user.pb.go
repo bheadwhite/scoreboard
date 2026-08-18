@@ -58,8 +58,12 @@ func (*GetMeRequest) Descriptor() ([]byte, []int) {
 }
 
 type GetMeResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	User  *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Whether this caller runs the service. The only capability the client is
+	// told about outside the context of a particular match, and what the profile
+	// screen reads to decide whether to offer linking.
+	Admin         bool `protobuf:"varint,2,opt,name=admin,proto3" json:"admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -99,6 +103,13 @@ func (x *GetMeResponse) GetUser() *User {
 		return x.User
 	}
 	return nil
+}
+
+func (x *GetMeResponse) GetAdmin() bool {
+	if x != nil {
+		return x.Admin
+	}
+	return false
 }
 
 type UpdateProfileRequest struct {
@@ -197,23 +208,140 @@ func (x *UpdateProfileResponse) GetUser() *User {
 	return nil
 }
 
+type LinkPlaceholderRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The player with no account, whose history is being handed over.
+	PlaceholderId string `protobuf:"bytes,1,opt,name=placeholder_id,json=placeholderId,proto3" json:"placeholder_id,omitempty"`
+	// The account that turns out to be them. Must be a real signed-up player.
+	UserId        string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LinkPlaceholderRequest) Reset() {
+	*x = LinkPlaceholderRequest{}
+	mi := &file_scoreboard_v1_user_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LinkPlaceholderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LinkPlaceholderRequest) ProtoMessage() {}
+
+func (x *LinkPlaceholderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_user_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LinkPlaceholderRequest.ProtoReflect.Descriptor instead.
+func (*LinkPlaceholderRequest) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_user_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LinkPlaceholderRequest) GetPlaceholderId() string {
+	if x != nil {
+		return x.PlaceholderId
+	}
+	return ""
+}
+
+func (x *LinkPlaceholderRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type LinkPlaceholderResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The surviving account, with everything now attributed to it.
+	User *User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// How many participations moved. Worth reporting: it is the size of what just
+	// happened, and there is no undo to check it against.
+	MatchesMoved  int32 `protobuf:"varint,2,opt,name=matches_moved,json=matchesMoved,proto3" json:"matches_moved,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LinkPlaceholderResponse) Reset() {
+	*x = LinkPlaceholderResponse{}
+	mi := &file_scoreboard_v1_user_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LinkPlaceholderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LinkPlaceholderResponse) ProtoMessage() {}
+
+func (x *LinkPlaceholderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_user_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LinkPlaceholderResponse.ProtoReflect.Descriptor instead.
+func (*LinkPlaceholderResponse) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_user_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *LinkPlaceholderResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+func (x *LinkPlaceholderResponse) GetMatchesMoved() int32 {
+	if x != nil {
+		return x.MatchesMoved
+	}
+	return 0
+}
+
 var File_scoreboard_v1_user_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"\x18scoreboard/v1/user.proto\x12\rscoreboard.v1\x1a\x1ascoreboard/v1/common.proto\"\x0e\n" +
-	"\fGetMeRequest\"8\n" +
+	"\fGetMeRequest\"N\n" +
 	"\rGetMeResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\"X\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x14\n" +
+	"\x05admin\x18\x02 \x01(\bR\x05admin\"X\n" +
 	"\x14UpdateProfileRequest\x12!\n" +
 	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\x12\x1d\n" +
 	"\n" +
 	"avatar_url\x18\x02 \x01(\tR\tavatarUrl\"@\n" +
 	"\x15UpdateProfileResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user2\xad\x01\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\"X\n" +
+	"\x16LinkPlaceholderRequest\x12%\n" +
+	"\x0eplaceholder_id\x18\x01 \x01(\tR\rplaceholderId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"g\n" +
+	"\x17LinkPlaceholderResponse\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12#\n" +
+	"\rmatches_moved\x18\x02 \x01(\x05R\fmatchesMoved2\x8f\x02\n" +
 	"\vUserService\x12B\n" +
 	"\x05GetMe\x12\x1b.scoreboard.v1.GetMeRequest\x1a\x1c.scoreboard.v1.GetMeResponse\x12Z\n" +
-	"\rUpdateProfile\x12#.scoreboard.v1.UpdateProfileRequest\x1a$.scoreboard.v1.UpdateProfileResponseB\xbc\x01\n" +
+	"\rUpdateProfile\x12#.scoreboard.v1.UpdateProfileRequest\x1a$.scoreboard.v1.UpdateProfileResponse\x12`\n" +
+	"\x0fLinkPlaceholder\x12%.scoreboard.v1.LinkPlaceholderRequest\x1a&.scoreboard.v1.LinkPlaceholderResponseB\xbc\x01\n" +
 	"\x11com.scoreboard.v1B\tUserProtoP\x01ZGgithub.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1;scoreboardv1\xa2\x02\x03SXX\xaa\x02\rScoreboard.V1\xca\x02\rScoreboard\\V1\xe2\x02\x19Scoreboard\\V1\\GPBMetadata\xea\x02\x0eScoreboard::V1b\x06proto3"
 
 var (
@@ -228,26 +356,31 @@ func file_scoreboard_v1_user_proto_rawDescGZIP() []byte {
 	return file_scoreboard_v1_user_proto_rawDescData
 }
 
-var file_scoreboard_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_scoreboard_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_scoreboard_v1_user_proto_goTypes = []any{
-	(*GetMeRequest)(nil),          // 0: scoreboard.v1.GetMeRequest
-	(*GetMeResponse)(nil),         // 1: scoreboard.v1.GetMeResponse
-	(*UpdateProfileRequest)(nil),  // 2: scoreboard.v1.UpdateProfileRequest
-	(*UpdateProfileResponse)(nil), // 3: scoreboard.v1.UpdateProfileResponse
-	(*User)(nil),                  // 4: scoreboard.v1.User
+	(*GetMeRequest)(nil),            // 0: scoreboard.v1.GetMeRequest
+	(*GetMeResponse)(nil),           // 1: scoreboard.v1.GetMeResponse
+	(*UpdateProfileRequest)(nil),    // 2: scoreboard.v1.UpdateProfileRequest
+	(*UpdateProfileResponse)(nil),   // 3: scoreboard.v1.UpdateProfileResponse
+	(*LinkPlaceholderRequest)(nil),  // 4: scoreboard.v1.LinkPlaceholderRequest
+	(*LinkPlaceholderResponse)(nil), // 5: scoreboard.v1.LinkPlaceholderResponse
+	(*User)(nil),                    // 6: scoreboard.v1.User
 }
 var file_scoreboard_v1_user_proto_depIdxs = []int32{
-	4, // 0: scoreboard.v1.GetMeResponse.user:type_name -> scoreboard.v1.User
-	4, // 1: scoreboard.v1.UpdateProfileResponse.user:type_name -> scoreboard.v1.User
-	0, // 2: scoreboard.v1.UserService.GetMe:input_type -> scoreboard.v1.GetMeRequest
-	2, // 3: scoreboard.v1.UserService.UpdateProfile:input_type -> scoreboard.v1.UpdateProfileRequest
-	1, // 4: scoreboard.v1.UserService.GetMe:output_type -> scoreboard.v1.GetMeResponse
-	3, // 5: scoreboard.v1.UserService.UpdateProfile:output_type -> scoreboard.v1.UpdateProfileResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	6, // 0: scoreboard.v1.GetMeResponse.user:type_name -> scoreboard.v1.User
+	6, // 1: scoreboard.v1.UpdateProfileResponse.user:type_name -> scoreboard.v1.User
+	6, // 2: scoreboard.v1.LinkPlaceholderResponse.user:type_name -> scoreboard.v1.User
+	0, // 3: scoreboard.v1.UserService.GetMe:input_type -> scoreboard.v1.GetMeRequest
+	2, // 4: scoreboard.v1.UserService.UpdateProfile:input_type -> scoreboard.v1.UpdateProfileRequest
+	4, // 5: scoreboard.v1.UserService.LinkPlaceholder:input_type -> scoreboard.v1.LinkPlaceholderRequest
+	1, // 6: scoreboard.v1.UserService.GetMe:output_type -> scoreboard.v1.GetMeResponse
+	3, // 7: scoreboard.v1.UserService.UpdateProfile:output_type -> scoreboard.v1.UpdateProfileResponse
+	5, // 8: scoreboard.v1.UserService.LinkPlaceholder:output_type -> scoreboard.v1.LinkPlaceholderResponse
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_scoreboard_v1_user_proto_init() }
@@ -262,7 +395,7 @@ func file_scoreboard_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scoreboard_v1_user_proto_rawDesc), len(file_scoreboard_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

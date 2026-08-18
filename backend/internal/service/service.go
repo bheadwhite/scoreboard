@@ -33,11 +33,13 @@ type base struct {
 //
 // One value rather than a string and a pair of bools threaded through every
 // signature, because "which of these three positional arguments was the
-// organizer one" is exactly the mistake that would leak a redacted objection.
+// organizer one" is exactly the kind of mistake that hands somebody a control
+// they should not have.
 type viewer struct {
 	id string
-	// Runs the family this match belongs to. Settles a genuine deadlock, and
-	// sees who objected.
+	// Runs the family this match belongs to. Rotates the invite code, removes
+	// members, and calls off a game other people are in. Notably does not
+	// settle arguments about results — nothing does.
 	organizer bool
 	// Runs the service. Not a role inside any family, and not something an
 	// organizer can grant themselves — see auth.Admins.

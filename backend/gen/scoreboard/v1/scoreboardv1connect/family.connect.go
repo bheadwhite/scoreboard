@@ -53,6 +53,9 @@ const (
 	// FamilyServiceLeaveFamilyProcedure is the fully-qualified name of the FamilyService's LeaveFamily
 	// RPC.
 	FamilyServiceLeaveFamilyProcedure = "/scoreboard.v1.FamilyService/LeaveFamily"
+	// FamilyServiceAddPlaceholderPlayerProcedure is the fully-qualified name of the FamilyService's
+	// AddPlaceholderPlayer RPC.
+	FamilyServiceAddPlaceholderPlayerProcedure = "/scoreboard.v1.FamilyService/AddPlaceholderPlayer"
 	// FamilyServiceRemoveMemberProcedure is the fully-qualified name of the FamilyService's
 	// RemoveMember RPC.
 	FamilyServiceRemoveMemberProcedure = "/scoreboard.v1.FamilyService/RemoveMember"
@@ -72,6 +75,19 @@ type FamilyServiceClient interface {
 	GetFamily(context.Context, *connect.Request[v1.GetFamilyRequest]) (*connect.Response[v1.GetFamilyResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	LeaveFamily(context.Context, *connect.Request[v1.LeaveFamilyRequest]) (*connect.Response[v1.LeaveFamilyResponse], error)
+	// Adds somebody who has not signed up, so a game they were actually in can be
+	// recorded with everybody in it. Open to any member: the moment you need one
+	// is while you are setting up a game with the person standing next to you,
+	// and routing that through an administrator would mean the game gets entered
+	// wrong or not at all.
+	//
+	// What it creates is a real player — see User.placeholder. They cannot be
+	// asked to concede anything, so adding them to a match joins them outright
+	// rather than inviting them: you are stating that they played, not asking
+	// whether they would like to. That is a claim you are making about somebody
+	// else, and the check on it is that they can dispute any of it once they sign
+	// up and an administrator links them.
+	AddPlaceholderPlayer(context.Context, *connect.Request[v1.AddPlaceholderPlayerRequest]) (*connect.Response[v1.AddPlaceholderPlayerResponse], error)
 	// Owner only.
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	RegenerateInviteCode(context.Context, *connect.Request[v1.RegenerateInviteCodeRequest]) (*connect.Response[v1.RegenerateInviteCodeResponse], error)
@@ -130,6 +146,12 @@ func NewFamilyServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(familyServiceMethods.ByName("LeaveFamily")),
 			connect.WithClientOptions(opts...),
 		),
+		addPlaceholderPlayer: connect.NewClient[v1.AddPlaceholderPlayerRequest, v1.AddPlaceholderPlayerResponse](
+			httpClient,
+			baseURL+FamilyServiceAddPlaceholderPlayerProcedure,
+			connect.WithSchema(familyServiceMethods.ByName("AddPlaceholderPlayer")),
+			connect.WithClientOptions(opts...),
+		),
 		removeMember: connect.NewClient[v1.RemoveMemberRequest, v1.RemoveMemberResponse](
 			httpClient,
 			baseURL+FamilyServiceRemoveMemberProcedure,
@@ -154,6 +176,7 @@ type familyServiceClient struct {
 	getFamily            *connect.Client[v1.GetFamilyRequest, v1.GetFamilyResponse]
 	listMembers          *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
 	leaveFamily          *connect.Client[v1.LeaveFamilyRequest, v1.LeaveFamilyResponse]
+	addPlaceholderPlayer *connect.Client[v1.AddPlaceholderPlayerRequest, v1.AddPlaceholderPlayerResponse]
 	removeMember         *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
 	regenerateInviteCode *connect.Client[v1.RegenerateInviteCodeRequest, v1.RegenerateInviteCodeResponse]
 }
@@ -193,6 +216,11 @@ func (c *familyServiceClient) LeaveFamily(ctx context.Context, req *connect.Requ
 	return c.leaveFamily.CallUnary(ctx, req)
 }
 
+// AddPlaceholderPlayer calls scoreboard.v1.FamilyService.AddPlaceholderPlayer.
+func (c *familyServiceClient) AddPlaceholderPlayer(ctx context.Context, req *connect.Request[v1.AddPlaceholderPlayerRequest]) (*connect.Response[v1.AddPlaceholderPlayerResponse], error) {
+	return c.addPlaceholderPlayer.CallUnary(ctx, req)
+}
+
 // RemoveMember calls scoreboard.v1.FamilyService.RemoveMember.
 func (c *familyServiceClient) RemoveMember(ctx context.Context, req *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error) {
 	return c.removeMember.CallUnary(ctx, req)
@@ -214,6 +242,19 @@ type FamilyServiceHandler interface {
 	GetFamily(context.Context, *connect.Request[v1.GetFamilyRequest]) (*connect.Response[v1.GetFamilyResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	LeaveFamily(context.Context, *connect.Request[v1.LeaveFamilyRequest]) (*connect.Response[v1.LeaveFamilyResponse], error)
+	// Adds somebody who has not signed up, so a game they were actually in can be
+	// recorded with everybody in it. Open to any member: the moment you need one
+	// is while you are setting up a game with the person standing next to you,
+	// and routing that through an administrator would mean the game gets entered
+	// wrong or not at all.
+	//
+	// What it creates is a real player — see User.placeholder. They cannot be
+	// asked to concede anything, so adding them to a match joins them outright
+	// rather than inviting them: you are stating that they played, not asking
+	// whether they would like to. That is a claim you are making about somebody
+	// else, and the check on it is that they can dispute any of it once they sign
+	// up and an administrator links them.
+	AddPlaceholderPlayer(context.Context, *connect.Request[v1.AddPlaceholderPlayerRequest]) (*connect.Response[v1.AddPlaceholderPlayerResponse], error)
 	// Owner only.
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	RegenerateInviteCode(context.Context, *connect.Request[v1.RegenerateInviteCodeRequest]) (*connect.Response[v1.RegenerateInviteCodeResponse], error)
@@ -268,6 +309,12 @@ func NewFamilyServiceHandler(svc FamilyServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(familyServiceMethods.ByName("LeaveFamily")),
 		connect.WithHandlerOptions(opts...),
 	)
+	familyServiceAddPlaceholderPlayerHandler := connect.NewUnaryHandler(
+		FamilyServiceAddPlaceholderPlayerProcedure,
+		svc.AddPlaceholderPlayer,
+		connect.WithSchema(familyServiceMethods.ByName("AddPlaceholderPlayer")),
+		connect.WithHandlerOptions(opts...),
+	)
 	familyServiceRemoveMemberHandler := connect.NewUnaryHandler(
 		FamilyServiceRemoveMemberProcedure,
 		svc.RemoveMember,
@@ -296,6 +343,8 @@ func NewFamilyServiceHandler(svc FamilyServiceHandler, opts ...connect.HandlerOp
 			familyServiceListMembersHandler.ServeHTTP(w, r)
 		case FamilyServiceLeaveFamilyProcedure:
 			familyServiceLeaveFamilyHandler.ServeHTTP(w, r)
+		case FamilyServiceAddPlaceholderPlayerProcedure:
+			familyServiceAddPlaceholderPlayerHandler.ServeHTTP(w, r)
 		case FamilyServiceRemoveMemberProcedure:
 			familyServiceRemoveMemberHandler.ServeHTTP(w, r)
 		case FamilyServiceRegenerateInviteCodeProcedure:
@@ -335,6 +384,10 @@ func (UnimplementedFamilyServiceHandler) ListMembers(context.Context, *connect.R
 
 func (UnimplementedFamilyServiceHandler) LeaveFamily(context.Context, *connect.Request[v1.LeaveFamilyRequest]) (*connect.Response[v1.LeaveFamilyResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.FamilyService.LeaveFamily is not implemented"))
+}
+
+func (UnimplementedFamilyServiceHandler) AddPlaceholderPlayer(context.Context, *connect.Request[v1.AddPlaceholderPlayerRequest]) (*connect.Response[v1.AddPlaceholderPlayerResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.FamilyService.AddPlaceholderPlayer is not implemented"))
 }
 
 func (UnimplementedFamilyServiceHandler) RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error) {

@@ -70,20 +70,25 @@ export function gameLabel(game: Game | undefined): string {
   return game.emoji ? `${game.emoji} ${game.name}` : game.name;
 }
 
+/**
+ * What a match's status is called on screen.
+ *
+ * Deliberately not where "contested" is expressed. Being objected to is a
+ * property that sits alongside the status rather than replacing it — a
+ * contested match is still awaiting answers, or still final — so the screens
+ * show the mark next to this label instead of instead of it. Collapsing the two
+ * would lose the fact that a contested result is a real, settled result.
+ */
 export function statusLabel(status: MatchStatus): string {
   switch (status) {
-    case MatchStatus.LOBBY:
-      return "Getting ready";
     case MatchStatus.IN_PROGRESS:
       return "In play";
     case MatchStatus.CLAIMED:
-      return "Awaiting concession";
+      return "Awaiting answers";
     case MatchStatus.FINAL:
       return "Final";
-    case MatchStatus.DISPUTED:
-      return "Disputed";
     case MatchStatus.CANCELED:
-      return "Canceled";
+      return "Called off";
     default:
       return "";
   }
@@ -176,4 +181,22 @@ export function debtLine(debt: number, opponent: string, isMe: boolean): string 
 export function unfinishedLine(wins: number, losses: number, opponent: string): string {
   if (wins === losses) return `Dead even with ${opponent} at ${wins}–${losses}.`;
   return `${wins}–${losses} with ${opponent}. One game swings it.`;
+}
+
+/**
+ * "2 games" or "1 win and 2 losses", for the line that explains why a record is
+ * smaller than the games somebody remembers playing.
+ *
+ * Contested results are held out of every tally, so without a sentence like
+ * this the numbers silently disagree with the match list and there is nothing
+ * on screen to explain it. Spelled out win-and-loss when both sides have one,
+ * because "3 games contested" invites the reading that they were all losses.
+ */
+export function contestedLine(wins: number, losses: number): string {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  if (wins > 0 && losses > 0) {
+    return `${plural(wins, "win", "wins")} and ${plural(losses, "loss", "losses")}`;
+  }
+  if (wins > 0) return plural(wins, "win", "wins");
+  return plural(losses, "loss", "losses");
 }

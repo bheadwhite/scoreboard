@@ -46,7 +46,17 @@ func (r Rivalry) Debt() int32 {
 // One pass, shared by the nemesis, the favorite victim, the drought and the
 // unfinished business — four stats that are four different questions asked of
 // the same pairings.
-func Rivalries(ps []Participation, userID string) map[string]Rivalry {
+//
+// Clean results only. A drought counted off matches somebody is objecting to
+// would be a needling sentence built on a result the person being needled does
+// not accept, which is the worst possible place to be confidently wrong.
+func Rivalries(all []Participation, userID string) map[string]Rivalry {
+	clean, _ := Split(all)
+	return rivalries(clean, userID)
+}
+
+// rivalries is the pass itself, over a slice already filtered by Split.
+func rivalries(ps []Participation, userID string) map[string]Rivalry {
 	// Opposing meetings per opponent, in finalization order.
 	meetings := map[string][]Participation{}
 
@@ -198,8 +208,13 @@ type GameKing struct {
 //
 // Deliberately per game rather than overall: "Lisa owns Catan" is a claim
 // somebody can do something about, where a single overall champion is just the
-// top of the table again.
-func GameKings(ps []Participation) []GameKing {
+// top of the table again. Which is also why contested matches are dropped
+// first: a crown is the loudest thing on the scoreboard, and one handed over on
+// a result its loser is publicly objecting to is the exact claim nobody can do
+// anything about.
+func GameKings(all []Participation) []GameKing {
+	ps, _ := Split(all)
+
 	// game → player → record
 	byGame := map[string]map[string]*Record{}
 	played := map[string]int32{}

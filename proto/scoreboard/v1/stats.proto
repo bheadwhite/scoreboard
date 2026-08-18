@@ -7,6 +7,19 @@ import "scoreboard/v1/common.proto";
 
 // StatsService is the bragging-rights layer. Everything here is computed on
 // read from finalized matches; nothing is materialized.
+//
+// Every tally in this file counts clean results only. A finalized match with an
+// objection standing on it is contested, and contested matches are held out of
+// the wins, the losses, the streaks, the rivalries and the game kings alike —
+// they are reported separately, as a count, so a record reads "14–3, plus 2
+// contested" rather than quietly folding a disputed win into a number somebody
+// is going to quote at dinner.
+//
+// Contested counts are not a second scoreboard. They exist so the clean number
+// can be trusted and so a result nobody agrees about is still visible instead of
+// vanishing. An objection is retractable at any time, so a match can move
+// between the two at any time, and every one of these numbers is recomputed on
+// read anyway.
 service StatsService {
   rpc GetStandings(GetStandingsRequest) returns (GetStandingsResponse);
   rpc GetHeadToHead(GetHeadToHeadRequest) returns (GetHeadToHeadResponse);
@@ -53,13 +66,20 @@ message GameKing {
 
 message StandingsRow {
   User user = 1;
+  // Clean results only.
   int32 wins = 2;
   int32 losses = 3;
-  // 0..1. Zero when the player has no finalized matches.
+  // 0..1, over the clean results. Zero when the player has none.
   double win_rate = 4;
-  // Positive for an active winning streak, negative for a losing one.
+  // Positive for an active winning streak, negative for a losing one. Contested
+  // matches do not break a streak any more than they extend one — they are not
+  // in the sequence at all.
   int32 streak = 5;
   int32 rank = 6;
+  // Settled matches this player was in that somebody is objecting to. Counted
+  // in neither wins nor losses.
+  int32 contested_wins = 7;
+  int32 contested_losses = 8;
 }
 
 message GetStandingsRequest {
@@ -83,6 +103,10 @@ message GetStandingsResponse {
   // Who owns each game that has been finished in range. One per game, and the
   // reason the scoreboard can say "Lisa owns Catan" without a request per game.
   repeated GameKing game_kings = 4;
+  // Settled matches in range that somebody is objecting to. Not included in
+  // total_matches, and the reason the two numbers can disagree with a raw count
+  // of the match list.
+  int32 contested_matches = 5;
 }
 
 // One game's slice of a head-to-head record.
@@ -120,6 +144,10 @@ message GetHeadToHeadResponse {
   // The same pairing as a story: how long since user last won, and what it
   // would take to draw level.
   RivalryLine rivalry = 10;
+  // Meetings on opposing teams that somebody is objecting to. Held out of wins,
+  // losses, games, streak and rivalry alike.
+  int32 contested_wins = 11;
+  int32 contested_losses = 12;
 }
 
 message GetPlayerProfileRequest {
@@ -154,4 +182,13 @@ message GetPlayerProfileResponse {
   // The closest rivalry with enough matches to argue about. Unset until some
   // pairing qualifies.
   RivalryLine unfinished_business = 16;
+  // Settled matches this player was in that somebody is objecting to. Held out
+  // of every other number here, including the nemesis and the drought.
+  int32 contested_wins = 17;
+  int32 contested_losses = 18;
+  // Whether the caller may link this player to an account. True only when the
+  // subject is a placeholder and the caller runs the service — the profile
+  // screen is where a placeholder is actually looked at, so it is where the
+  // administrator is offered the link.
+  bool viewer_may_link = 19;
 }

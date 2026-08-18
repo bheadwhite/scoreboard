@@ -67,6 +67,7 @@ func userPB(u model.User) *scoreboardv1.User {
 		DisplayName: u.DisplayName,
 		AvatarUrl:   u.AvatarURL,
 		CreatedAt:   ts(u.CreatedAt),
+		Placeholder: u.Placeholder,
 	}
 }
 
@@ -116,16 +117,12 @@ func gamePB(g model.Game) *scoreboardv1.Game {
 
 func statusPB(s model.Status) scoreboardv1.MatchStatus {
 	switch s {
-	case model.StatusLobby:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_LOBBY
 	case model.StatusInProgress:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS
 	case model.StatusClaimed:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED
 	case model.StatusFinal:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_FINAL
-	case model.StatusDisputed:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_DISPUTED
 	case model.StatusCanceled:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_CANCELED
 	default:
@@ -135,16 +132,12 @@ func statusPB(s model.Status) scoreboardv1.MatchStatus {
 
 func statusFromPB(s scoreboardv1.MatchStatus) (model.Status, bool) {
 	switch s {
-	case scoreboardv1.MatchStatus_MATCH_STATUS_LOBBY:
-		return model.StatusLobby, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS:
 		return model.StatusInProgress, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED:
 		return model.StatusClaimed, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_FINAL:
 		return model.StatusFinal, true
-	case scoreboardv1.MatchStatus_MATCH_STATUS_DISPUTED:
-		return model.StatusDisputed, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_CANCELED:
 		return model.StatusCanceled, true
 	default:
@@ -238,25 +231,25 @@ func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 		Status:        participantStatusPB(p.Status),
 		InvitedAt:     ts(p.InvitedAt),
 		RespondedAt:   tsp(p.RespondedAt),
-		ReadyAt:       tsp(p.ReadyAt),
 		DisputeReason: p.DisputeReason,
 	}
 }
 
 // matchPB converts a match for one viewer, filling in the convenience fields the
-// UI needs: who still owes a concession, and whether the viewer is one of them.
+// UI needs: who owes the claim an answer, who is objecting to it, and where the
+// viewer stands in both lists.
 //
-// v.organizer controls one piece of redaction. Who disputed a result is only
-// sent to the family organizer, because they are the person who has to settle
-// it. Everyone else sees that the match is disputed without seeing which
-// relative called foul — the app already asks people to concede to each other's
-// faces, and naming the objector turns a paused game into a grudge. Redacted
-// here rather than hidden in the UI, so the name is not merely off-screen while
-// still sitting in the response.
+// Nothing here is redacted. An objection used to be shown only to the family
+// organizer and its own author, because the organizer was the one who had to
+// settle it and naming the objector to everybody else turned a paused game into
+// a grudge. Nobody settles anything now — the objection is the outcome — and an
+// asterisk on somebody's win that nobody can attribute or read the grounds for
+// is worse than the grudge it was avoiding. If you are going to say a result
+// did not happen, you say it under your own name.
 //
-// A method rather than a function because whether the organizer may step in
-// depends on the concession window, which lives on base. A service constructed
-// without one still maps correctly — see Match.Deadlocked.
+// A method rather than a function for consistency with the rest of base; it no
+// longer needs the concession window, because nothing it computes depends on
+// one.
 func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 	out := &scoreboardv1.Match{
 		Id:              m.ID,
@@ -268,6 +261,7 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 		StartedAt:       tsp(m.StartedAt),
 		ClaimedAt:       tsp(m.ClaimedAt),
 		ClaimedByTeamId: deref(m.ClaimedByTeamID),
+		ClaimedByUserId: deref(m.ClaimedByUserID),
 		ConcedeDeadline: tsp(m.ConcedeDeadline),
 		FinalizedAt:     tsp(m.FinalizedAt),
 	}
@@ -278,11 +272,11 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 		out.Teams = append(out.Teams, teamPB(t))
 	}
 	for _, p := range m.Participants {
-		out.Participants = append(out.Participants, redactDispute(participantPB(p), p, v))
+		out.Participants = append(out.Participants, participantPB(p))
 	}
 	// Split rosters so the UI never has to re-derive who is actually playing.
 	for _, p := range m.JoinedParticipants() {
-		out.Joined = append(out.Joined, redactDispute(participantPB(p), p, v))
+		out.Joined = append(out.Joined, participantPB(p))
 	}
 	for _, p := range m.PendingInvites() {
 		out.Invited = append(out.Invited, participantPB(p))
@@ -291,16 +285,7 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 		}
 	}
 
-	out.AllReady = m.AllReady()
 	out.ViewerIsCreator = m.CreatedBy == v.id
-	for _, p := range m.AwaitingReady() {
-		out.AwaitingReady = append(out.AwaitingReady, userPB(p.User))
-	}
-	for _, p := range m.JoinedParticipants() {
-		if p.User.ID == v.id && p.ReadyAt != nil {
-			out.ViewerIsReady = true
-		}
-	}
 	for _, p := range m.AwaitingConcession() {
 		out.AwaitingConcession = append(out.AwaitingConcession, userPB(p.User))
 		if p.User.ID == v.id {
@@ -308,30 +293,20 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 		}
 	}
 
+	out.Contested = m.Contested()
+	for _, p := range m.Objectors() {
+		out.Objectors = append(out.Objectors, userPB(p.User))
+		if p.User.ID == v.id {
+			out.ViewerObjected = true
+		}
+	}
+
 	out.ViewerIsClaimant = m.OnClaimingTeam(v.id)
-	out.OrganizerMayResolve = m.Deadlocked(b.concedeWindow)
 	// Unconditional on status: a finalized match is exactly the one an admin is
 	// most likely to need gone, and it is the only status nothing else can
 	// touch.
 	out.ViewerMayVoid = v.admin
 	return out
-}
-
-// redactDispute strips who objected unless the viewer is the organizer, or it
-// is their own objection — you always know what you did.
-//
-// Being an administrator is deliberately not enough. The argument is the
-// family's, and running the server is not a reason to be told who in somebody
-// else's household called foul.
-func redactDispute(
-	pb *scoreboardv1.MatchParticipant, p model.MatchParticipant, v viewer,
-) *scoreboardv1.MatchParticipant {
-	if v.organizer || p.User.ID == v.id {
-		return pb
-	}
-	pb.DisputedAt = nil
-	pb.DisputeReason = ""
-	return pb
 }
 
 func (b base) matchesPB(ms []model.Match, v viewer) []*scoreboardv1.Match {

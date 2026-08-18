@@ -14,20 +14,53 @@ clients for nothing, and renaming the Cloud Run service changes the URL, which
 `APP_URL` and the OAuth redirect URI are both derived from. The name lives in
 what a player sees: the title, the manifest, the sign-in hero, the share sheet.
 
-**The mechanic that defines the app: nobody can declare their own win.** You
-claim victory, and the claim sits publicly pending until every opponent
-concedes. Only ratified matches touch the scoreboard, and that is what makes the
-numbers worth arguing about.
+**The mechanic that defines the app: a win is a claim, and everybody else gets
+asked.** Somebody names the winner, the claim sits publicly pending, and every
+other player answers it. Only settled matches touch the scoreboard, and only
+settled matches nobody is objecting to touch the *clean* scoreboard — which is
+the number people actually argue about.
 
-Nothing about a pending claim is a one-way door. Every answer is a *position
-held*, not an event logged: an opponent can move between conceding and objecting
-for as long as the match is open, a claimant can withdraw the claim outright, and
-the match sits on every player's list showing what they currently say. Silence
-eventually reads as a concession, but the window is a week — a backstop for a
-match everybody walked away from, not a countdown anyone is meant to race. An
-objection stops even that. The family organizer can break a deadlock, but only
-once the players genuinely cannot move it themselves; they are a last resort, not
-a referee.
+**Objecting marks a result; it does not block one.** Anybody who was not on the
+named side can say "that is not what happened", at any point in the match's life
+including years after it settled. The claim still settles on schedule. What the
+objection does is make the match **contested**, and a contested match is held
+out of every tally on the scoreboard — wins, losses, streaks, rivalries, game
+kings — while staying completely visible as a match, with the objector's name
+and reasons on it. It stops being contested the moment they take it back.
+
+Nothing about any of this is a one-way door except settling itself. Every answer
+is a *position held*, not an event logged: a player can move between conceding
+and objecting whenever they like, and whoever made a claim — or anybody on the
+side it named — can withdraw it outright. Silence eventually reads as agreement,
+but the window is a week: a backstop for a match everybody walked away from, not
+a countdown anyone is meant to race.
+
+**Nobody adjudicates.** There is no dispute resolution, no referee and no
+deadlock, because an objection cannot deadlock anything. The organizer can call
+off a game that is still being played and a service administrator can erase a
+match outright, but neither of them can decide who won, or clear somebody's
+objection, or overrule a result. That is the whole argument of the app.
+
+**Joining is the entire commitment.** There is no lobby and no ready check. A
+match is posted with its game, its contract and its invitations, and it is live
+from that moment; you confirm on your own device by joining, and the contract
+was fixed before you tapped so there is nothing left to affirm. Somebody who
+wanders up halfway through can still join, right until a winner is named.
+
+**Players who have not signed up are still players.** Any member can add a
+placeholder — an ordinary `users` row nobody can log in to — so a game somebody
+was actually in gets recorded with everybody in it rather than entered short or
+not at all. They join matches, hold a team, win, lose, and appear in the
+standings and in other people's head-to-head records, all without a single query
+knowing they are different.
+
+The one thing they cannot do is answer, so the protocol never asks them, and a
+claim only they could have answered settles on the clock instead of on anybody's
+word. Their agreement is deferred rather than assumed: when they sign up, a
+service administrator links the two, the whole history becomes genuinely theirs,
+and because objections outlive finalization they can go back and flag anything
+in it. That deferred objection is the entire justification for one player being
+able to enter another person into a game without asking.
 
 ## Stack
 
@@ -180,54 +213,130 @@ two meetings minimum (`minMeetings`), a win before anybody owns a game. That is
 deliberate: "0 meetings since you last beat Dad" and a crown handed to somebody
 for one game are both worse than silence, and a screen that pads itself with
 non-facts stops being worth reading. Every one of them comes off the same
-`Rivalries()` pass over the same finalized participations, so adding another
-question of the form "who have I not beaten lately" costs a function, not a
-query.
+`Rivalries()` pass over the same *clean* finalized participations, so adding
+another question of the form "who have I not beaten lately" costs a function,
+not a query — and gets the contested filtering for free by construction.
+
+**A placeholder is a `users` row with `provider = 'placeholder'`.** That is the
+whole mechanism, and it is deliberate: everything keys on `users.id`, so
+modelling them separately would have meant teaching standings, head-to-head,
+profiles, participations and every mapper about a second kind of player. The
+provider identity is exactly what they lack, so it is what says so. `provider_id`
+is a fresh uuid rather than empty because `users_provider_identity_idx` is a
+plain unique index on `(provider, provider_id)` — it has to be, since the sign-in
+upsert names it as an `ON CONFLICT` target — so two placeholders sharing a blank
+id would collide with each other. `isPlaceholder` in `store.go` is the one SQL
+definition; `model.User.Placeholder` is the Go one, and every query that loads a
+player selects it.
+
+**`invitePlayer` joins a placeholder instead of inviting them.** An invitation
+is a question, and there is no device to put it on — an invitation to a
+placeholder would sit unanswered forever while the person plainly sitting at the
+table never appeared in the game. The branch lives in that one function so
+`CreateMatch` and `InvitePlayers` cannot disagree about it.
+
+**`Match.Answered()` needs somebody who *could* answer, not just an empty
+queue.** `AwaitingConcession` skips placeholders, so a game whose only opponents
+are placeholders has nobody outstanding from the first instant — and would
+ratify immediately, recording a win on the say-so of the one person who claimed
+it against players who by construction cannot contradict them. Hence the second
+condition: `len(Answerable()) > 0`. Such a match waits out the concession window
+and settles on the clock, which is silence read as agreement rather than
+agreement invented from an empty list. Drop that condition and the app's central
+rule has a hole in it exactly the size of one placeholder.
+
+**Linking is admin-only and irreversible.** `UserService.LinkPlaceholder` is
+gated on `ADMIN_EMAILS`, the same as `VoidMatch` and for the same reason — both
+rewrite the permanent record, and a family organizer being able to move wins
+between the people they play against is the shape of thing family roles are kept
+away from. The account's id survives, never the placeholder's: the account id is
+carried in a session cookie, so moving it would sign somebody out of their own
+history. The rewrite has to reach every reference, not just participations —
+`matches.created_by`, `matches.claimed_by_user_id`, `games.created_by`,
+`families.owner_id`, `family_members` — because the placeholder row is deleted
+at the end and anything missed is a dangling foreign key. It refuses outright
+when both players are in the same match: whichever row were dropped would be a
+guess about something the database cannot settle, and the possibility worth
+stopping for is that the placeholder is not who the administrator thinks it is.
 
 **Every participant always has a team**, including in free-for-all games, where
 each player gets a team of one. This collapses "concede to a player" and
 "concede to a team" into one code path. Do not add a parallel non-team path.
 
-**A standing objection clears `concede_deadline`.** That is the whole mechanism
-separating disagreement from silence. If you ever leave the deadline set on a
-disputed match, a false claim will silently become true once the window runs out.
+**Contested is derived, never stored.** `Match.Contested()` asks the answers —
+does any joined player off the winning side have `disputed_at` set — and that is
+true of a claim mid-flight and of a match that settled in 2019, because the
+participant row outlives finalization. Store a flag instead and you inherit the
+job of maintaining it across concede, dispute, withdraw, re-claim and finalize,
+and the day one of those forgets, a disputed result is silently back on the
+scoreboard. The same question is asked once in SQL — the `EXISTS` in
+`LoadParticipations` — and those two have to be read together, including the
+team test: a stray `disputed_at` on somebody on the winning side, left by a
+claim that was withdrawn and remade, is not an objection to this result.
 
-**`CLAIMED` and `DISPUTED` are derived, not latched.** They are the same
-situation — a claim on the table, a set of answers to it — read with and without
-an objection in the pile, so `settleAnswers()` recomputes the status from the
-answers after every change rather than flipping it one way when somebody first
-objects. Withdrawing the last objection therefore returns the match to `claimed`
-and restarts the clock with a *full* window: the players who had said nothing
-were watching an argument, not sitting on an unanswered claim. Write a status
-directly in a handler and a match will get stuck disputed with its clock stopped
-forever.
+**An objection does not touch `concede_deadline`.** It used to clear it, to
+separate disagreement from silence. Nothing turns on that difference now, and
+leaving the clock alone is what guarantees every claim terminates: a match
+everybody objected to settles exactly as promptly as one everybody accepted, and
+lands contested. Clear the deadline again and you reintroduce the match nobody
+can finish.
 
-**`Concede` accepts a disputed match on purpose.** That is how somebody takes
-their own objection back. Narrow it to `claimed` and the only way out of a
-dispute becomes the organizer.
+**`finalizeIfRatified` fires when every opponent has *answered*, not agreed.**
+That one word is the difference. Waiting for unanimous concession made sense
+when an objection put the match in front of a referee; with no referee, waiting
+means waiting forever.
 
-**The organizer is gated on `Match.Deadlocked(window)`**, not on "is this
-disputed" — everyone has answered and they still disagree, or the claim has
-outlived its window. The second test is not optional: an objection stops the
-clock, so a disputer who goes quiet would otherwise freeze the match with no way
-to finish it. `ResolveDispute` enforces this server-side; the proto field
-`organizer_may_resolve` is only how the UI knows.
+**`Concede` and `DisputeMatch` both accept a `final` match on purpose.** That is
+how a result gets flagged after the fact — which is when most people first
+notice one they disagree with, since they see it in the standings — and how the
+flag comes off again. Narrow `answerable()` to `claimed` and the only remedy for
+a bogus settled result becomes an administrator erasing the match.
+
+**On a settled match the named winner may object too.** `answerable()` shuts
+them out only while the claim is live, where they have the better door:
+`WithdrawClaim` takes the whole thing off the table instead of leaving an
+asterisk on a result that stands anyway. After it settles that door is closed,
+and shutting them out as well would leave the person credited with the win as
+the only player unable to say it did not happen — which is a position the
+creator's short circuit can put somebody in, instantly, in a two-player game
+where the creator's own claim is also the only answer it needs. So
+`Match.Objectors()` scans every joined player while `AwaitingConcession()` still
+only asks the opposing side: owing the claim an answer and being able to call it
+wrong are different questions.
+
+**Only the creator may name somebody else the winner.** Anyone may claim their
+own side; `ClaimVictory` gates a different side on `m.CreatedBy`. When they do,
+their claim is written as their own concession in the same transaction — they
+are an opponent of the team they just crowned, and they have plainly already
+accepted it — which is what lets `AwaitingConcession` and everything downstream
+stay ignorant of who made the claim. `claimed_by_user_id` records who said it,
+as distinct from `claimed_by_team_id` for who won.
+
+**`WithdrawClaim` is open to the claim's author *and* the side it named.** The
+second half is the counterweight to the first rule: being handed a win you did
+not earn should be refusable outright, not only objectable to.
 
 **Voiding is the only exit from the permanent record, and it is a hard delete.**
 `MatchService.VoidMatch` erases the row; participants and teams go with it. That
-is deliberate — a voided match kept as a row would be a fourth status every stats
+is deliberate — a voided match kept as a row would be another status every stats
 query has to remember to skip. Because stats are computed on read, deleting the
 row *is* the whole cleanup: standings, head-to-head and profiles simply stop
 counting it. It is gated on `ADMIN_EMAILS` (a service administrator, checked
 against `users.email`), **not** on any family role, and unlike every other match
 handler it does not require family membership — running the deployment is the
-authorization. Organizers get `ResolveDispute`, which still names a winner.
+authorization. Organizers get `CancelMatch` on a game other people are in, and
+that is all — nothing anywhere lets one player decide a result, and voiding is
+not a way around that. It is for a match that should never have existed: a test
+game played against real people, a claim the sweeper ratified while everybody
+was away. A result somebody merely disagrees with is what objecting is for, and
+objecting does not need anybody's permission.
 
-**Finalization happens in two places** — `finalizeIfRatified` (last concession
+**Finalization happens in two places** — `finalizeIfRatified` (last answer
 lands) and `finalizeIfExpired` (clock ran out, checked lazily on read *and* by
 the sweeper). Both funnel through `finalize()`, which is the only place a match
 enters the permanent record, and finalizing is the *only* irreversible step in
-the whole protocol.
+the whole protocol. Note what it is not: it is not the moment a result becomes
+uncontestable, because objections outlive it.
 
 **`POST /tasks/sweep` does double duty**: it finalizes timed-out claims and the
 request itself keeps a free-tier Supabase project from being paused for
@@ -273,7 +382,17 @@ are deliberately no credentials in the bundle.
 **Stats are computed on read, never materialized.** The store does one query for
 a family's finalized participations and `internal/stats` does the rest as pure
 functions. At family scale that is correct and it makes all the interesting
-logic unit-testable without a database.
+logic unit-testable without a database. It is also what makes a retractable
+objection free: a result moves between the clean numbers and the contested ones
+with nothing to recompute and nothing to invalidate.
+
+**The contested split happens exactly once, in `stats.Split`.** Every exported
+function in the package calls it at the top and everything below works on an
+already-filtered slice. Do not thread a "skip if contested" test through the
+individual functions — that is precisely how `HeadToHead` and `Rivalries` would
+drift apart about which meetings exist, and they have to agree for the same
+reason they already have to agree about free-for-all losses. Contested tallies
+are counted by running the same code over the other half.
 
 ## Testing
 

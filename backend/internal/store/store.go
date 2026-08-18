@@ -95,3 +95,18 @@ func noRows(err error) error {
 	}
 	return err
 }
+
+// placeholderProvider marks a users row nobody can sign in to. A placeholder is
+// an ordinary player that another player added so a game they were actually in
+// could be recorded honestly; what they lack is a provider identity, so that is
+// what says so.
+//
+// Never 'google', so the sign-in upsert — which conflicts on
+// (provider, provider_id) — can never land on one of these rows.
+const placeholderProvider = "placeholder"
+
+// isPlaceholder is the SQL half of model.User.Placeholder. Written once and
+// referenced from every query that loads a player, because a screen that
+// disagrees with the concession protocol about who can answer is worse than
+// either answer.
+const isPlaceholder = `(u.provider = '` + placeholderProvider + `')`

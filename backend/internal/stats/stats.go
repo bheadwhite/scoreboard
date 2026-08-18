@@ -5,6 +5,27 @@
 // the rest, which keeps the SQL trivial and makes all of the interesting logic
 // testable without a database. At family scale — a few thousand matches, ever —
 // there is no reason to push this into the query planner or to materialize it.
+//
+// # Contested results
+//
+// A finalized match somebody is still objecting to does not count. Not toward
+// wins, not toward losses, not toward a streak, a rivalry, a drought or a
+// crown. It is reported separately as a count, so a record reads "14–3, plus 2
+// contested" and the number people quote at each other is one nobody at the
+// table disputes.
+//
+// The split happens in exactly one place — Split, called at the top of each
+// exported entry point — and everything below it works on a slice that has
+// already been filtered. That is deliberate. Threading a "skip if contested"
+// test through every function is how HeadToHead and Rivalries would eventually
+// come to disagree about which meetings exist, and they have to agree: a
+// rivalry counted by one and not the other puts a pairing on a profile that
+// the rivalry screen then shows as 0–0. Filtering once, at the door, makes
+// disagreeing impossible rather than merely discouraged.
+//
+// An objection is retractable at any time, including years after the match
+// settled, so a result can move between clean and contested at any time. Since
+// none of this is materialized, that costs nothing: the next read is right.
 package stats
 
 import (
@@ -23,6 +44,36 @@ type Participation struct {
 	Result string
 	// Finalization order; ties broken by MatchID for stability.
 	Seq int64
+	// Whether somebody is objecting to this match's result. Held out of every
+	// number here and counted on its own — see Split.
+	Contested bool
+}
+
+// Split separates the results everybody accepts from the ones somebody is
+// objecting to. Called at the top of every exported function in this package,
+// and the only place the distinction is made.
+func Split(ps []Participation) (clean, contested []Participation) {
+	for _, p := range ps {
+		if p.Contested {
+			contested = append(contested, p)
+		} else {
+			clean = append(clean, p)
+		}
+	}
+	return clean, contested
+}
+
+// tally counts one player's wins and losses in a slice, which is all a
+// contested count ever needs — there is no streak in a set of results nobody
+// agrees about, and no rivalry worth deriving from one.
+func tally(ps []Participation, userID string) Record {
+	var r Record
+	for _, p := range ps {
+		if p.UserID == userID {
+			r.add(p.won())
+		}
+	}
+	return r
 }
 
 func (p Participation) won() bool { return p.Result == model.ResultWin }
@@ -50,6 +101,11 @@ type PlayerStanding struct {
 	Losses int32
 	// Positive for an active winning streak, negative for a losing one.
 	Streak int32
+	// Settled matches somebody is objecting to. In neither column above, and
+	// not in the streak either — a contested result is not in the sequence at
+	// all, so it neither extends a run nor breaks one.
+	ContestedWins   int32
+	ContestedLosses int32
 }
 
 // WinRate returns 0..1, or 0 for a player with no finalized matches.
@@ -129,8 +185,26 @@ func longestWinStreak(ordered []Participation) int32 {
 
 // Standings ranks every player who appears in ps. Order is wins desc, then win
 // rate desc, then fewer losses, then user id so the result is stable.
-func Standings(ps []Participation) []PlayerStanding {
+//
+// Contested results do not rank anybody. A player who appears only in contested
+// matches still gets a row — they played, and their contested count says so —
+// but at 0–0, which is the honest reading of a record nobody agrees about.
+func Standings(all []Participation) []PlayerStanding {
+	ps, contested := Split(all)
+
 	agg := map[string]*PlayerStanding{}
+	for _, p := range contested {
+		row, ok := agg[p.UserID]
+		if !ok {
+			row = &PlayerStanding{UserID: p.UserID}
+			agg[p.UserID] = row
+		}
+		if p.won() {
+			row.ContestedWins++
+		} else {
+			row.ContestedLosses++
+		}
+	}
 	for _, p := range ps {
 		row, ok := agg[p.UserID]
 		if !ok {
@@ -178,8 +252,12 @@ type H2H struct {
 	Games []GameRecord
 	// Positive for an active winning streak against this opponent.
 	Streak int32
-	// Opposing meetings, newest first.
+	// Opposing meetings, newest first. Clean ones only — a contested match is
+	// not offered as evidence of a record it is not part of.
 	MatchIDs []string
+	// Opposing meetings somebody is objecting to. In none of the above.
+	ContestedWins   int32
+	ContestedLosses int32
 }
 
 // GameRecord is a record within a single game.
@@ -190,7 +268,22 @@ type GameRecord struct {
 
 // HeadToHead computes userID's record against opponentID. This is the query the
 // whole app exists for: "how many times have I beaten Dad at Rook."
-func HeadToHead(ps []Participation, userID, opponentID string) H2H {
+func HeadToHead(all []Participation, userID, opponentID string) H2H {
+	ps, contested := Split(all)
+	out := headToHead(ps, userID, opponentID)
+	if len(contested) > 0 {
+		c := headToHead(contested, userID, opponentID)
+		out.ContestedWins, out.ContestedLosses = c.Wins, c.Losses
+	}
+	return out
+}
+
+// headToHead is the tally itself, over a slice already filtered by Split. The
+// contested count is the same computation run again over the other half, so
+// "which meetings are meetings" — the free-for-all rule below in particular —
+// cannot be answered one way for the clean numbers and another for the marked
+// ones.
+func headToHead(ps []Participation, userID, opponentID string) H2H {
 	var out H2H
 	games := map[string]*Record{}
 	var opposing []Participation
@@ -282,12 +375,21 @@ type Profile struct {
 	HasUnfinished bool
 
 	Games []GameRecord
+
+	// Settled matches somebody is objecting to. In none of the above — not the
+	// totals, not the streaks, not the nemesis, not the drought.
+	ContestedWins   int32
+	ContestedLosses int32
 }
 
 // PlayerProfile summarizes one player's whole record, including the two stats
 // that make this fun: your nemesis and your favorite victim.
-func PlayerProfile(ps []Participation, userID string) Profile {
+func PlayerProfile(all []Participation, userID string) Profile {
+	ps, contested := Split(all)
+
 	var out Profile
+	c := tally(contested, userID)
+	out.ContestedWins, out.ContestedLosses = c.Wins, c.Losses
 
 	mine := forPlayer(ps, userID)
 	for _, p := range mine {
@@ -314,7 +416,7 @@ func PlayerProfile(ps []Participation, userID string) Profile {
 	// Every pairing this player has, computed once. The nemesis, the favorite
 	// victim, the drought and the unfinished business are four questions asked
 	// of the same map.
-	versus := Rivalries(ps, userID)
+	versus := rivalries(ps, userID)
 
 	// Nemesis: most losses to. Ties broken by fewer wins against them (a
 	// rivalry you are losing more lopsidedly is the better story), then by id.

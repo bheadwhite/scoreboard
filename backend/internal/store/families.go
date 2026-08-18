@@ -212,8 +212,8 @@ func (s *Store) MemberRole(ctx context.Context, familyID, userID string) (model.
 }
 
 func (s *Store) ListMembers(ctx context.Context, familyID string) ([]model.FamilyMember, error) {
-	const q = `
-		SELECT u.id, u.display_name, u.avatar_url, u.created_at, m.role, m.joined_at
+	q := `
+		SELECT u.id, u.display_name, u.avatar_url, u.created_at, ` + isPlaceholder + `, m.role, m.joined_at
 		FROM family_members m
 		JOIN users u ON u.id = m.user_id
 		WHERE m.family_id = $1
@@ -229,7 +229,7 @@ func (s *Store) ListMembers(ctx context.Context, familyID string) ([]model.Famil
 	for rows.Next() {
 		var m model.FamilyMember
 		if err := rows.Scan(&m.User.ID, &m.User.DisplayName, &m.User.AvatarURL,
-			&m.User.CreatedAt, &m.Role, &m.JoinedAt); err != nil {
+			&m.User.CreatedAt, &m.User.Placeholder, &m.Role, &m.JoinedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, m)

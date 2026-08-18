@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/user.proto.
  */
 export const file_scoreboard_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChhzY29yZWJvYXJkL3YxL3VzZXIucHJvdG8SDXNjb3JlYm9hcmQudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlciJAChRVcGRhdGVQcm9maWxlUmVxdWVzdBIUCgxkaXNwbGF5X25hbWUYASABKAkSEgoKYXZhdGFyX3VybBgCIAEoCSI6ChVVcGRhdGVQcm9maWxlUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlcjKtAQoLVXNlclNlcnZpY2USQgoFR2V0TWUSGy5zY29yZWJvYXJkLnYxLkdldE1lUmVxdWVzdBocLnNjb3JlYm9hcmQudjEuR2V0TWVSZXNwb25zZRJaCg1VcGRhdGVQcm9maWxlEiMuc2NvcmVib2FyZC52MS5VcGRhdGVQcm9maWxlUmVxdWVzdBokLnNjb3JlYm9hcmQudjEuVXBkYXRlUHJvZmlsZVJlc3BvbnNlQrwBChFjb20uc2NvcmVib2FyZC52MUIJVXNlclByb3RvUAFaR2dpdGh1Yi5jb20vYmhlYWR3aGl0ZS9zY29yZWJvYXJkL2JhY2tlbmQvZ2VuL3Njb3JlYm9hcmQvdjE7c2NvcmVib2FyZHYxogIDU1hYqgINU2NvcmVib2FyZC5WMcoCDVNjb3JlYm9hcmRcVjHiAhlTY29yZWJvYXJkXFYxXEdQQk1ldGFkYXRh6gIOU2NvcmVib2FyZDo6VjFiBnByb3RvMw", [file_scoreboard_v1_common]);
+  fileDesc("ChhzY29yZWJvYXJkL3YxL3VzZXIucHJvdG8SDXNjb3JlYm9hcmQudjEiDgoMR2V0TWVSZXF1ZXN0IkEKDUdldE1lUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchINCgVhZG1pbhgCIAEoCCJAChRVcGRhdGVQcm9maWxlUmVxdWVzdBIUCgxkaXNwbGF5X25hbWUYASABKAkSEgoKYXZhdGFyX3VybBgCIAEoCSI6ChVVcGRhdGVQcm9maWxlUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlciJBChZMaW5rUGxhY2Vob2xkZXJSZXF1ZXN0EhYKDnBsYWNlaG9sZGVyX2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkiUwoXTGlua1BsYWNlaG9sZGVyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchIVCg1tYXRjaGVzX21vdmVkGAIgASgFMo8CCgtVc2VyU2VydmljZRJCCgVHZXRNZRIbLnNjb3JlYm9hcmQudjEuR2V0TWVSZXF1ZXN0Ghwuc2NvcmVib2FyZC52MS5HZXRNZVJlc3BvbnNlEloKDVVwZGF0ZVByb2ZpbGUSIy5zY29yZWJvYXJkLnYxLlVwZGF0ZVByb2ZpbGVSZXF1ZXN0GiQuc2NvcmVib2FyZC52MS5VcGRhdGVQcm9maWxlUmVzcG9uc2USYAoPTGlua1BsYWNlaG9sZGVyEiUuc2NvcmVib2FyZC52MS5MaW5rUGxhY2Vob2xkZXJSZXF1ZXN0GiYuc2NvcmVib2FyZC52MS5MaW5rUGxhY2Vob2xkZXJSZXNwb25zZUK8AQoRY29tLnNjb3JlYm9hcmQudjFCCVVzZXJQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
 
 /**
  * @generated from message scoreboard.v1.GetMeRequest
@@ -35,6 +35,15 @@ export type GetMeResponse = Message<"scoreboard.v1.GetMeResponse"> & {
    * @generated from field: scoreboard.v1.User user = 1;
    */
   user?: User | undefined;
+
+  /**
+   * Whether this caller runs the service. The only capability the client is
+   * told about outside the context of a particular match, and what the profile
+   * screen reads to decide whether to offer linking.
+   *
+   * @generated from field: bool admin = 2;
+   */
+  admin: boolean;
 };
 
 /**
@@ -84,8 +93,61 @@ export const UpdateProfileResponseSchema: GenMessage<UpdateProfileResponse> = /*
   messageDesc(file_scoreboard_v1_user, 3);
 
 /**
- * UserService manages the caller's own profile. Identity itself comes from the
- * Supabase JWT; the first authenticated call upserts a row here.
+ * @generated from message scoreboard.v1.LinkPlaceholderRequest
+ */
+export type LinkPlaceholderRequest = Message<"scoreboard.v1.LinkPlaceholderRequest"> & {
+  /**
+   * The player with no account, whose history is being handed over.
+   *
+   * @generated from field: string placeholder_id = 1;
+   */
+  placeholderId: string;
+
+  /**
+   * The account that turns out to be them. Must be a real signed-up player.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message scoreboard.v1.LinkPlaceholderRequest.
+ * Use `create(LinkPlaceholderRequestSchema)` to create a new message.
+ */
+export const LinkPlaceholderRequestSchema: GenMessage<LinkPlaceholderRequest> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_user, 4);
+
+/**
+ * @generated from message scoreboard.v1.LinkPlaceholderResponse
+ */
+export type LinkPlaceholderResponse = Message<"scoreboard.v1.LinkPlaceholderResponse"> & {
+  /**
+   * The surviving account, with everything now attributed to it.
+   *
+   * @generated from field: scoreboard.v1.User user = 1;
+   */
+  user?: User | undefined;
+
+  /**
+   * How many participations moved. Worth reporting: it is the size of what just
+   * happened, and there is no undo to check it against.
+   *
+   * @generated from field: int32 matches_moved = 2;
+   */
+  matchesMoved: number;
+};
+
+/**
+ * Describes the message scoreboard.v1.LinkPlaceholderResponse.
+ * Use `create(LinkPlaceholderResponseSchema)` to create a new message.
+ */
+export const LinkPlaceholderResponseSchema: GenMessage<LinkPlaceholderResponse> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_user, 5);
+
+/**
+ * UserService manages who somebody is. Identity itself comes from the OAuth
+ * flow the server runs; the first authenticated call upserts a row here.
  *
  * @generated from service scoreboard.v1.UserService
  */
@@ -105,6 +167,34 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof UpdateProfileRequestSchema;
     output: typeof UpdateProfileResponseSchema;
+  },
+  /**
+   * Declares that a placeholder and a real account are the same person, and
+   * makes it true: everything the placeholder did becomes the account's, and
+   * the placeholder stops existing.
+   *
+   * Service administrator only, and gated on ADMIN_EMAILS rather than on any
+   * family role — the same gate as MatchService.VoidMatch, for the same reason.
+   * Both rewrite the permanent record, and moving somebody's wins onto another
+   * player is not something a family organizer should be able to do to the
+   * people they play against.
+   *
+   * Irreversible, and the rewrite runs the whole way: participations, the
+   * matches they set up, the claims they made, the games they added, their
+   * membership. The account's own id is what survives, because it is the one
+   * tied to a sign-in. Nothing is left pointing at the placeholder afterward
+   * because the placeholder is deleted.
+   *
+   * Refused outright when the two are both in the same match. That is either a
+   * person entered twice or a placeholder that is not who somebody thinks it
+   * is, and neither can be resolved by guessing which row to keep.
+   *
+   * @generated from rpc scoreboard.v1.UserService.LinkPlaceholder
+   */
+  linkPlaceholder: {
+    methodKind: "unary";
+    input: typeof LinkPlaceholderRequestSchema;
+    output: typeof LinkPlaceholderResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_scoreboard_v1_user, 0);

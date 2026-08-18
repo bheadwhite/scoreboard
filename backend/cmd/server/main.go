@@ -110,7 +110,7 @@ func main() {
 	opts := []connect.HandlerOption{connect.WithInterceptors(authn.Interceptor())}
 
 	api := http.NewServeMux()
-	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st, hub), opts...))
+	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st, hub, admins), opts...))
 	api.Handle(scoreboardv1connect.NewFamilyServiceHandler(service.NewFamilyService(st, hub), opts...))
 	api.Handle(scoreboardv1connect.NewGameServiceHandler(service.NewGameService(st, hub), opts...))
 	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, concedeWindow, admins), opts...))
