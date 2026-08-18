@@ -1,7 +1,12 @@
-# Deploying Scoreboard
+# Deploying Gauntlet
 
 One Cloud Run service. The Go binary serves the built SPA, so everything is
 same-origin and CORS never enters the picture.
+
+The service is still called `scoreboard`, and should stay that way: its name is
+what the `*.run.app` URL is built from, and `APP_URL` plus the OAuth redirect
+URI are both derived from that URL. Renaming it breaks every sign-in until the
+Google console is updated to match.
 
 ---
 
@@ -124,7 +129,8 @@ gcloud scheduler jobs list --location us-central1
 curl -fsS https://YOUR-SERVICE-URL/health      # pings the database, prints "ok"
 ```
 
-Then sign in, create a family, and play a game through to a concession.
+Then sign in and play a game through to a concession. Signing in puts you on the
+scoreboard — there is one, and nothing asks you to pick or create it.
 
 ---
 

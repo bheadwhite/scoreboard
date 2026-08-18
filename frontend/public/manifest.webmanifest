@@ -1,14 +1,14 @@
 {
-  "name": "Scoreboard",
-  "short_name": "Scoreboard",
-  "description": "Family scoreboard. Wins only count when the losers concede.",
+  "name": "Gauntlet",
+  "short_name": "Gauntlet",
+  "description": "Every game, every rivalry, on the record. A win only counts when the losers concede it.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1b1512",
   "theme_color": "#1b1512",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥊</text></svg>",
       "sizes": "any",
       "type": "image/svg+xml"
     }

@@ -29,11 +29,11 @@ export function SignInView({ session }: { session: Session }) {
     <div className="app">
       <div className="hero">
         <span className="hero__mark" aria-hidden="true">
-          🏆
+          🥊
         </span>
-        <h1 className="hero__title">Scoreboard</h1>
+        <h1 className="hero__title">Gauntlet</h1>
         <p className="hero__tag">
-          Family bragging rights, permanently on the record.
+          Every game you play with your people, permanently on the record.
           <br />A win only counts when the losers concede it.
         </p>
       </div>

@@ -1,7 +1,7 @@
-# Scoreboard — Design
+# Gauntlet — Design
 
-A family game scoreboard. Players join a family, play games, and a win only counts
-once the losers concede it. The point of the app is bragging rights: how many times
+Gauntlet is a scoreboard for everything you play. Everybody who signs in is on
+the same board, plays games, and a win only counts once the losers concede it. The point of the app is bragging rights: how many times
 you've beaten a *specific person* at a *specific game*.
 
 The integrity mechanic is the product. Nobody self-reports a win into the record —
@@ -87,7 +87,7 @@ become truth — silence and disagreement must not mean the same thing.
 -- id mirrors Supabase auth.users.id; row is upserted on first authenticated call
 users              (id, display_name, avatar_url, created_at)
 
-families           (id, name, invite_code unique, owner_id, created_at)
+families           (id, name, invite_code unique, owner_id, created_at, is_default)
 family_members     (family_id, user_id, role, joined_at)          -- pk(family_id, user_id)
 
 -- family_id null = global catalog game (Rook, Catan, …), seeded at migration time

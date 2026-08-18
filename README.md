@@ -1,7 +1,8 @@
-# 🏆 Scoreboard
+# 🥊 Gauntlet
 
-A family game scoreboard. Players join a family, log the games they play, and the
-app keeps a permanent record of who beat whom at what.
+A scoreboard for everything you play. Everybody who signs in is on the same
+board — friends, family, whoever you play with — and the app keeps a permanent
+record of who beat whom at what.
 
 The point is bragging rights. The headline stat is not "your win rate" — it is
 **"you have beaten Dad at Rook 14 times and he has beaten you 3 times."**
@@ -72,5 +73,6 @@ make check                         # typecheck + test everything
 make generate                      # regenerate Go + TS from the protos
 make data                          # show what is in the database
 make clear-family FAMILY="name"    # delete one family and everything under it
+make consolidate                   # plan for folding every family into one
 make deploy                        # Cloud Run
 ```
