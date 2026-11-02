@@ -275,9 +275,9 @@ function InPlayStage({
   match: Match;
   busy: boolean;
 }) {
-  const [picking, setPicking] = useState(false);
   const myTeam = presenter.myTeamId(match);
-  const teams = presenter.teamsWithPlayers(match);
+  // A side with nobody left on it cannot have won anything.
+  const sides = presenter.teamsWithPlayers(match).filter((team) => team.players.length > 0);
   const inMatch = presenter.amIn(match);
   const canCallIt = presenter.canClaimForOthers(match);
   // Nobody to beat yet. The match is live either way — there is no lobby — but
@@ -302,33 +302,40 @@ function InPlayStage({
 
       <Roster presenter={presenter} match={match} busy={busy} inMatch={inMatch} />
 
-      {inMatch ? (
+      {canCallIt && !alone ? (
+        // The host is usually the one holding the phone when a game ends, and
+        // the winner is as likely to be anybody else as them. So every side is
+        // one tap away, and the host's own is not given any special standing.
         <div className="bottombar">
           <div className="stack" style={{ gap: 8 }}>
-            <button
-              className="btn btn--primary btn--block btn--claim"
-              disabled={busy || alone || !myTeam}
-              onClick={() => myTeam && void presenter.claimVictory(myTeam)}
-            >
-              {alone
-                ? "Waiting for someone to join"
-                : presenter.amSolo(match)
-                  ? "🏆 I won"
-                  : "🏆 We won"}
-            </button>
-            {/* The short circuit. Only the host gets it, and only once there is
-                somebody to name — the common case is a game that just ended
-                where the winner is not the one holding the phone. */}
-            {canCallIt && !alone && (
-              <button
-                className="btn btn--block btn--sm"
-                disabled={busy}
-                onClick={() => setPicking(true)}
-              >
-                Somebody else won
-              </button>
-            )}
+            <span className="section-label">Who won? Tap to put it on the board</span>
+            <div className="winner-grid">
+              {sides.map((team) => (
+                <button
+                  key={team.id}
+                  className="btn btn--primary btn--block"
+                  disabled={busy}
+                  onClick={() => void presenter.claimVictory(team.id)}
+                >
+                  {team.id === myTeam ? (presenter.amSolo(match) ? "Me" : "Us") : team.name}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+      ) : inMatch ? (
+        <div className="bottombar">
+          <button
+            className="btn btn--primary btn--block btn--claim"
+            disabled={busy || alone || !myTeam}
+            onClick={() => myTeam && void presenter.claimVictory(myTeam)}
+          >
+            {alone
+              ? "Waiting for someone to join"
+              : presenter.amSolo(match)
+                ? "🏆 I won"
+                : "🏆 We won"}
+          </button>
         </div>
       ) : (
         <div className="bottombar">
@@ -340,35 +347,6 @@ function InPlayStage({
             Join this game
           </button>
         </div>
-      )}
-
-      {picking && (
-        <Sheet title="Who won?" onDismiss={() => setPicking(false)}>
-          <h2>Who won?</h2>
-          <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
-            This records the result under your name. Everybody in the game can object to it —
-            including whoever you are about to crown — and while an objection stands the result
-            counts for nobody.
-          </p>
-          <div className="stack">
-            {teams.map((team) => (
-              <button
-                key={team.id}
-                className="btn btn--block"
-                disabled={busy}
-                onClick={() => {
-                  void presenter.claimVictory(team.id);
-                  setPicking(false);
-                }}
-              >
-                {team.name}
-              </button>
-            ))}
-            <button className="btn btn--ghost btn--block" onClick={() => setPicking(false)}>
-              Never mind
-            </button>
-          </div>
-        </Sheet>
       )}
     </>
   );

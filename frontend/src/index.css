@@ -142,9 +142,10 @@ button {
 .app {
   max-width: 640px;
   margin: 0 auto;
-  /* Enough to clear the tallest .bottombar — two stacked buttons plus its own
-     padding — so the last card on a page is never left under it. */
-  padding: 0 16px calc(140px + env(safe-area-inset-bottom));
+  /* Enough to clear the tallest .bottombar — a host's winner buttons, for up to
+     six sides, plus its own padding — so the last card on a page is never left
+     under it. */
+  padding: 0 16px calc(200px + env(safe-area-inset-bottom));
 }
 
 .topbar {
@@ -930,6 +931,13 @@ button {
   pointer-events: auto;
   width: 100%;
   max-width: 608px;
+}
+
+/* Two across, so a full table does not stack up over the page behind it. */
+.winner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 /* ── Feedback ─────────────────────────────────────────────────────────────── */
