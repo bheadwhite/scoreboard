@@ -166,6 +166,12 @@ message GetPlayerProfileRequest {
   StatsRange range = 3;
 }
 
+// Somebody a player has been in a game with, on either side of it.
+message PlayedWith {
+  User user = 1;
+  int32 games = 2;
+}
+
 message GetPlayerProfileResponse {
   User user = 1;
   int32 wins = 2;
@@ -201,4 +207,7 @@ message GetPlayerProfileResponse {
   // screen is where a placeholder is actually looked at, so it is where the
   // administrator is offered the link.
   bool viewer_may_link = 19;
+  // Everybody this player has shared a clean result with, most games first.
+  // Nobody they have never played with is listed.
+  repeated PlayedWith played_with = 20;
 }

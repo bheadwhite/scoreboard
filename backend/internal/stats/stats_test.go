@@ -501,3 +501,37 @@ func TestAtTheTableStillHoldsOutContestedResults(t *testing.T) {
 		}
 	}
 }
+
+func TestPlayerProfilePlayedWithCountsEverybodyAtTheTable(t *testing.T) {
+	ps := concat(
+		// Teammate, opponent, and a fellow free-for-all loser all count.
+		match("m1", 1, "rook", []string{"bill", "dad"}, []string{"sue"}),
+		freeForAll("m2", 2, "catan", "sue", "bill", "dad"),
+		match("m3", 3, "rook", []string{"sue"}, []string{"bill"}),
+		// Not bill's game, so nobody in it is somebody he played with.
+		match("m4", 4, "rook", []string{"dad"}, []string{"gran"}),
+	)
+
+	got := PlayerProfile(ps, "bill").PlayedWith
+
+	want := []Companion{{UserID: "sue", Games: 3}, {UserID: "dad", Games: 2}}
+	if len(got) != len(want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("row %d: got %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestPlayerProfilePlayedWithLeavesOutContestedResults(t *testing.T) {
+	ps := match("m1", 1, "rook", []string{"bill"}, []string{"dad"})
+	for i := range ps {
+		ps[i].Contested = true
+	}
+
+	if got := PlayerProfile(ps, "bill").PlayedWith; len(got) != 0 {
+		t.Errorf("a contested game counted: %+v", got)
+	}
+}

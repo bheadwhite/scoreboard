@@ -407,10 +407,48 @@ type Profile struct {
 
 	Games []GameRecord
 
+	// Everybody this player has been in a clean result with, most games first.
+	PlayedWith []Companion
+
 	// Settled matches somebody is objecting to. In none of the above — not the
 	// totals, not the streaks, not the nemesis, not the drought.
 	ContestedWins   int32
 	ContestedLosses int32
+}
+
+// Companion is somebody a player has shared a game with, on either side of it.
+type Companion struct {
+	UserID string
+	Games  int32
+}
+
+// playedWith counts the matches userID shares with each other player. Teammates
+// and opponents alike, and free-for-all losers too: unlike a rivalry, this only
+// asks who was there.
+func playedWith(ps []Participation, userID string) []Companion {
+	counts := map[string]int32{}
+	for _, group := range byMatch(ps) {
+		if len(forPlayer(group, userID)) == 0 {
+			continue
+		}
+		for _, p := range group {
+			if p.UserID != userID {
+				counts[p.UserID]++
+			}
+		}
+	}
+
+	out := make([]Companion, 0, len(counts))
+	for id, games := range counts {
+		out = append(out, Companion{UserID: id, Games: games})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Games != out[j].Games {
+			return out[i].Games > out[j].Games
+		}
+		return out[i].UserID < out[j].UserID
+	})
+	return out
 }
 
 // PlayerProfile summarizes one player's whole record, including the two stats
@@ -443,6 +481,7 @@ func PlayerProfile(all []Participation, userID string) Profile {
 		rec.add(p.won())
 	}
 	out.Games = rankGames(games)
+	out.PlayedWith = playedWith(ps, userID)
 
 	// Every pairing this player has, computed once. The nemesis, the favorite
 	// victim, the drought and the unfinished business are four questions asked

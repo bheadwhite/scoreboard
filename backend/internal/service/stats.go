@@ -336,6 +336,14 @@ func (svc *StatsService) GetPlayerProfile(
 	if p.HasUnfinished {
 		res.UnfinishedBusiness = rivalryPB(p.Unfinished, users)
 	}
+	for _, c := range p.PlayedWith {
+		if u, ok := users[c.UserID]; ok {
+			res.PlayedWith = append(res.PlayedWith, &scoreboardv1.PlayedWith{
+				User:  userPB(u),
+				Games: c.Games,
+			})
+		}
+	}
 	// A placeholder's profile is where an administrator actually looks at one,
 	// so it is where the link is offered. Both halves are required: there is
 	// nothing to link on a player who already has an account, and nobody but a

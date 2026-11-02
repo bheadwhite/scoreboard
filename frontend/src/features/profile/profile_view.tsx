@@ -31,7 +31,6 @@ export function ProfileView({
   app: AppPresenter;
 }) {
   const profile = useCollection(presenter.profile);
-  const members = useCollection(presenter.members);
 
   useEffect(() => {
     void presenter.load();
@@ -41,8 +40,6 @@ export function ProfileView({
   useEffect(() => {
     if (who) app.setScreenTitle(who);
   }, [app, who]);
-
-  const others = members.filter((m) => m.user?.id !== presenter.userId);
 
   return (
     <AsyncBoundary runner={presenter.profile.broadcast} hideChildrenWhilePending={!profile}>
@@ -219,37 +216,38 @@ export function ProfileView({
             </section>
           )}
 
-          <section className="stack">
-            <span className="section-label">
-              {presenter.isMe ? "Your rivalries" : "Head to head"}
-            </span>
-            <div className="card card--flush">
-              {others.length === 0 ? (
-                <Empty emoji="👥">Nobody else here yet.</Empty>
-              ) : (
-                others.map((m) => (
+          {/* Only people they have actually played with, most games first. A list of
+              everybody on the board says nothing about who they play with, and
+              sends you to head-to-heads that are empty. */}
+          {profile.playedWith.length > 0 && (
+            <section className="stack">
+              <span className="section-label">Played with</span>
+              <div className="card card--flush">
+                {profile.playedWith.map((c) => (
                   <button
-                    key={m.user?.id}
+                    key={c.user?.id}
                     className="rowbtn"
                     onClick={() =>
-                      m.user &&
+                      c.user &&
                       app.navigate({
                         name: "head_to_head",
                         userId: presenter.userId,
-                        opponentId: m.user.id,
+                        opponentId: c.user.id,
                       })
                     }
                   >
-                    <Avatar user={m.user} size="sm" />
+                    <Avatar user={c.user} size="sm" />
                     <span className="rowbtn__main">
-                      <span className="rowbtn__name">{displayName(m.user)}</span>
+                      <span className="rowbtn__name">{displayName(c.user)}</span>
                     </span>
-                    <span style={{ color: "var(--ink-faint)" }}>›</span>
+                    <span className="num" style={{ color: "var(--ink-faint)" }}>
+                      {c.games} {c.games === 1 ? "game" : "games"} ›
+                    </span>
                   </button>
-                ))
-              )}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
           {profile.wins + profile.losses === 0 && (
             <Empty emoji="🫥">

@@ -863,6 +863,59 @@ func (x *GetPlayerProfileRequest) GetRange() StatsRange {
 	return StatsRange_STATS_RANGE_UNSPECIFIED
 }
 
+// Somebody a player has been in a game with, on either side of it.
+type PlayedWith struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	Games         int32                  `protobuf:"varint,2,opt,name=games,proto3" json:"games,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlayedWith) Reset() {
+	*x = PlayedWith{}
+	mi := &file_scoreboard_v1_stats_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayedWith) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayedWith) ProtoMessage() {}
+
+func (x *PlayedWith) ProtoReflect() protoreflect.Message {
+	mi := &file_scoreboard_v1_stats_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayedWith.ProtoReflect.Descriptor instead.
+func (*PlayedWith) Descriptor() ([]byte, []int) {
+	return file_scoreboard_v1_stats_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PlayedWith) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+func (x *PlayedWith) GetGames() int32 {
+	if x != nil {
+		return x.Games
+	}
+	return 0
+}
+
 type GetPlayerProfileResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	User             *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
@@ -899,13 +952,16 @@ type GetPlayerProfileResponse struct {
 	// screen is where a placeholder is actually looked at, so it is where the
 	// administrator is offered the link.
 	ViewerMayLink bool `protobuf:"varint,19,opt,name=viewer_may_link,json=viewerMayLink,proto3" json:"viewer_may_link,omitempty"`
+	// Everybody this player has shared a clean result with, most games first.
+	// Nobody they have never played with is listed.
+	PlayedWith    []*PlayedWith `protobuf:"bytes,20,rep,name=played_with,json=playedWith,proto3" json:"played_with,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPlayerProfileResponse) Reset() {
 	*x = GetPlayerProfileResponse{}
-	mi := &file_scoreboard_v1_stats_proto_msgTypes[9]
+	mi := &file_scoreboard_v1_stats_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -917,7 +973,7 @@ func (x *GetPlayerProfileResponse) String() string {
 func (*GetPlayerProfileResponse) ProtoMessage() {}
 
 func (x *GetPlayerProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_scoreboard_v1_stats_proto_msgTypes[9]
+	mi := &file_scoreboard_v1_stats_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -930,7 +986,7 @@ func (x *GetPlayerProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlayerProfileResponse.ProtoReflect.Descriptor instead.
 func (*GetPlayerProfileResponse) Descriptor() ([]byte, []int) {
-	return file_scoreboard_v1_stats_proto_rawDescGZIP(), []int{9}
+	return file_scoreboard_v1_stats_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetPlayerProfileResponse) GetUser() *User {
@@ -1066,6 +1122,13 @@ func (x *GetPlayerProfileResponse) GetViewerMayLink() bool {
 	return false
 }
 
+func (x *GetPlayerProfileResponse) GetPlayedWith() []*PlayedWith {
+	if x != nil {
+		return x.PlayedWith
+	}
+	return nil
+}
+
 var File_scoreboard_v1_stats_proto protoreflect.FileDescriptor
 
 const file_scoreboard_v1_stats_proto_rawDesc = "" +
@@ -1134,7 +1197,11 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x17GetPlayerProfileRequest\x12\x1b\n" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12/\n" +
-	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\xb1\x06\n" +
+	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"K\n" +
+	"\n" +
+	"PlayedWith\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x14\n" +
+	"\x05games\x18\x02 \x01(\x05R\x05games\"\xed\x06\n" +
 	"\x18GetPlayerProfileResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.scoreboard.v1.UserR\x04user\x12\x12\n" +
 	"\x04wins\x18\x02 \x01(\x05R\x04wins\x12\x16\n" +
@@ -1156,7 +1223,9 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x13unfinished_business\x18\x10 \x01(\v2\x1a.scoreboard.v1.RivalryLineR\x12unfinishedBusiness\x12%\n" +
 	"\x0econtested_wins\x18\x11 \x01(\x05R\rcontestedWins\x12)\n" +
 	"\x10contested_losses\x18\x12 \x01(\x05R\x0fcontestedLosses\x12&\n" +
-	"\x0fviewer_may_link\x18\x13 \x01(\bR\rviewerMayLink*\x85\x01\n" +
+	"\x0fviewer_may_link\x18\x13 \x01(\bR\rviewerMayLink\x12:\n" +
+	"\vplayed_with\x18\x14 \x03(\v2\x19.scoreboard.v1.PlayedWithR\n" +
+	"playedWith*\x85\x01\n" +
 	"\n" +
 	"StatsRange\x12\x1b\n" +
 	"\x17STATS_RANGE_UNSPECIFIED\x10\x00\x12\x18\n" +
@@ -1184,7 +1253,7 @@ func file_scoreboard_v1_stats_proto_rawDescGZIP() []byte {
 }
 
 var file_scoreboard_v1_stats_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_scoreboard_v1_stats_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_scoreboard_v1_stats_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_scoreboard_v1_stats_proto_goTypes = []any{
 	(StatsRange)(0),                  // 0: scoreboard.v1.StatsRange
 	(*RivalryLine)(nil),              // 1: scoreboard.v1.RivalryLine
@@ -1196,47 +1265,50 @@ var file_scoreboard_v1_stats_proto_goTypes = []any{
 	(*GetHeadToHeadRequest)(nil),     // 7: scoreboard.v1.GetHeadToHeadRequest
 	(*GetHeadToHeadResponse)(nil),    // 8: scoreboard.v1.GetHeadToHeadResponse
 	(*GetPlayerProfileRequest)(nil),  // 9: scoreboard.v1.GetPlayerProfileRequest
-	(*GetPlayerProfileResponse)(nil), // 10: scoreboard.v1.GetPlayerProfileResponse
-	(*User)(nil),                     // 11: scoreboard.v1.User
-	(*timestamppb.Timestamp)(nil),    // 12: google.protobuf.Timestamp
-	(*Game)(nil),                     // 13: scoreboard.v1.Game
-	(*Match)(nil),                    // 14: scoreboard.v1.Match
+	(*PlayedWith)(nil),               // 10: scoreboard.v1.PlayedWith
+	(*GetPlayerProfileResponse)(nil), // 11: scoreboard.v1.GetPlayerProfileResponse
+	(*User)(nil),                     // 12: scoreboard.v1.User
+	(*timestamppb.Timestamp)(nil),    // 13: google.protobuf.Timestamp
+	(*Game)(nil),                     // 14: scoreboard.v1.Game
+	(*Match)(nil),                    // 15: scoreboard.v1.Match
 }
 var file_scoreboard_v1_stats_proto_depIdxs = []int32{
-	11, // 0: scoreboard.v1.RivalryLine.opponent:type_name -> scoreboard.v1.User
-	12, // 1: scoreboard.v1.RivalryLine.last_win_at:type_name -> google.protobuf.Timestamp
-	13, // 2: scoreboard.v1.GameKing.game:type_name -> scoreboard.v1.Game
-	11, // 3: scoreboard.v1.GameKing.user:type_name -> scoreboard.v1.User
-	11, // 4: scoreboard.v1.StandingsRow.user:type_name -> scoreboard.v1.User
+	12, // 0: scoreboard.v1.RivalryLine.opponent:type_name -> scoreboard.v1.User
+	13, // 1: scoreboard.v1.RivalryLine.last_win_at:type_name -> google.protobuf.Timestamp
+	14, // 2: scoreboard.v1.GameKing.game:type_name -> scoreboard.v1.Game
+	12, // 3: scoreboard.v1.GameKing.user:type_name -> scoreboard.v1.User
+	12, // 4: scoreboard.v1.StandingsRow.user:type_name -> scoreboard.v1.User
 	0,  // 5: scoreboard.v1.GetStandingsRequest.range:type_name -> scoreboard.v1.StatsRange
 	3,  // 6: scoreboard.v1.GetStandingsResponse.rows:type_name -> scoreboard.v1.StandingsRow
-	13, // 7: scoreboard.v1.GetStandingsResponse.played_games:type_name -> scoreboard.v1.Game
+	14, // 7: scoreboard.v1.GetStandingsResponse.played_games:type_name -> scoreboard.v1.Game
 	2,  // 8: scoreboard.v1.GetStandingsResponse.game_kings:type_name -> scoreboard.v1.GameKing
-	13, // 9: scoreboard.v1.HeadToHeadGame.game:type_name -> scoreboard.v1.Game
+	14, // 9: scoreboard.v1.HeadToHeadGame.game:type_name -> scoreboard.v1.Game
 	0,  // 10: scoreboard.v1.GetHeadToHeadRequest.range:type_name -> scoreboard.v1.StatsRange
-	11, // 11: scoreboard.v1.GetHeadToHeadResponse.user:type_name -> scoreboard.v1.User
-	11, // 12: scoreboard.v1.GetHeadToHeadResponse.opponent:type_name -> scoreboard.v1.User
+	12, // 11: scoreboard.v1.GetHeadToHeadResponse.user:type_name -> scoreboard.v1.User
+	12, // 12: scoreboard.v1.GetHeadToHeadResponse.opponent:type_name -> scoreboard.v1.User
 	6,  // 13: scoreboard.v1.GetHeadToHeadResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
-	14, // 14: scoreboard.v1.GetHeadToHeadResponse.recent_matches:type_name -> scoreboard.v1.Match
+	15, // 14: scoreboard.v1.GetHeadToHeadResponse.recent_matches:type_name -> scoreboard.v1.Match
 	1,  // 15: scoreboard.v1.GetHeadToHeadResponse.rivalry:type_name -> scoreboard.v1.RivalryLine
 	0,  // 16: scoreboard.v1.GetPlayerProfileRequest.range:type_name -> scoreboard.v1.StatsRange
-	11, // 17: scoreboard.v1.GetPlayerProfileResponse.user:type_name -> scoreboard.v1.User
-	11, // 18: scoreboard.v1.GetPlayerProfileResponse.nemesis:type_name -> scoreboard.v1.User
-	11, // 19: scoreboard.v1.GetPlayerProfileResponse.favorite_victim:type_name -> scoreboard.v1.User
-	6,  // 20: scoreboard.v1.GetPlayerProfileResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
-	1,  // 21: scoreboard.v1.GetPlayerProfileResponse.drought:type_name -> scoreboard.v1.RivalryLine
-	1,  // 22: scoreboard.v1.GetPlayerProfileResponse.unfinished_business:type_name -> scoreboard.v1.RivalryLine
-	4,  // 23: scoreboard.v1.StatsService.GetStandings:input_type -> scoreboard.v1.GetStandingsRequest
-	7,  // 24: scoreboard.v1.StatsService.GetHeadToHead:input_type -> scoreboard.v1.GetHeadToHeadRequest
-	9,  // 25: scoreboard.v1.StatsService.GetPlayerProfile:input_type -> scoreboard.v1.GetPlayerProfileRequest
-	5,  // 26: scoreboard.v1.StatsService.GetStandings:output_type -> scoreboard.v1.GetStandingsResponse
-	8,  // 27: scoreboard.v1.StatsService.GetHeadToHead:output_type -> scoreboard.v1.GetHeadToHeadResponse
-	10, // 28: scoreboard.v1.StatsService.GetPlayerProfile:output_type -> scoreboard.v1.GetPlayerProfileResponse
-	26, // [26:29] is the sub-list for method output_type
-	23, // [23:26] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	12, // 17: scoreboard.v1.PlayedWith.user:type_name -> scoreboard.v1.User
+	12, // 18: scoreboard.v1.GetPlayerProfileResponse.user:type_name -> scoreboard.v1.User
+	12, // 19: scoreboard.v1.GetPlayerProfileResponse.nemesis:type_name -> scoreboard.v1.User
+	12, // 20: scoreboard.v1.GetPlayerProfileResponse.favorite_victim:type_name -> scoreboard.v1.User
+	6,  // 21: scoreboard.v1.GetPlayerProfileResponse.games:type_name -> scoreboard.v1.HeadToHeadGame
+	1,  // 22: scoreboard.v1.GetPlayerProfileResponse.drought:type_name -> scoreboard.v1.RivalryLine
+	1,  // 23: scoreboard.v1.GetPlayerProfileResponse.unfinished_business:type_name -> scoreboard.v1.RivalryLine
+	10, // 24: scoreboard.v1.GetPlayerProfileResponse.played_with:type_name -> scoreboard.v1.PlayedWith
+	4,  // 25: scoreboard.v1.StatsService.GetStandings:input_type -> scoreboard.v1.GetStandingsRequest
+	7,  // 26: scoreboard.v1.StatsService.GetHeadToHead:input_type -> scoreboard.v1.GetHeadToHeadRequest
+	9,  // 27: scoreboard.v1.StatsService.GetPlayerProfile:input_type -> scoreboard.v1.GetPlayerProfileRequest
+	5,  // 28: scoreboard.v1.StatsService.GetStandings:output_type -> scoreboard.v1.GetStandingsResponse
+	8,  // 29: scoreboard.v1.StatsService.GetHeadToHead:output_type -> scoreboard.v1.GetHeadToHeadResponse
+	11, // 30: scoreboard.v1.StatsService.GetPlayerProfile:output_type -> scoreboard.v1.GetPlayerProfileResponse
+	28, // [28:31] is the sub-list for method output_type
+	25, // [25:28] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_scoreboard_v1_stats_proto_init() }
@@ -1251,7 +1323,7 @@ func file_scoreboard_v1_stats_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scoreboard_v1_stats_proto_rawDesc), len(file_scoreboard_v1_stats_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
