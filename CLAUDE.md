@@ -54,10 +54,14 @@ match outright, but neither of them can decide who won, or clear somebody's
 objection, or overrule a result. That is the whole argument of the app.
 
 **Joining is the entire commitment.** There is no lobby and no ready check. A
-match is posted with its game, its contract and its invitations, and it is live
-from that moment; you confirm on your own device by joining, and the contract
-was fixed before you tapped so there is nothing left to affirm. Somebody who
-wanders up halfway through can still join, right until a winner is named.
+match is posted with its game, its contract and its players, and it is live from
+that moment. Whoever posts it says who is at the table, and the people they add
+are in without confirming anything: they can see who is sitting there, a second
+tap bought nothing, and everybody added this way can object to any result. They
+can also take anybody back out until a winner is named. Other
+players can only invite, and you confirm those on your own device by joining.
+Somebody who wanders up halfway through can still join, right until a winner is
+named.
 
 **Players who have not signed up are still players.** Any member can add a
 placeholder — an ordinary `users` row nobody can log in to — so a game somebody
@@ -243,11 +247,12 @@ id would collide with each other. `isPlaceholder` in `store.go` is the one SQL
 definition; `model.User.Placeholder` is the Go one, and every query that loads a
 player selects it.
 
-**`invitePlayer` joins a placeholder instead of inviting them.** An invitation
-is a question, and there is no device to put it on — an invitation to a
-placeholder would sit unanswered forever while the person plainly sitting at the
-table never appeared in the game. The branch lives in that one function so
-`CreateMatch` and `InvitePlayers` cannot disagree about it.
+**`invitePlayer` joins instead of inviting in two cases.** A placeholder, from
+anyone: an invitation is a question, and there is no device to put it on, so it
+would sit unanswered forever while the person plainly at the table never appeared
+in the game. And anybody at all when the match's creator is adding them, unless
+they already declined. The branch lives in that one function so `CreateMatch` and
+`InvitePlayers` cannot disagree about it.
 
 **`Match.Unwitnessed()` is what is left of a rule that used to be enforced by
 delay.** `Match.Answered()` required at least one opponent who could actually
@@ -422,6 +427,15 @@ individual functions — that is precisely how `HeadToHead` and `Rivalries` woul
 drift apart about which meetings exist, and they have to agree for the same
 reason they already have to agree about free-for-all losses. Contested tallies
 are counted by running the same code over the other half.
+
+**The player filter is what keeps the board fair to somebody who plays less.**
+Standings rank by wins first, so on the full board playing more is itself a way
+to climb. `stats.AtTheTable` counts only matches *every* picked player was in and
+gives a row only to them, which is the only version that does the job: counting
+any match among the picked players would still let two of them pull away from
+the third by playing each other. The kings follow it and `played_games` does not.
+It narrows before the stats run, so `stats.Split` and the rest of the package
+never hear about it. The choice is remembered per device, in `localStorage`.
 
 ## Testing
 

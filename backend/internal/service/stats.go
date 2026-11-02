@@ -54,10 +54,12 @@ func (svc *StatsService) GetStandings(
 		return nil, err
 	}
 
-	ps := all
+	table := stats.AtTheTable(all, req.Msg.GetPlayerIds())
+
+	ps := table
 	if gameID := req.Msg.GetGameId(); gameID != "" {
 		ps = nil
-		for _, p := range all {
+		for _, p := range table {
 			if p.GameID == gameID {
 				ps = append(ps, p)
 			}
@@ -90,10 +92,11 @@ func (svc *StatsService) GetStandings(
 	clean, contested := stats.Split(ps)
 	played, disputed := distinctMatches(clean), distinctMatches(contested)
 
-	// Kings come off the unnarrowed history on purpose: "who owns what" is a
-	// tour of every game, and filtering to one game would leave a section
-	// showing the single crown you already selected.
-	kings, err := svc.gameKings(ctx, familyID, all, users)
+	// Kings ignore the game filter on purpose: "who owns what" is a tour of every
+	// game, and filtering to one game would leave a section showing the single
+	// crown you already selected. They do respect the players, or a crown won
+	// against other people would sit under a board that left those games out.
+	kings, err := svc.gameKings(ctx, familyID, table, users)
 	if err != nil {
 		return nil, err
 	}

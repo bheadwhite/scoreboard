@@ -451,3 +451,53 @@ func TestPlayerWithOnlyContestedMatchesStillAppears(t *testing.T) {
 		}
 	}
 }
+
+func TestAtTheTableKeepsOnlyMatchesEveryPickedPlayerWasIn(t *testing.T) {
+	var ps []Participation
+	ps = append(ps, freeForAll("all-three", 1, "rook", "mom", "me", "kaylee")...)
+	ps = append(ps, freeForAll("with-friend", 2, "rook", "me", "kaylee", "mom", "friend")...)
+	ps = append(ps, match("without-mom", 3, "rook", []string{"me"}, []string{"kaylee"})...)
+	ps = append(ps, match("mom-and-kaylee", 4, "rook", []string{"mom"}, []string{"kaylee"})...)
+	ps = append(ps, match("friends", 5, "rook", []string{"me"}, []string{"friend"})...)
+
+	rows := Standings(AtTheTable(ps, []string{"mom", "me", "kaylee"}))
+
+	if len(rows) != 3 {
+		t.Fatalf("want a row for each picked player and no one else, got %+v", rows)
+	}
+	want := map[string]Record{
+		"mom":    {Wins: 1, Losses: 1},
+		"me":     {Wins: 1, Losses: 1},
+		"kaylee": {Wins: 0, Losses: 2},
+	}
+	for _, r := range rows {
+		if got := (Record{Wins: r.Wins, Losses: r.Losses}); got != want[r.UserID] {
+			t.Errorf("%s: got %+v, want %+v", r.UserID, got, want[r.UserID])
+		}
+	}
+}
+
+func TestAtTheTableWithNobodyPickedChangesNothing(t *testing.T) {
+	ps := match("m", 1, "rook", []string{"a"}, []string{"b"})
+	if got := AtTheTable(ps, nil); len(got) != len(ps) {
+		t.Fatalf("got %d participations, want %d", len(got), len(ps))
+	}
+}
+
+func TestAtTheTableStillHoldsOutContestedResults(t *testing.T) {
+	ps := match("m", 1, "rook", []string{"a"}, []string{"b"})
+	for i := range ps {
+		ps[i].Contested = true
+	}
+
+	rows := Standings(AtTheTable(ps, []string{"a", "b"}))
+
+	for _, r := range rows {
+		if r.Wins != 0 || r.Losses != 0 {
+			t.Errorf("%s: a contested result counted: %+v", r.UserID, r)
+		}
+		if r.ContestedWins+r.ContestedLosses != 1 {
+			t.Errorf("%s: want the contested result reported, got %+v", r.UserID, r)
+		}
+	}
+}

@@ -31,8 +31,8 @@ interface Invalidatable {
 
 /** Composite keys. Kept in one place so invalidation and reads cannot drift. */
 export const key = {
-  standings: (familyId: string, gameId: string, range: StatsRange) =>
-    `${familyId}|${gameId}|${range}`,
+  standings: (familyId: string, gameId: string, range: StatsRange, playerIds: string[]) =>
+    `${familyId}|${gameId}|${range}|${[...playerIds].sort().join(",")}`,
   headToHead: (familyId: string, userId: string, opponentId: string, gameId: string) =>
     `${familyId}|${userId}|${opponentId}|${gameId}`,
   profile: (familyId: string, userId: string) => `${familyId}|${userId}`,
@@ -98,8 +98,13 @@ export class Store {
     this.standings = new KeyedCollection<GetStandingsResponse | undefined>(
       undefined,
       async (composite) => {
-        const [familyId = "", gameId = "", range = "0"] = composite.split("|");
-        return api.stats.getStandings({ familyId, gameId, range: Number(range) as StatsRange });
+        const [familyId = "", gameId = "", range = "0", players = ""] = composite.split("|");
+        return api.stats.getStandings({
+          familyId,
+          gameId,
+          range: Number(range) as StatsRange,
+          playerIds: players ? players.split(",") : [],
+        });
       },
     );
 

@@ -981,29 +981,46 @@ function Roster({
           const partners = match.joined.filter((x) => x.teamId === p.teamId).length;
 
           return (
-            <button
-              key={id}
-              className="rowbtn"
-              style={{
-                border: "1px solid",
-                borderColor: isSelected ? "var(--gold)" : "var(--line)",
-                borderRadius: "var(--radius)",
-                cursor: canPair ? "pointer" : "default",
-                minHeight: 54,
-              }}
-              aria-pressed={canPair ? isSelected : undefined}
-              disabled={!canPair}
-              onClick={() => toggle(id)}
-            >
-              <Avatar user={p.user} size="sm" />
-              <span className="rowbtn__main">
-                <span className="rowbtn__name">{displayName(p.user)}</span>
-                {partners > 1 && <span className="rowbtn__meta">with {teamNameOf(match, p)}</span>}
-                {p.user?.placeholder && (
-                  <span className="rowbtn__meta">not on the app · will not be asked</span>
-                )}
-              </span>
-            </button>
+            <div key={id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button
+                className="rowbtn"
+                style={{
+                  border: "1px solid",
+                  borderColor: isSelected ? "var(--gold)" : "var(--line)",
+                  borderRadius: "var(--radius)",
+                  cursor: canPair ? "pointer" : "default",
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 54,
+                }}
+                aria-pressed={canPair ? isSelected : undefined}
+                disabled={!canPair}
+                onClick={() => toggle(id)}
+              >
+                <Avatar user={p.user} size="sm" />
+                <span className="rowbtn__main">
+                  <span className="rowbtn__name">{displayName(p.user)}</span>
+                  {partners > 1 && <span className="rowbtn__meta">with {teamNameOf(match, p)}</span>}
+                  {p.user?.placeholder && (
+                    <span className="rowbtn__meta">not on the app · will not be asked</span>
+                  )}
+                </span>
+              </button>
+              {match.viewerIsCreator && !presenter.isMe(id) && (
+                <button
+                  className="btn btn--ghost btn--sm"
+                  style={{ color: "var(--ink-faint)" }}
+                  aria-label={`Remove ${displayName(p.user)}`}
+                  disabled={busy}
+                  onClick={() => {
+                    setSelected((prev) => prev.filter((x) => x !== id));
+                    void presenter.removePlayer(id);
+                  }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           );
         })}
 
@@ -1079,7 +1096,7 @@ function Roster({
 }
 
 /**
- * Asking more people into a game that is already posted.
+ * Adding more people to a game that is already posted, several at a time.
  *
  * This screen went without it for a while, which made posting a game a
  * one-shot: forget somebody at the New game screen and your only recourse was
@@ -1087,9 +1104,10 @@ function Roster({
  * Setting a game up is the moment you are least likely to have everybody's
  * name straight, so the ask has to stay available afterward.
  *
- * Open to any player in the match rather than only whoever posted it. Inviting
- * somebody is not a claim on the result and it costs the invitee nothing to
- * decline, so gating it behind the host would just mean waiting for the host.
+ * Whoever posted the match is saying who is at the table, so the people they
+ * pick go straight in. Any other player can use it too, as an invitation: that is
+ * not a claim on the result and it costs the invitee nothing to decline, so gating
+ * it behind the host would just mean waiting for the host.
  */
 function InvitePlayers({
   presenter,
@@ -1104,8 +1122,24 @@ function InvitePlayers({
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
 
   const candidates = presenter.invitable(match, members);
+  const isHost = match.viewerIsCreator;
+  const verb = isHost ? "Add" : "Ask";
+
+  const toggle = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const close = () => {
+    setOpen(false);
+    setSelected([]);
+  };
+
+  const submit = () => {
+    void presenter.invitePlayers(selected);
+    close();
+  };
 
   const addPlaceholder = () => {
     const trimmed = name.trim();
@@ -1113,45 +1147,49 @@ function InvitePlayers({
     void presenter.addPlaceholder(match, trimmed);
     setName("");
     setAdding(false);
-    setOpen(false);
   };
 
   return (
     <>
       <button className="btn btn--block btn--sm" disabled={busy} onClick={() => setOpen(true)}>
-        Ask someone to join
+        {isHost ? "Add players" : "Ask someone to join"}
       </button>
 
       {open && (
-        <Sheet title="Ask someone to join" onDismiss={() => setOpen(false)}>
+        <Sheet title={isHost ? "Add players" : "Ask someone to join"} onDismiss={close}>
           <h2>Who else is playing?</h2>
           <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
-            They decide for themselves — the game carries on without the ones who never answer.
+            {isHost
+              ? "Everyone you pick goes straight into the game."
+              : "They decide for themselves — the game carries on without the ones who never answer."}
           </p>
 
-          <div className="stack" style={{ gap: 6 }}>
+          <div className="stack sheet__list" style={{ gap: 6 }}>
             {candidates.map((m) => {
               const id = m.user?.id ?? "";
+              const picked = selected.includes(id);
               return (
                 <button
                   key={id}
                   className="rowbtn"
+                  aria-pressed={picked}
                   disabled={busy}
-                  onClick={() => {
-                    void presenter.invitePlayers([id]);
-                    setOpen(false);
-                  }}
+                  onClick={() => toggle(id)}
                 >
                   <Avatar user={m.user} size="sm" />
                   <span className="rowbtn__main">
                     <span className="rowbtn__name">{displayName(m.user)}</span>
-                    {/* Picking them puts them straight in rather than asking,
-                        because there is no device to ask. */}
+                    {/* Anyone can put them straight in, because there is no
+                        device to ask. For the host that is every row. */}
                     {m.user?.placeholder && (
-                      <span className="rowbtn__meta">not on the app · added, not asked</span>
+                      <span className="rowbtn__meta">
+                        {isHost ? "not on the app" : "not on the app · added, not asked"}
+                      </span>
                     )}
                   </span>
-                  <span style={{ color: "var(--ink-faint)" }}>+</span>
+                  <span style={{ color: picked ? "var(--gold)" : "var(--ink-faint)" }}>
+                    {picked ? "✓" : "+"}
+                  </span>
                 </button>
               );
             })}
@@ -1162,6 +1200,12 @@ function InvitePlayers({
               </p>
             )}
           </div>
+
+          {selected.length > 0 && (
+            <button className="btn btn--primary btn--block" disabled={busy} onClick={submit}>
+              {verb} {selected.length}
+            </button>
+          )}
 
           {adding ? (
             <div className="stack">
@@ -1181,7 +1225,7 @@ function InvitePlayers({
               </div>
               <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
                 They get a real spot on the scoreboard, but they cannot concede or object to
-                anything — so they go straight into the game rather than being asked.
+                anything, so they go straight into the game.
               </p>
               <button
                 className="btn btn--primary btn--block"
@@ -1197,7 +1241,7 @@ function InvitePlayers({
             </button>
           )}
 
-          <button className="btn btn--ghost btn--block" onClick={() => setOpen(false)}>
+          <button className="btn btn--ghost btn--block" onClick={close}>
             Done
           </button>
         </Sheet>

@@ -112,22 +112,28 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 // invitePlayer records an invitation. No team is created — an invitation is a
 // question, and the roster only gains a member when it is answered.
 //
-// Except for a player with no account, who is joined outright. There is no
-// device to put the question on, so an invitation to one would be a question
-// nobody can ever answer: it would sit unanswered on the match forever and the
-// person who is plainly sitting at the table would never appear in the game
-// they are playing.
+// Except when whoever posted the match is the one adding them. byCreator is that
+// case, and it joins them outright: the host is at the table and can see who is
+// sitting at it, so adding somebody is a statement rather than a question, and
+// making them tap a second time to confirm it bought nothing. It stops at a no —
+// somebody who declined stays declined — and everybody put in this way can object
+// to whatever gets recorded, for as long as the record exists.
 //
-// So adding them is a statement rather than a question — somebody is asserting
-// that they played. That is the one place in this app where a player is put
-// into a match without agreeing to it, and it is worth being clear about what
-// pays for it: everything they are entered into is disputable by them the
-// moment they sign up and an administrator links the two, because objections
-// outlive finalization. Their consent is deferred, not skipped.
+// And except for a player with no account, who is joined outright by anyone.
+// There is no device to put the question on, so an invitation to one would be a
+// question nobody can ever answer: it would sit unanswered on the match forever
+// and the person who is plainly sitting at the table would never appear in the
+// game they are playing.
+//
+// So adding them is a statement too — somebody is asserting that they played. It
+// is worth being clear about what pays for it: everything they are entered into
+// is disputable by them the moment they sign up and an administrator links the
+// two, because objections outlive finalization. Their consent is deferred, not
+// skipped.
 //
 // The branch lives here rather than at the call sites so CreateMatch and
 // InvitePlayers cannot disagree about it.
-func invitePlayer(ctx context.Context, tx pgx.Tx, matchID, userID string) error {
+func invitePlayer(ctx context.Context, tx pgx.Tx, matchID, userID string, byCreator bool) error {
 	var placeholder bool
 	if err := tx.QueryRow(ctx,
 		`SELECT u.provider = $2 FROM users u WHERE u.id = $1`,
@@ -135,6 +141,19 @@ func invitePlayer(ctx context.Context, tx pgx.Tx, matchID, userID string) error 
 		return noRows(err)
 	}
 	if placeholder {
+		return joinParticipant(ctx, tx, matchID, userID)
+	}
+	if byCreator {
+		var status string
+		err := tx.QueryRow(ctx,
+			`SELECT status FROM match_participants WHERE match_id = $1 AND user_id = $2`,
+			matchID, userID).Scan(&status)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		if status == model.InviteDeclined {
+			return fmt.Errorf("%w: they said no — that is theirs to change", ErrConflict)
+		}
 		return joinParticipant(ctx, tx, matchID, userID)
 	}
 
@@ -220,7 +239,7 @@ func (s *Store) CreateMatch(
 			return err
 		}
 
-		// The creator is in by definition; everybody else is asked.
+		// The creator is in by definition, and so is everybody they add.
 		if err := joinParticipant(ctx, tx, id, createdBy); err != nil {
 			return err
 		}
@@ -238,7 +257,7 @@ func (s *Store) CreateMatch(
 			if !member {
 				return fmt.Errorf("%w: user %s is not in this family", ErrConflict, uid)
 			}
-			if err := invitePlayer(ctx, tx, id, uid); err != nil {
+			if err := invitePlayer(ctx, tx, id, uid, true); err != nil {
 				return err
 			}
 		}
@@ -282,16 +301,15 @@ func rosterOpen(m model.Match) error {
 // the evening is on the scoreboard for it.
 //
 // byCreator is set when the host is doing this on somebody else's behalf, which
-// is how a game gets going when everybody is sitting at the table and nobody has
-// picked up their phone. It is narrower than joining yourself in one specific
+// now only comes up for an invitation another player sent: anybody the host adds
+// themselves is already in. It is narrower than joining yourself in one specific
 // way, and the narrowing is the point: it only works on an invitation nobody has
 // answered. Somebody who declined stays declined — the host can start a game
 // past people who are not paying attention, never past a no.
 //
-// What it deliberately does not buy is a result. Anybody put in this way still
-// owes a claim an answer exactly like a player who joined themselves, so a host
-// who conscripts the table and then names a winner has to wait out the same
-// concessions or the same week.
+// What it deliberately does not buy is an unchallengeable result. Anybody put in
+// this way can object to whatever gets recorded, exactly like a player who joined
+// themselves, and one objection holds it out of every tally.
 func (s *Store) JoinMatch(ctx context.Context, matchID, userID string, byCreator bool) (model.Match, error) {
 	var out model.Match
 
@@ -376,8 +394,9 @@ func (s *Store) DeclineMatch(ctx context.Context, matchID, userID string) (model
 	return out, err
 }
 
-// InvitePlayers asks more people once the match exists.
-func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []string) (model.Match, error) {
+// InvitePlayers adds more people once the match exists: into the game if the host
+// is the one adding them, otherwise as an invitation. See invitePlayer.
+func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []string, byCreator bool) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -399,7 +418,7 @@ func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []str
 			if !member {
 				return fmt.Errorf("%w: that player is not in this family", ErrConflict)
 			}
-			if err := invitePlayer(ctx, tx, matchID, uid); err != nil {
+			if err := invitePlayer(ctx, tx, matchID, uid, byCreator); err != nil {
 				return err
 			}
 		}
@@ -411,7 +430,10 @@ func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []str
 	return out, err
 }
 
-func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.Match, error) {
+// LeaveMatch takes a player out while the roster is open. byCreator is the host
+// doing it to somebody else, which cannot erase a refusal: a declined row is what
+// stops that person being added again.
+func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string, byCreator bool) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -424,9 +446,11 @@ func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.M
 		}
 
 		var teamID *string
-		if err := tx.QueryRow(ctx,
-			`DELETE FROM match_participants WHERE match_id = $1 AND user_id = $2 RETURNING team_id`,
-			matchID, userID).Scan(&teamID); err != nil {
+		if err := tx.QueryRow(ctx, `
+			DELETE FROM match_participants
+			WHERE match_id = $1 AND user_id = $2 AND (NOT $3::boolean OR status <> 'declined')
+			RETURNING team_id`,
+			matchID, userID, byCreator).Scan(&teamID); err != nil {
 			return noRows(err)
 		}
 		// Drop the team too, if leaving emptied it.
@@ -435,6 +459,17 @@ func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.M
 				DELETE FROM match_teams t WHERE t.id = $1
 				  AND NOT EXISTS (SELECT 1 FROM match_participants p WHERE p.team_id = t.id)`,
 				*teamID); err != nil {
+				return err
+			}
+			// A team that survives is named after its players, and a result is
+			// about to be written under that name.
+			if _, err := tx.Exec(ctx, `
+				UPDATE match_teams t
+				SET name = (
+					SELECT string_agg(u.display_name, ' & ' ORDER BY u.display_name)
+					FROM match_participants p JOIN users u ON u.id = p.user_id
+					WHERE p.team_id = t.id)
+				WHERE t.id = $1`, *teamID); err != nil {
 				return err
 			}
 		}

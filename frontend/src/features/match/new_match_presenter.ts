@@ -7,7 +7,7 @@ import { messageOf } from "./match_presenter.js";
 
 /**
  * NewMatchPresenter runs the "start a game" flow: pick the game, say how it is
- * won, pick who is being asked, and post it.
+ * won, pick who is playing, and post it.
  *
  * The contract is here rather than on the match screen because it is the term
  * everybody who joins is agreeing to, and it is fixed once the match exists.
@@ -193,8 +193,8 @@ export class NewMatchPresenter {
   }
 
   /**
-   * Everyone invited, plus you. These are the people who *could* play — each
-   * still decides for themselves, so this is a ceiling rather than a roster.
+   * Everyone picked, plus you. The server puts each of them straight in, so this
+   * is the roster the match starts with.
    */
   playerCount(): number {
     return this._invited.get().size + 1;
@@ -204,7 +204,7 @@ export class NewMatchPresenter {
    * A match needs a game and terms. It does not need players yet: the
    * minimum-players rule belongs at the moment somebody claims a win, once
    * people have actually joined — blocking here would mean you could not even
-   * send the invitations.
+   * post the game before everybody has turned up.
    */
   canCreate(games: Game[]): boolean {
     const game = this.selectedGame(games);

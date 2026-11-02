@@ -317,6 +317,8 @@ func (b base) matchesPB(ms []model.Match, v viewer) []*scoreboardv1.Match {
 // still counts. A zero time means all of it.
 func rangeStart(r scoreboardv1.StatsRange, now time.Time) time.Time {
 	switch r {
+	case scoreboardv1.StatsRange_STATS_RANGE_DAY:
+		return now.Add(-24 * time.Hour)
 	case scoreboardv1.StatsRange_STATS_RANGE_YEAR:
 		return now.AddDate(-1, 0, 0)
 	case scoreboardv1.StatsRange_STATS_RANGE_MONTH:

@@ -21,6 +21,7 @@ import {
 
 const RANGES: { value: StatsRange; label: string }[] = [
   { value: StatsRange.ALL_TIME, label: "All time" },
+  { value: StatsRange.DAY, label: "Last 24 hours" },
   { value: StatsRange.YEAR, label: "This year" },
   { value: StatsRange.MONTH, label: "This month" },
 ];
@@ -39,9 +40,11 @@ export function ScoreboardView({
 }) {
   const gameId = useSignalValue(presenter.gameIdBroadcast);
   const range = useSignalValue(presenter.rangeBroadcast);
+  const playerIds = useSignalValue(presenter.playerIdsBroadcast);
   const standings = useCollection(presenter.standings);
   const live = useCollection(presenter.liveMatches);
   const recent = useCollection(presenter.recentMatches);
+  const members = useCollection(presenter.members);
   // The filter offers games with a finished match behind them, not the catalog.
   const playedGames = standings?.playedGames ?? [];
 
@@ -127,6 +130,31 @@ export function ScoreboardView({
           <span className="section-label">The pecking order</span>
         )}
 
+        {/* Everybody picked has to have been in a game for it to count here, so
+            the people on this board are all measured over the same games. With
+            two members or fewer it would only ever show the same table. */}
+        {members.length > 2 && (
+          <div className="chips" role="group" aria-label="Filter by players">
+            <button
+              className="chip"
+              aria-pressed={playerIds.length === 0}
+              onClick={presenter.clearPlayers}
+            >
+              Everyone
+            </button>
+            {members.map((member) => (
+              <button
+                key={member.user?.id}
+                className="chip"
+                aria-pressed={playerIds.includes(member.user?.id ?? "")}
+                onClick={() => member.user && presenter.togglePlayer(member.user.id)}
+              >
+                {displayName(member.user)}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Only what this family has actually finished. Offering the whole
             catalog meant a dozen chips that every filtered to an empty table.
             With one game played there is nothing to choose between, so the row
@@ -153,8 +181,12 @@ export function ScoreboardView({
           </div>
         )}
 
-        {/* Nothing on the record yet means nothing to slice by time either. */}
-        {(standings?.totalMatches ?? 0) > 0 && (
+        {/* Nothing on the record yet means nothing to slice by time either. A
+            quiet range is different: the total is for that range, and hiding the
+            chips would leave nowhere to go back to. */}
+        {((standings?.totalMatches ?? 0) > 0 ||
+          range !== StatsRange.ALL_TIME ||
+          playerIds.length > 0) && (
         <div className="chips" role="group" aria-label="Time range">
           {RANGES.map((r) => (
             <button
@@ -172,11 +204,21 @@ export function ScoreboardView({
         <AsyncBoundary runner={presenter.standings.broadcast}>
           <div className="card card--flush">
             {!standings || standings.rows.length === 0 ? (
-              <Empty emoji="🎲">
-                <strong>Nothing on the record yet.</strong>
-                <br />
-                Play something. The record starts when somebody names a winner.
-              </Empty>
+              playerIds.length > 0 ? (
+                <Empty emoji="🎲">
+                  <strong>No finished games with everybody you picked.</strong>
+                </Empty>
+              ) : range === StatsRange.ALL_TIME ? (
+                <Empty emoji="🎲">
+                  <strong>Nothing on the record yet.</strong>
+                  <br />
+                  Play something. The record starts when somebody names a winner.
+                </Empty>
+              ) : (
+                <Empty emoji="🎲">
+                  <strong>Nothing that counts in this stretch.</strong>
+                </Empty>
+              )
             ) : (
               standings.rows.map((row) => (
                 <button
@@ -215,7 +257,8 @@ export function ScoreboardView({
         {standings && standings.totalMatches + standings.contestedMatches > 0 && (
           <p style={{ margin: 0, textAlign: "center", color: "var(--ink-faint)", fontSize: "0.82rem" }}>
             <span className="num">{standings.totalMatches}</span> game
-            {standings.totalMatches === 1 ? "" : "s"} on the record
+            {standings.totalMatches === 1 ? "" : "s"}{" "}
+            {playerIds.length > 1 ? "together" : "on the record"}
             {/* Contested games are held out of every number above. Saying so
                 here is the only thing standing between "the table is wrong" and
                 "the table is right and two results are being argued about". */}

@@ -25,8 +25,8 @@ type CreateMatchRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	FamilyId string                 `protobuf:"bytes,1,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
 	GameId   string                 `protobuf:"bytes,2,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	// Players to invite. They are asked, not added — each decides for themselves,
-	// and the match runs without the ones who never answer.
+	// Players the creator is putting in the game. They are added, not asked: the
+	// host can see who is at the table, and each can object to any result.
 	InviteUserIds []string `protobuf:"bytes,3,rep,name=invite_user_ids,json=inviteUserIds,proto3" json:"invite_user_ids,omitempty"`
 	// How this one is won. Required, and fixed once set: it is the term everyone
 	// who joins is agreeing to, so it cannot be edited out from under them.
@@ -237,8 +237,11 @@ func (x *JoinMatchResponse) GetMatch() *Match {
 }
 
 type LeaveMatchRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	MatchId string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	// Who to take out. Empty means you, which is the ordinary case. Naming somebody
+	// else is the creator's alone, and only until a winner is named.
+	UserId        string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -276,6 +279,13 @@ func (*LeaveMatchRequest) Descriptor() ([]byte, []int) {
 func (x *LeaveMatchRequest) GetMatchId() string {
 	if x != nil {
 		return x.MatchId
+	}
+	return ""
+}
+
+func (x *LeaveMatchRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -1452,9 +1462,10 @@ const file_scoreboard_v1_match_proto_rawDesc = "" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"?\n" +
 	"\x11JoinMatchResponse\x12*\n" +
-	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\".\n" +
+	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\"G\n" +
 	"\x11LeaveMatchRequest\x12\x19\n" +
-	"\bmatch_id\x18\x01 \x01(\tR\amatchId\"@\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"@\n" +
 	"\x12LeaveMatchResponse\x12*\n" +
 	"\x05match\x18\x01 \x01(\v2\x14.scoreboard.v1.MatchR\x05match\"0\n" +
 	"\x13DeclineMatchRequest\x12\x19\n" +

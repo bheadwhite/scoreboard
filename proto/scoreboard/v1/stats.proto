@@ -32,6 +32,9 @@ enum StatsRange {
   STATS_RANGE_ALL_TIME = 1;
   STATS_RANGE_YEAR = 2;
   STATS_RANGE_MONTH = 3;
+  // A rolling 24 hours rather than a calendar day, so a game that runs past
+  // midnight stays in one night and no timezone has to be agreed on.
+  STATS_RANGE_DAY = 4;
 }
 
 // One pairing, from the viewer's point of view, phrased for the screens that
@@ -87,6 +90,10 @@ message GetStandingsRequest {
   // Empty means all games combined.
   string game_id = 2;
   StatsRange range = 3;
+  // Empty means everybody. Otherwise only matches every one of these players
+  // was in count, and only these players get a row, so everybody on the board is
+  // measured over the same games and nobody climbs by playing without the others.
+  repeated string player_ids = 4;
 }
 
 message GetStandingsResponse {
@@ -97,11 +104,14 @@ message GetStandingsResponse {
   // includes a dozen games nobody here has played, and every one of those
   // filters to an empty table.
   //
-  // Not narrowed by game_id: selecting a filter must not collapse the list of
-  // filters to the one already chosen.
+  // Not narrowed by game_id or player_ids: selecting a filter must not collapse
+  // the list of filters to the one already chosen, or take away the chip that
+  // would get you back out of it.
   repeated Game played_games = 3;
   // Who owns each game that has been finished in range. One per game, and the
   // reason the scoreboard can say "Lisa owns Catan" without a request per game.
+  // Narrowed by player_ids, since a crown won elsewhere is the same boost the
+  // filter is there to take out.
   repeated GameKing game_kings = 4;
   // Settled matches in range that somebody is objecting to. Not included in
   // total_matches, and the reason the two numbers can disagree with a raw count

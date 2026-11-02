@@ -79,17 +79,17 @@ type MatchServiceClient interface {
 	// Confirms you are playing, under the contract as posted. This is the only
 	// commitment step there is. Open until a winner is named, so latecomers count.
 	//
-	// Whoever posted the match may also do this for somebody they invited, which
-	// is how a game gets under way when everybody is at the table and nobody has
-	// picked up their phone. It converts a pending invitation into a player and
-	// nothing more: a refusal cannot be overridden, and the person put in still
-	// owes any claim an answer, so this buys the host a game that can start, not
-	// a result they can manufacture.
+	// Whoever posted the match may also do this for somebody another player
+	// invited. It converts a pending invitation into a player and nothing more: a
+	// refusal cannot be overridden, and the person put in can still object to
+	// whatever gets recorded.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.
 	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
-	// Ask more players once the match exists.
+	// Add more players once the match exists. Whoever posted the match puts them
+	// straight in; anybody else in it sends an invitation. A player with no account
+	// is always put straight in, since there is no device to ask.
 	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
 	// Replaces the whole team layout. Creator only, and only while the match has
 	// no result — who is on which side is what the result is written against.
@@ -347,17 +347,17 @@ type MatchServiceHandler interface {
 	// Confirms you are playing, under the contract as posted. This is the only
 	// commitment step there is. Open until a winner is named, so latecomers count.
 	//
-	// Whoever posted the match may also do this for somebody they invited, which
-	// is how a game gets under way when everybody is at the table and nobody has
-	// picked up their phone. It converts a pending invitation into a player and
-	// nothing more: a refusal cannot be overridden, and the person put in still
-	// owes any claim an answer, so this buys the host a game that can start, not
-	// a result they can manufacture.
+	// Whoever posted the match may also do this for somebody another player
+	// invited. It converts a pending invitation into a player and nothing more: a
+	// refusal cannot be overridden, and the person put in can still object to
+	// whatever gets recorded.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.
 	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
-	// Ask more players once the match exists.
+	// Add more players once the match exists. Whoever posted the match puts them
+	// straight in; anybody else in it sends an invitation. A player with no account
+	// is always put straight in, since there is no device to ask.
 	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
 	// Replaces the whole team layout. Creator only, and only while the match has
 	// no result — who is on which side is what the result is written against.
