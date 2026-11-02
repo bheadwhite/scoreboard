@@ -30,6 +30,9 @@ const (
 	StatsRange_STATS_RANGE_ALL_TIME    StatsRange = 1
 	StatsRange_STATS_RANGE_YEAR        StatsRange = 2
 	StatsRange_STATS_RANGE_MONTH       StatsRange = 3
+	// A rolling 24 hours rather than a calendar day, so a game that runs past
+	// midnight stays in one night and no timezone has to be agreed on.
+	StatsRange_STATS_RANGE_DAY StatsRange = 4
 )
 
 // Enum value maps for StatsRange.
@@ -39,12 +42,14 @@ var (
 		1: "STATS_RANGE_ALL_TIME",
 		2: "STATS_RANGE_YEAR",
 		3: "STATS_RANGE_MONTH",
+		4: "STATS_RANGE_DAY",
 	}
 	StatsRange_value = map[string]int32{
 		"STATS_RANGE_UNSPECIFIED": 0,
 		"STATS_RANGE_ALL_TIME":    1,
 		"STATS_RANGE_YEAR":        2,
 		"STATS_RANGE_MONTH":       3,
+		"STATS_RANGE_DAY":         4,
 	}
 )
 
@@ -1135,13 +1140,14 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x13unfinished_business\x18\x10 \x01(\v2\x1a.scoreboard.v1.RivalryLineR\x12unfinishedBusiness\x12%\n" +
 	"\x0econtested_wins\x18\x11 \x01(\x05R\rcontestedWins\x12)\n" +
 	"\x10contested_losses\x18\x12 \x01(\x05R\x0fcontestedLosses\x12&\n" +
-	"\x0fviewer_may_link\x18\x13 \x01(\bR\rviewerMayLink*p\n" +
+	"\x0fviewer_may_link\x18\x13 \x01(\bR\rviewerMayLink*\x85\x01\n" +
 	"\n" +
 	"StatsRange\x12\x1b\n" +
 	"\x17STATS_RANGE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14STATS_RANGE_ALL_TIME\x10\x01\x12\x14\n" +
 	"\x10STATS_RANGE_YEAR\x10\x02\x12\x15\n" +
-	"\x11STATS_RANGE_MONTH\x10\x032\xa8\x02\n" +
+	"\x11STATS_RANGE_MONTH\x10\x03\x12\x13\n" +
+	"\x0fSTATS_RANGE_DAY\x10\x042\xa8\x02\n" +
 	"\fStatsService\x12W\n" +
 	"\fGetStandings\x12\".scoreboard.v1.GetStandingsRequest\x1a#.scoreboard.v1.GetStandingsResponse\x12Z\n" +
 	"\rGetHeadToHead\x12#.scoreboard.v1.GetHeadToHeadRequest\x1a$.scoreboard.v1.GetHeadToHeadResponse\x12c\n" +

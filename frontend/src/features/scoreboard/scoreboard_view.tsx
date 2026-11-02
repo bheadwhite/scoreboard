@@ -21,6 +21,7 @@ import {
 
 const RANGES: { value: StatsRange; label: string }[] = [
   { value: StatsRange.ALL_TIME, label: "All time" },
+  { value: StatsRange.DAY, label: "Last 24 hours" },
   { value: StatsRange.YEAR, label: "This year" },
   { value: StatsRange.MONTH, label: "This month" },
 ];
@@ -153,8 +154,10 @@ export function ScoreboardView({
           </div>
         )}
 
-        {/* Nothing on the record yet means nothing to slice by time either. */}
-        {(standings?.totalMatches ?? 0) > 0 && (
+        {/* Nothing on the record yet means nothing to slice by time either. A
+            quiet range is different: the total is for that range, and hiding the
+            chips would leave nowhere to go back to. */}
+        {((standings?.totalMatches ?? 0) > 0 || range !== StatsRange.ALL_TIME) && (
         <div className="chips" role="group" aria-label="Time range">
           {RANGES.map((r) => (
             <button
@@ -172,11 +175,17 @@ export function ScoreboardView({
         <AsyncBoundary runner={presenter.standings.broadcast}>
           <div className="card card--flush">
             {!standings || standings.rows.length === 0 ? (
-              <Empty emoji="🎲">
-                <strong>Nothing on the record yet.</strong>
-                <br />
-                Play something. The record starts when somebody names a winner.
-              </Empty>
+              range === StatsRange.ALL_TIME ? (
+                <Empty emoji="🎲">
+                  <strong>Nothing on the record yet.</strong>
+                  <br />
+                  Play something. The record starts when somebody names a winner.
+                </Empty>
+              ) : (
+                <Empty emoji="🎲">
+                  <strong>Nothing that counts in this stretch.</strong>
+                </Empty>
+              )
             ) : (
               standings.rows.map((row) => (
                 <button

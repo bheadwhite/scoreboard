@@ -32,6 +32,9 @@ enum StatsRange {
   STATS_RANGE_ALL_TIME = 1;
   STATS_RANGE_YEAR = 2;
   STATS_RANGE_MONTH = 3;
+  // A rolling 24 hours rather than a calendar day, so a game that runs past
+  // midnight stays in one night and no timezone has to be agreed on.
+  STATS_RANGE_DAY = 4;
 }
 
 // One pairing, from the viewer's point of view, phrased for the screens that
