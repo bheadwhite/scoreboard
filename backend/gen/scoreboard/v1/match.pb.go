@@ -25,8 +25,8 @@ type CreateMatchRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	FamilyId string                 `protobuf:"bytes,1,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
 	GameId   string                 `protobuf:"bytes,2,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	// Players to invite. They are asked, not added — each decides for themselves,
-	// and the match runs without the ones who never answer.
+	// Players the creator is putting in the game. They are added, not asked: the
+	// host can see who is at the table, and each can object to any result.
 	InviteUserIds []string `protobuf:"bytes,3,rep,name=invite_user_ids,json=inviteUserIds,proto3" json:"invite_user_ids,omitempty"`
 	// How this one is won. Required, and fixed once set: it is the term everyone
 	// who joins is agreeing to, so it cannot be edited out from under them.

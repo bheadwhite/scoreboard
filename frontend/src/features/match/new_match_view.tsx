@@ -9,7 +9,7 @@ import { Alert, Avatar, Empty, Sheet } from "../../components/ui.js";
 import { displayName, gameLabel } from "../../lib/format.js";
 
 /**
- * Pick a game, say how it is won, pick who to ask, post it.
+ * Pick a game, say how it is won, pick who is playing, post it.
  *
  * The contract lives on this screen rather than the match screen because the
  * match is live the moment it is posted and joining it is the whole commitment.
@@ -85,7 +85,7 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
 
       <section className="stack">
         <div className="row row--between">
-          <span className="section-label">Who do you want to invite?</span>
+          <span className="section-label">Who is playing?</span>
           <span className="section-label num">
             {count}
             {game ? ` / ${game.maxPlayers}` : ""}
@@ -110,11 +110,7 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
                     {displayName(m.user)}
                     {isMe && <span style={{ color: "var(--ink-faint)" }}> (you)</span>}
                   </span>
-                  {/* Picking them puts them straight in rather than asking, so
-                      the row says so before it is tapped. */}
-                  {m.user?.placeholder && (
-                    <span className="rowbtn__meta">not on the app · added, not asked</span>
-                  )}
+                  {m.user?.placeholder && <span className="rowbtn__meta">not on the app</span>}
                 </span>
                 <span style={{ color: selected ? "var(--gold)" : "var(--ink-faint)" }}>
                   {selected ? "✓" : "+"}
@@ -139,8 +135,8 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
           </button>
         </div>
         <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
-          They each decide whether to play, and joining is all there is to it — whoever taps yes is
-          in the game. Anyone you miss can still join later, right up until somebody calls the win.
+          Everyone you pick is in the game. Anyone you miss can still join later, right up until
+          somebody calls the win.
         </p>
       </section>
 
@@ -163,7 +159,7 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
                 : !ready
                   ? "Say how it is won"
                   : count > 1
-                    ? `Start ${gameLabel(game)} and ask ${count - 1}`
+                    ? `Start ${gameLabel(game)} with ${count - 1} more`
                     : `Start ${gameLabel(game)}`}
         </button>
       </div>
@@ -175,8 +171,7 @@ export function NewMatchView({ presenter }: { presenter: NewMatchPresenter }) {
  * Adding somebody who has not signed up.
  *
  * Everything about this sheet is trying to be honest about what it does, because
- * what it does is unusual for this app: it puts a person into a game without
- * asking them. That is unavoidable — there is no device to ask — and the whole
+ * this person can never answer for themselves until they sign up, and the whole
  * justification is on the other end, so the copy says it. They get a real place
  * on the scoreboard, they are not asked to agree to anything, and when they do
  * sign up they inherit the lot and can argue with any of it.
@@ -220,10 +215,10 @@ function AddPlayerSheet({ presenter }: { presenter: NewMatchPresenter }) {
           />
         </div>
         <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
-          They cannot concede or object to anything, because there is nothing to do it from — so
-          they are added to the game rather than asked, and a result only they lost is marked as
-          one nobody could deny. When they sign up, an administrator can join the two together and
-          they get to argue with every result they inherit.
+          They cannot concede or object to anything, because there is nothing to do it from — so a
+          result only they lost is marked as one nobody could deny. When they sign up, an
+          administrator can join the two together and they get to argue with every result they
+          inherit.
         </p>
         <button
           className="btn btn--primary btn--block"

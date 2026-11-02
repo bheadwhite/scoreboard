@@ -91,8 +91,8 @@ func parseContract(in *scoreboardv1.Contract) (model.Contract, error) {
 // JoinMatch puts somebody in the game — normally the caller, saying they are
 // playing.
 //
-// The host may also do it for somebody they invited. That is a real exception to
-// "nobody is dragged into a game", and it exists because the alternative is
+// The host may also do it for somebody another player invited. That is a real
+// exception to "nobody is dragged into a game", and it exists because the alternative is
 // worse: four people around a table, one of them has posted the match, and the
 // game cannot begin until the other three find their phones. The exception is
 // kept as narrow as it can be — an unanswered invitation only, never a refusal —
@@ -171,7 +171,7 @@ func (svc *MatchService) InvitePlayers(
 		return nil, invalid("pick someone to invite")
 	}
 
-	out, err := svc.store.InvitePlayers(ctx, req.Msg.GetMatchId(), req.Msg.GetUserIds())
+	out, err := svc.store.InvitePlayers(ctx, req.Msg.GetMatchId(), req.Msg.GetUserIds(), m.CreatedBy == v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
