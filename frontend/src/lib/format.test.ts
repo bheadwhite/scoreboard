@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ContractKind } from "../gen/scoreboard/v1/common_pb.js";
+import { ContractKind, type Match } from "../gen/scoreboard/v1/common_pb.js";
 import { messageOf } from "../features/match/match_presenter.js";
 import {
   contestedLine,
@@ -8,6 +8,7 @@ import {
   debtLine,
   droughtVerdict,
   initials,
+  playerNames,
   rivalryVerdict,
   streakLabel,
   unfinishedLine,
@@ -172,5 +173,24 @@ describe("contestedLine", () => {
     // reason this spells the split out rather than counting matches.
     expect(contestedLine(3, 0)).toBe("3 wins");
     expect(contestedLine(0, 1)).toBe("1 loss");
+  });
+});
+
+describe("playerNames", () => {
+  const match = {
+    joined: [
+      { user: { id: "b", displayName: "Brent Whitehead" } },
+      { user: { id: "k", displayName: "Kaylee Whitehead" } },
+      { user: { id: "l", displayName: "Lisa Tarver" } },
+    ],
+  } as unknown as Match;
+
+  it("lists everybody in the game by first name", () => {
+    expect(playerNames(match)).toBe("Brent, Kaylee, Lisa");
+  });
+
+  it("leaves out whoever the screen already names", () => {
+    expect(playerNames(match, ["b", "l"])).toBe("Kaylee");
+    expect(playerNames(match, ["b", "k", "l"])).toBe("");
   });
 });

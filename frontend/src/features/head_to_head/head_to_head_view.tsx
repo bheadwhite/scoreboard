@@ -9,6 +9,7 @@ import {
   contestedLine,
   displayName,
   gameLabel,
+  playerNames,
   debtLine,
   droughtVerdict,
   rivalryVerdict,
@@ -167,6 +168,8 @@ export function HeadToHeadView({
                 record.recentMatches.map((match) => {
                   const players = winners(match);
                   const wonByViewer = players.some((p) => p.id === record.user?.id);
+                  // The two of them are the whole point of this screen.
+                  const others = playerNames(match, [record.user?.id, record.opponent?.id]);
                   return (
                     <button
                       key={match.id}
@@ -183,6 +186,7 @@ export function HeadToHeadView({
                         </span>
                         <span className="rowbtn__meta">
                           {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+                          {others && ` · with ${others}`}
                         </span>
                       </span>
                       <span

@@ -86,6 +86,17 @@ export function winningTeamName(match: Match): string {
   return team?.name ?? "";
 }
 
+/**
+ * Who was in a game, by first name, so a list of games says who played without
+ * having to open one. `exclude` is for whoever the screen already names.
+ */
+export function playerNames(match: Match, exclude: (string | undefined)[] = []): string {
+  return match.joined
+    .filter((p) => !exclude.includes(p.user?.id))
+    .map((p) => displayName(p.user).split(" ")[0])
+    .join(", ");
+}
+
 /** Players on the winning side, for the victory line. */
 export function winners(match: Match): User[] {
   return match.participants

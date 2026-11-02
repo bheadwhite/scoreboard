@@ -12,6 +12,7 @@ import {
   contractText,
   displayName,
   gameLabel,
+  playerNames,
   streakLabel,
   timeAgo,
   winRateText,
@@ -301,7 +302,7 @@ export function ScoreboardView({
                     {winnerLine(match)} <span style={{ color: "var(--ink-faint)" }}>won</span>
                   </span>
                   <span className="rowbtn__meta">
-                    {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+                    {gameLabel(match.game)} · {timeAgo(match.finalizedAt)} · {playerNames(match)}
                   </span>
                 </span>
                 <div className="avatar-stack">
@@ -451,7 +452,7 @@ function ResultRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
           {winnerLine(match)} <span style={{ color: "var(--ink-faint)" }}>won</span>
         </span>
         <span className="rowbtn__meta">
-          {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+          {gameLabel(match.game)} · {timeAgo(match.finalizedAt)} · {playerNames(match)}
         </span>
       </span>
       {match.contested ? (
@@ -529,7 +530,7 @@ function LiveRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
         <span className="rowbtn__meta">
           {waiting
             ? `${players}${pending}`
-            : `${players} · ${contractSet ? contractText(match.contract) : "no contract"}`}
+            : `${playerNames(match)} · ${contractSet ? contractText(match.contract) : "no contract"}`}
         </span>
       </span>
       {badge()}

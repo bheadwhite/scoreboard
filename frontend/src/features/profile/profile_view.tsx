@@ -14,6 +14,7 @@ import {
   displayName,
   droughtVerdict,
   gameLabel,
+  playerNames,
   streakLabel,
   timeAgo,
   unfinishedLine,
@@ -439,9 +440,7 @@ function GameRow({
 }) {
   const players = winners(match);
   const won = players.some((p) => p.id === userId);
-  const others = match.joined
-    .filter((p) => p.user?.id !== userId)
-    .map((p) => displayName(p.user).split(" ")[0]);
+  const others = playerNames(match, [userId]);
 
   return (
     <button className="rowbtn" onClick={onOpen}>
@@ -453,7 +452,7 @@ function GameRow({
         </span>
         <span className="rowbtn__meta">
           {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
-          {others.length > 0 && ` · with ${others.join(", ")}`}
+          {others && ` · with ${others}`}
         </span>
       </span>
       {match.contested ? (
