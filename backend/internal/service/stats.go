@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
+	"github.com/bheadwhite/scoreboard/backend/internal/auth"
 	"github.com/bheadwhite/scoreboard/backend/internal/events"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
 	"github.com/bheadwhite/scoreboard/backend/internal/stats"
@@ -18,8 +19,11 @@ type StatsService struct {
 	base
 }
 
-func NewStatsService(s *store.Store, hub *events.Hub) *StatsService {
-	return &StatsService{base: base{store: s, hub: hub}}
+// The concession window is not passed in: nothing here needs it. The admin list
+// is, because the head-to-head screen sends back recent meetings, and those
+// carry viewer_may_void.
+func NewStatsService(s *store.Store, hub *events.Hub, admins auth.Admins) *StatsService {
+	return &StatsService{base: base{store: s, hub: hub, admins: admins}}
 }
 
 // How many recent meetings the head-to-head screen shows.
@@ -45,7 +49,7 @@ func (svc *StatsService) GetStandings(
 		return nil, err
 	}
 
-	played, err := svc.playedGames(ctx, familyID, all)
+	playedGames, err := svc.playedGames(ctx, familyID, all)
 	if err != nil {
 		return nil, err
 	}
@@ -68,27 +72,87 @@ func (svc *StatsService) GetStandings(
 			continue
 		}
 		out = append(out, &scoreboardv1.StandingsRow{
-			User:    userPB(u),
-			Wins:    r.Wins,
-			Losses:  r.Losses,
-			WinRate: r.WinRate(),
-			Streak:  r.Streak,
-			Rank:    int32(i + 1),
+			User:            userPB(u),
+			Wins:            r.Wins,
+			Losses:          r.Losses,
+			WinRate:         r.WinRate(),
+			Streak:          r.Streak,
+			Rank:            int32(i + 1),
+			ContestedWins:   r.ContestedWins,
+			ContestedLosses: r.ContestedLosses,
 		})
 	}
 
 	// Every match contributes one participation per player, so the distinct
-	// match count is what "matches played" means here.
+	// match count is what "matches played" means here. Counted over the clean
+	// and contested halves separately, because the headline number has to agree
+	// with the wins and losses beside it, and those exclude the contested ones.
+	clean, contested := stats.Split(ps)
+	played, disputed := distinctMatches(clean), distinctMatches(contested)
+
+	// Kings come off the unnarrowed history on purpose: "who owns what" is a
+	// tour of every game, and filtering to one game would leave a section
+	// showing the single crown you already selected.
+	kings, err := svc.gameKings(ctx, familyID, all, users)
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&scoreboardv1.GetStandingsResponse{
+		Rows:             out,
+		TotalMatches:     played,
+		PlayedGames:      playedGames,
+		GameKings:        kings,
+		ContestedMatches: disputed,
+	}), nil
+}
+
+// distinctMatches counts matches rather than participations.
+func distinctMatches(ps []stats.Participation) int32 {
 	seen := map[string]struct{}{}
 	for _, p := range ps {
 		seen[p.MatchID] = struct{}{}
 	}
+	return int32(len(seen))
+}
 
-	return connect.NewResponse(&scoreboardv1.GetStandingsResponse{
-		Rows:         out,
-		TotalMatches: int32(len(seen)),
-		PlayedGames:  played,
-	}), nil
+// gameKings resolves the per-game champions into proto, dropping any game or
+// player that has since been deleted.
+func (svc *StatsService) gameKings(
+	ctx context.Context, familyID string, ps []stats.Participation, users map[string]model.User,
+) ([]*scoreboardv1.GameKing, error) {
+	crowned := stats.GameKings(ps)
+	if len(crowned) == 0 {
+		return nil, nil
+	}
+
+	games, err := svc.store.ListGames(ctx, familyID)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+	byID := make(map[string]model.Game, len(games))
+	for _, g := range games {
+		byID[g.ID] = g
+	}
+
+	out := make([]*scoreboardv1.GameKing, 0, len(crowned))
+	for _, k := range crowned {
+		g, ok := byID[k.GameID]
+		if !ok {
+			continue
+		}
+		u, ok := users[k.UserID]
+		if !ok {
+			continue
+		}
+		out = append(out, &scoreboardv1.GameKing{
+			Game:   gamePB(g),
+			User:   userPB(u),
+			Wins:   k.Wins,
+			Losses: k.Losses,
+		})
+	}
+	return out, nil
 }
 
 // playedGames returns the games that appear in this history, most-played first,
@@ -150,20 +214,15 @@ func (svc *StatsService) playedGames(
 func (svc *StatsService) GetHeadToHead(
 	ctx context.Context, req *connect.Request[scoreboardv1.GetHeadToHeadRequest],
 ) (*connect.Response[scoreboardv1.GetHeadToHeadResponse], error) {
-	uid, err := caller(ctx)
-	if err != nil {
-		return nil, err
-	}
 	familyID := req.Msg.GetFamilyId()
-	role, err := svc.requireMember(ctx, familyID, uid)
+	v, err := svc.familyViewer(ctx, familyID)
 	if err != nil {
 		return nil, err
 	}
-	org := role == model.RoleOwner
 
 	subject := req.Msg.GetUserId()
 	if subject == "" {
-		subject = uid
+		subject = v.id
 	}
 	opponent := req.Msg.GetOpponentId()
 	if opponent == "" {
@@ -195,15 +254,18 @@ func (svc *StatsService) GetHeadToHead(
 	}
 
 	return connect.NewResponse(&scoreboardv1.GetHeadToHeadResponse{
-		User:           userPB(users[subject]),
-		Opponent:       userPB(users[opponent]),
-		Wins:           h.Wins,
-		Losses:         h.Losses,
-		TogetherWins:   h.TogetherWins,
-		TogetherLosses: h.TogetherLosses,
-		Games:          games,
-		RecentMatches:  svc.matchesPB(recent, uid, org),
-		Streak:         h.Streak,
+		User:            userPB(users[subject]),
+		Opponent:        userPB(users[opponent]),
+		Wins:            h.Wins,
+		Losses:          h.Losses,
+		TogetherWins:    h.TogetherWins,
+		TogetherLosses:  h.TogetherLosses,
+		Games:           games,
+		RecentMatches:   svc.matchesPB(recent, v),
+		Streak:          h.Streak,
+		Rivalry:         rivalryPB(stats.Rivalries(ps, subject)[opponent], users),
+		ContestedWins:   h.ContestedWins,
+		ContestedLosses: h.ContestedLosses,
 	}), nil
 }
 
@@ -216,6 +278,10 @@ func (svc *StatsService) GetPlayerProfile(
 	}
 	familyID := req.Msg.GetFamilyId()
 	if _, err := svc.requireMember(ctx, familyID, uid); err != nil {
+		return nil, err
+	}
+	v, err := svc.familyViewer(ctx, familyID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -243,6 +309,8 @@ func (svc *StatsService) GetPlayerProfile(
 		CurrentStreak:    p.CurrentStreak,
 		LongestWinStreak: p.LongestWin,
 		Games:            games,
+		ContestedWins:    p.ContestedWins,
+		ContestedLosses:  p.ContestedLosses,
 	}
 	total := p.Wins + p.Losses
 	if total > 0 {
@@ -252,12 +320,24 @@ func (svc *StatsService) GetPlayerProfile(
 		res.Nemesis = userPB(u)
 		res.NemesisLosses = p.NemesisLosses
 		res.NemesisWins = p.NemesisWins
+		res.NemesisDebt = p.NemesisDebt
 	}
 	if u, ok := users[p.VictimID]; ok {
 		res.FavoriteVictim = userPB(u)
 		res.VictimWins = p.VictimWins
 		res.VictimLosses = p.VictimLosses
 	}
+	if p.HasDrought {
+		res.Drought = rivalryPB(p.Drought, users)
+	}
+	if p.HasUnfinished {
+		res.UnfinishedBusiness = rivalryPB(p.Unfinished, users)
+	}
+	// A placeholder's profile is where an administrator actually looks at one,
+	// so it is where the link is offered. Both halves are required: there is
+	// nothing to link on a player who already has an account, and nobody but a
+	// service administrator may move a history between names.
+	res.ViewerMayLink = users[subject].Placeholder && v.admin
 
 	return connect.NewResponse(res), nil
 }

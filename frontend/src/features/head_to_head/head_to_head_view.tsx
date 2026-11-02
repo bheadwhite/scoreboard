@@ -6,8 +6,11 @@ import type { AppPresenter } from "../../app/app_presenter.js";
 import type { HeadToHeadPresenter } from "./head_to_head_presenter.js";
 import { AsyncBoundary, Avatar, Empty, Record } from "../../components/ui.js";
 import {
+  contestedLine,
   displayName,
   gameLabel,
+  debtLine,
+  droughtVerdict,
   rivalryVerdict,
   streakLabel,
   timeAgo,
@@ -71,6 +74,40 @@ export function HeadToHeadView({
                 </>
               )}
             </div>
+
+            {/* Meetings one of them is still objecting to. Said out loud
+                rather than silently dropped: the alternative is a record that
+                does not match the games people remember playing, with no
+                explanation on the screen for why. */}
+            {record.contestedWins + record.contestedLosses > 0 && (
+              <div className="verdict__note">
+                <div>
+                  ⚑ {contestedLine(record.contestedWins, record.contestedLosses)} contested, and
+                  not counted above.
+                </div>
+              </div>
+            )}
+
+            {/* The verdict says who is ahead. These two say how long it has
+                been and what it would cost to fix — the part that decides
+                whether somebody sets the board back up tonight. */}
+            {record.rivalry && record.wins + record.losses > 0 && (
+              <div className="verdict__note">
+                {record.rivalry.meetingsSinceLastWin > 0 && (
+                  <div>
+                    {droughtVerdict(
+                      record.rivalry.neverBeaten,
+                      record.rivalry.meetingsSinceLastWin,
+                      displayName(record.opponent),
+                      true,
+                    )}
+                  </div>
+                )}
+                {record.rivalry.debt > 0 && (
+                  <div>{debtLine(record.rivalry.debt, displayName(record.opponent), true)}</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="chips" role="group" aria-label="Filter by game">
@@ -125,7 +162,7 @@ export function HeadToHeadView({
             <span className="section-label">Recent meetings</span>
             <div className="card card--flush">
               {record.recentMatches.length === 0 ? (
-                <Empty emoji="🤝">You two have never faced off.</Empty>
+                <Empty emoji="🤝">You two have never faced off. Somebody has to start it.</Empty>
               ) : (
                 record.recentMatches.map((match) => {
                   const players = winners(match);

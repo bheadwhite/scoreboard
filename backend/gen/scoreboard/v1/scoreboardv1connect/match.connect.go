@@ -48,13 +48,6 @@ const (
 	MatchServiceInvitePlayersProcedure = "/scoreboard.v1.MatchService/InvitePlayers"
 	// MatchServiceSetTeamsProcedure is the fully-qualified name of the MatchService's SetTeams RPC.
 	MatchServiceSetTeamsProcedure = "/scoreboard.v1.MatchService/SetTeams"
-	// MatchServiceSetContractProcedure is the fully-qualified name of the MatchService's SetContract
-	// RPC.
-	MatchServiceSetContractProcedure = "/scoreboard.v1.MatchService/SetContract"
-	// MatchServiceSetReadyProcedure is the fully-qualified name of the MatchService's SetReady RPC.
-	MatchServiceSetReadyProcedure = "/scoreboard.v1.MatchService/SetReady"
-	// MatchServiceStartMatchProcedure is the fully-qualified name of the MatchService's StartMatch RPC.
-	MatchServiceStartMatchProcedure = "/scoreboard.v1.MatchService/StartMatch"
 	// MatchServiceClaimVictoryProcedure is the fully-qualified name of the MatchService's ClaimVictory
 	// RPC.
 	MatchServiceClaimVictoryProcedure = "/scoreboard.v1.MatchService/ClaimVictory"
@@ -66,12 +59,11 @@ const (
 	// MatchServiceDisputeMatchProcedure is the fully-qualified name of the MatchService's DisputeMatch
 	// RPC.
 	MatchServiceDisputeMatchProcedure = "/scoreboard.v1.MatchService/DisputeMatch"
-	// MatchServiceResolveDisputeProcedure is the fully-qualified name of the MatchService's
-	// ResolveDispute RPC.
-	MatchServiceResolveDisputeProcedure = "/scoreboard.v1.MatchService/ResolveDispute"
 	// MatchServiceCancelMatchProcedure is the fully-qualified name of the MatchService's CancelMatch
 	// RPC.
 	MatchServiceCancelMatchProcedure = "/scoreboard.v1.MatchService/CancelMatch"
+	// MatchServiceVoidMatchProcedure is the fully-qualified name of the MatchService's VoidMatch RPC.
+	MatchServiceVoidMatchProcedure = "/scoreboard.v1.MatchService/VoidMatch"
 	// MatchServiceGetMatchProcedure is the fully-qualified name of the MatchService's GetMatch RPC.
 	MatchServiceGetMatchProcedure = "/scoreboard.v1.MatchService/GetMatch"
 	// MatchServiceListMatchesProcedure is the fully-qualified name of the MatchService's ListMatches
@@ -81,41 +73,82 @@ const (
 
 // MatchServiceClient is a client for the scoreboard.v1.MatchService service.
 type MatchServiceClient interface {
+	// Posts a match: a game, its contract, and the people being asked. Live
+	// immediately.
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
+	// Confirms you are playing, under the contract as posted. This is the only
+	// commitment step there is. Open until a winner is named, so latecomers count.
+	//
+	// Whoever posted the match may also do this for somebody they invited, which
+	// is how a game gets under way when everybody is at the table and nobody has
+	// picked up their phone. It converts a pending invitation into a player and
+	// nothing more: a refusal cannot be overridden, and the person put in still
+	// owes any claim an answer, so this buys the host a game that can start, not
+	// a result they can manufacture.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.
 	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
-	// Ask more players once the lobby already exists.
+	// Ask more players once the match exists.
 	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
-	// Replaces the whole team layout while still in the lobby.
+	// Replaces the whole team layout. Creator only, and only while the match has
+	// no result — who is on which side is what the result is written against.
 	SetTeams(context.Context, *connect.Request[v1.SetTeamsRequest]) (*connect.Response[v1.SetTeamsResponse], error)
-	SetContract(context.Context, *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error)
-	// Affirm, or withdraw, that you are ready to play under the current
-	// contract. Changing the contract or the teams clears everyone's.
-	SetReady(context.Context, *connect.Request[v1.SetReadyRequest]) (*connect.Response[v1.SetReadyResponse], error)
-	// Locks the contract and begins play. Creator only, and only once every
-	// joined player is ready.
-	StartMatch(context.Context, *connect.Request[v1.StartMatchRequest]) (*connect.Response[v1.StartMatchResponse], error)
-	// Claim victory for the caller's team. Starts the concession clock.
-	// Idempotent: re-claiming by the same team is a no-op.
+	// Names the winner, which records the result. Any player may name their own
+	// side; whoever posted the match may name any side, which is the short
+	// circuit for a game that is plainly over and where the winner is not the one
+	// holding the phone. Idempotent: re-naming the same side is a no-op.
+	//
+	// There is no pending stage between this and the record. There used to be —
+	// the claim sat collecting answers and settled on the last one or on a
+	// week-long clock — and it decided nothing, because both endings wrote the
+	// same result. What keeps a manufactured win from standing is not a delay in
+	// front of it, it is that everybody in the match can object to it afterward,
+	// for as long as the record exists.
 	ClaimVictory(context.Context, *connect.Request[v1.ClaimVictoryRequest]) (*connect.Response[v1.ClaimVictoryResponse], error)
-	// Take back a claim your own team made. The match returns to IN_PROGRESS with
-	// no winner and every answer cleared — this is "never mind", not "you won".
-	// Anyone on the claiming team may do it, and only until the match finalizes.
+	// Refuse the win. The match returns to IN_PROGRESS with no winner, every
+	// answer cleared and every result back to pending — "never mind", not "they
+	// won": if the other side actually won, they have to name themselves.
+	//
+	// Open to the side the result names, and to nobody else. Not to whoever
+	// called it, which is the one rule this app cannot bend: in a match you
+	// posted you could name the other side the winner and then take your own loss
+	// back off the board, and a record you can retract a defeat from is not a
+	// record. So a win can always be refused and a loss can never be erased.
+	// Somebody who called a game wrong and cannot fix it objects to it instead.
 	WithdrawClaim(context.Context, *connect.Request[v1.WithdrawClaimRequest]) (*connect.Response[v1.WithdrawClaimResponse], error)
-	// Acknowledge the standing claim. Idempotent, and reversible: this also
-	// withdraws an objection you made earlier. Taking back the last objection
-	// returns the match to CLAIMED and restarts its clock.
+	// Say the result is right. Idempotent, and reversible: this also withdraws an
+	// objection you made earlier, at any point in the match's life.
+	//
+	// It changes no tally — the result already counts — so this is a position on
+	// the answer board rather than a step in a protocol. It matters as the way
+	// back from an objection, and as the difference between a player who agrees
+	// and one who has not looked.
 	Concede(context.Context, *connect.Request[v1.ConcedeRequest]) (*connect.Response[v1.ConcedeResponse], error)
-	// Reject the standing claim, or take back a concession you already gave.
-	// Stops the concession clock for as long as the objection stands.
+	// Object to the result, or take back a concession you already gave. Marks the
+	// match contested for as long as the objection stands, which keeps it out of
+	// every clean number while leaving it fully visible as a match.
+	//
+	// This is the whole of what protects the record, now that nothing is pending.
+	// Anybody in the match may say a result did not happen, at any point in its
+	// life, without needing anybody's permission and without a majority — one
+	// objection is enough, and it can be taken back just as freely. The likeliest
+	// moment somebody notices a bogus result is when they see it in the
+	// standings, which is why it has to work forever rather than during a window.
 	DisputeMatch(context.Context, *connect.Request[v1.DisputeMatchRequest]) (*connect.Response[v1.DisputeMatchResponse], error)
-	// Owner only, and only once the match is genuinely stuck — see
-	// Match.organizer_may_resolve. Settles it by naming the winning team, or
-	// voids it.
-	ResolveDispute(context.Context, *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error)
 	CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error)
+	// Service administrator only, and the only way anything leaves the permanent
+	// record. The match is erased — its teams, its participations, every
+	// concession and objection on it — rather than marked, so it stops existing
+	// everywhere at once instead of lingering as a row every stats query has to
+	// remember to skip.
+	//
+	// Deliberately not offered to a family organizer, however sour the match got.
+	// Undoing a result is not adjudication, it is correcting a mistake in the
+	// record, and the whole argument of this app is that nobody in the family
+	// gets to do that. What a player gets is an objection, which is loud and
+	// permanent and still leaves the result standing.
+	VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error)
 	GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error)
 	ListMatches(context.Context, *connect.Request[v1.ListMatchesRequest]) (*connect.Response[v1.ListMatchesResponse], error)
 }
@@ -167,24 +200,6 @@ func NewMatchServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(matchServiceMethods.ByName("SetTeams")),
 			connect.WithClientOptions(opts...),
 		),
-		setContract: connect.NewClient[v1.SetContractRequest, v1.SetContractResponse](
-			httpClient,
-			baseURL+MatchServiceSetContractProcedure,
-			connect.WithSchema(matchServiceMethods.ByName("SetContract")),
-			connect.WithClientOptions(opts...),
-		),
-		setReady: connect.NewClient[v1.SetReadyRequest, v1.SetReadyResponse](
-			httpClient,
-			baseURL+MatchServiceSetReadyProcedure,
-			connect.WithSchema(matchServiceMethods.ByName("SetReady")),
-			connect.WithClientOptions(opts...),
-		),
-		startMatch: connect.NewClient[v1.StartMatchRequest, v1.StartMatchResponse](
-			httpClient,
-			baseURL+MatchServiceStartMatchProcedure,
-			connect.WithSchema(matchServiceMethods.ByName("StartMatch")),
-			connect.WithClientOptions(opts...),
-		),
 		claimVictory: connect.NewClient[v1.ClaimVictoryRequest, v1.ClaimVictoryResponse](
 			httpClient,
 			baseURL+MatchServiceClaimVictoryProcedure,
@@ -209,16 +224,16 @@ func NewMatchServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(matchServiceMethods.ByName("DisputeMatch")),
 			connect.WithClientOptions(opts...),
 		),
-		resolveDispute: connect.NewClient[v1.ResolveDisputeRequest, v1.ResolveDisputeResponse](
-			httpClient,
-			baseURL+MatchServiceResolveDisputeProcedure,
-			connect.WithSchema(matchServiceMethods.ByName("ResolveDispute")),
-			connect.WithClientOptions(opts...),
-		),
 		cancelMatch: connect.NewClient[v1.CancelMatchRequest, v1.CancelMatchResponse](
 			httpClient,
 			baseURL+MatchServiceCancelMatchProcedure,
 			connect.WithSchema(matchServiceMethods.ByName("CancelMatch")),
+			connect.WithClientOptions(opts...),
+		),
+		voidMatch: connect.NewClient[v1.VoidMatchRequest, v1.VoidMatchResponse](
+			httpClient,
+			baseURL+MatchServiceVoidMatchProcedure,
+			connect.WithSchema(matchServiceMethods.ByName("VoidMatch")),
 			connect.WithClientOptions(opts...),
 		),
 		getMatch: connect.NewClient[v1.GetMatchRequest, v1.GetMatchResponse](
@@ -238,23 +253,20 @@ func NewMatchServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // matchServiceClient implements MatchServiceClient.
 type matchServiceClient struct {
-	createMatch    *connect.Client[v1.CreateMatchRequest, v1.CreateMatchResponse]
-	joinMatch      *connect.Client[v1.JoinMatchRequest, v1.JoinMatchResponse]
-	leaveMatch     *connect.Client[v1.LeaveMatchRequest, v1.LeaveMatchResponse]
-	declineMatch   *connect.Client[v1.DeclineMatchRequest, v1.DeclineMatchResponse]
-	invitePlayers  *connect.Client[v1.InvitePlayersRequest, v1.InvitePlayersResponse]
-	setTeams       *connect.Client[v1.SetTeamsRequest, v1.SetTeamsResponse]
-	setContract    *connect.Client[v1.SetContractRequest, v1.SetContractResponse]
-	setReady       *connect.Client[v1.SetReadyRequest, v1.SetReadyResponse]
-	startMatch     *connect.Client[v1.StartMatchRequest, v1.StartMatchResponse]
-	claimVictory   *connect.Client[v1.ClaimVictoryRequest, v1.ClaimVictoryResponse]
-	withdrawClaim  *connect.Client[v1.WithdrawClaimRequest, v1.WithdrawClaimResponse]
-	concede        *connect.Client[v1.ConcedeRequest, v1.ConcedeResponse]
-	disputeMatch   *connect.Client[v1.DisputeMatchRequest, v1.DisputeMatchResponse]
-	resolveDispute *connect.Client[v1.ResolveDisputeRequest, v1.ResolveDisputeResponse]
-	cancelMatch    *connect.Client[v1.CancelMatchRequest, v1.CancelMatchResponse]
-	getMatch       *connect.Client[v1.GetMatchRequest, v1.GetMatchResponse]
-	listMatches    *connect.Client[v1.ListMatchesRequest, v1.ListMatchesResponse]
+	createMatch   *connect.Client[v1.CreateMatchRequest, v1.CreateMatchResponse]
+	joinMatch     *connect.Client[v1.JoinMatchRequest, v1.JoinMatchResponse]
+	leaveMatch    *connect.Client[v1.LeaveMatchRequest, v1.LeaveMatchResponse]
+	declineMatch  *connect.Client[v1.DeclineMatchRequest, v1.DeclineMatchResponse]
+	invitePlayers *connect.Client[v1.InvitePlayersRequest, v1.InvitePlayersResponse]
+	setTeams      *connect.Client[v1.SetTeamsRequest, v1.SetTeamsResponse]
+	claimVictory  *connect.Client[v1.ClaimVictoryRequest, v1.ClaimVictoryResponse]
+	withdrawClaim *connect.Client[v1.WithdrawClaimRequest, v1.WithdrawClaimResponse]
+	concede       *connect.Client[v1.ConcedeRequest, v1.ConcedeResponse]
+	disputeMatch  *connect.Client[v1.DisputeMatchRequest, v1.DisputeMatchResponse]
+	cancelMatch   *connect.Client[v1.CancelMatchRequest, v1.CancelMatchResponse]
+	voidMatch     *connect.Client[v1.VoidMatchRequest, v1.VoidMatchResponse]
+	getMatch      *connect.Client[v1.GetMatchRequest, v1.GetMatchResponse]
+	listMatches   *connect.Client[v1.ListMatchesRequest, v1.ListMatchesResponse]
 }
 
 // CreateMatch calls scoreboard.v1.MatchService.CreateMatch.
@@ -287,21 +299,6 @@ func (c *matchServiceClient) SetTeams(ctx context.Context, req *connect.Request[
 	return c.setTeams.CallUnary(ctx, req)
 }
 
-// SetContract calls scoreboard.v1.MatchService.SetContract.
-func (c *matchServiceClient) SetContract(ctx context.Context, req *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error) {
-	return c.setContract.CallUnary(ctx, req)
-}
-
-// SetReady calls scoreboard.v1.MatchService.SetReady.
-func (c *matchServiceClient) SetReady(ctx context.Context, req *connect.Request[v1.SetReadyRequest]) (*connect.Response[v1.SetReadyResponse], error) {
-	return c.setReady.CallUnary(ctx, req)
-}
-
-// StartMatch calls scoreboard.v1.MatchService.StartMatch.
-func (c *matchServiceClient) StartMatch(ctx context.Context, req *connect.Request[v1.StartMatchRequest]) (*connect.Response[v1.StartMatchResponse], error) {
-	return c.startMatch.CallUnary(ctx, req)
-}
-
 // ClaimVictory calls scoreboard.v1.MatchService.ClaimVictory.
 func (c *matchServiceClient) ClaimVictory(ctx context.Context, req *connect.Request[v1.ClaimVictoryRequest]) (*connect.Response[v1.ClaimVictoryResponse], error) {
 	return c.claimVictory.CallUnary(ctx, req)
@@ -322,14 +319,14 @@ func (c *matchServiceClient) DisputeMatch(ctx context.Context, req *connect.Requ
 	return c.disputeMatch.CallUnary(ctx, req)
 }
 
-// ResolveDispute calls scoreboard.v1.MatchService.ResolveDispute.
-func (c *matchServiceClient) ResolveDispute(ctx context.Context, req *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error) {
-	return c.resolveDispute.CallUnary(ctx, req)
-}
-
 // CancelMatch calls scoreboard.v1.MatchService.CancelMatch.
 func (c *matchServiceClient) CancelMatch(ctx context.Context, req *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error) {
 	return c.cancelMatch.CallUnary(ctx, req)
+}
+
+// VoidMatch calls scoreboard.v1.MatchService.VoidMatch.
+func (c *matchServiceClient) VoidMatch(ctx context.Context, req *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error) {
+	return c.voidMatch.CallUnary(ctx, req)
 }
 
 // GetMatch calls scoreboard.v1.MatchService.GetMatch.
@@ -344,41 +341,82 @@ func (c *matchServiceClient) ListMatches(ctx context.Context, req *connect.Reque
 
 // MatchServiceHandler is an implementation of the scoreboard.v1.MatchService service.
 type MatchServiceHandler interface {
+	// Posts a match: a game, its contract, and the people being asked. Live
+	// immediately.
 	CreateMatch(context.Context, *connect.Request[v1.CreateMatchRequest]) (*connect.Response[v1.CreateMatchResponse], error)
+	// Confirms you are playing, under the contract as posted. This is the only
+	// commitment step there is. Open until a winner is named, so latecomers count.
+	//
+	// Whoever posted the match may also do this for somebody they invited, which
+	// is how a game gets under way when everybody is at the table and nobody has
+	// picked up their phone. It converts a pending invitation into a player and
+	// nothing more: a refusal cannot be overridden, and the person put in still
+	// owes any claim an answer, so this buys the host a game that can start, not
+	// a result they can manufacture.
 	JoinMatch(context.Context, *connect.Request[v1.JoinMatchRequest]) (*connect.Response[v1.JoinMatchResponse], error)
 	LeaveMatch(context.Context, *connect.Request[v1.LeaveMatchRequest]) (*connect.Response[v1.LeaveMatchResponse], error)
 	// Turn down an invitation. The match carries on without you.
 	DeclineMatch(context.Context, *connect.Request[v1.DeclineMatchRequest]) (*connect.Response[v1.DeclineMatchResponse], error)
-	// Ask more players once the lobby already exists.
+	// Ask more players once the match exists.
 	InvitePlayers(context.Context, *connect.Request[v1.InvitePlayersRequest]) (*connect.Response[v1.InvitePlayersResponse], error)
-	// Replaces the whole team layout while still in the lobby.
+	// Replaces the whole team layout. Creator only, and only while the match has
+	// no result — who is on which side is what the result is written against.
 	SetTeams(context.Context, *connect.Request[v1.SetTeamsRequest]) (*connect.Response[v1.SetTeamsResponse], error)
-	SetContract(context.Context, *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error)
-	// Affirm, or withdraw, that you are ready to play under the current
-	// contract. Changing the contract or the teams clears everyone's.
-	SetReady(context.Context, *connect.Request[v1.SetReadyRequest]) (*connect.Response[v1.SetReadyResponse], error)
-	// Locks the contract and begins play. Creator only, and only once every
-	// joined player is ready.
-	StartMatch(context.Context, *connect.Request[v1.StartMatchRequest]) (*connect.Response[v1.StartMatchResponse], error)
-	// Claim victory for the caller's team. Starts the concession clock.
-	// Idempotent: re-claiming by the same team is a no-op.
+	// Names the winner, which records the result. Any player may name their own
+	// side; whoever posted the match may name any side, which is the short
+	// circuit for a game that is plainly over and where the winner is not the one
+	// holding the phone. Idempotent: re-naming the same side is a no-op.
+	//
+	// There is no pending stage between this and the record. There used to be —
+	// the claim sat collecting answers and settled on the last one or on a
+	// week-long clock — and it decided nothing, because both endings wrote the
+	// same result. What keeps a manufactured win from standing is not a delay in
+	// front of it, it is that everybody in the match can object to it afterward,
+	// for as long as the record exists.
 	ClaimVictory(context.Context, *connect.Request[v1.ClaimVictoryRequest]) (*connect.Response[v1.ClaimVictoryResponse], error)
-	// Take back a claim your own team made. The match returns to IN_PROGRESS with
-	// no winner and every answer cleared — this is "never mind", not "you won".
-	// Anyone on the claiming team may do it, and only until the match finalizes.
+	// Refuse the win. The match returns to IN_PROGRESS with no winner, every
+	// answer cleared and every result back to pending — "never mind", not "they
+	// won": if the other side actually won, they have to name themselves.
+	//
+	// Open to the side the result names, and to nobody else. Not to whoever
+	// called it, which is the one rule this app cannot bend: in a match you
+	// posted you could name the other side the winner and then take your own loss
+	// back off the board, and a record you can retract a defeat from is not a
+	// record. So a win can always be refused and a loss can never be erased.
+	// Somebody who called a game wrong and cannot fix it objects to it instead.
 	WithdrawClaim(context.Context, *connect.Request[v1.WithdrawClaimRequest]) (*connect.Response[v1.WithdrawClaimResponse], error)
-	// Acknowledge the standing claim. Idempotent, and reversible: this also
-	// withdraws an objection you made earlier. Taking back the last objection
-	// returns the match to CLAIMED and restarts its clock.
+	// Say the result is right. Idempotent, and reversible: this also withdraws an
+	// objection you made earlier, at any point in the match's life.
+	//
+	// It changes no tally — the result already counts — so this is a position on
+	// the answer board rather than a step in a protocol. It matters as the way
+	// back from an objection, and as the difference between a player who agrees
+	// and one who has not looked.
 	Concede(context.Context, *connect.Request[v1.ConcedeRequest]) (*connect.Response[v1.ConcedeResponse], error)
-	// Reject the standing claim, or take back a concession you already gave.
-	// Stops the concession clock for as long as the objection stands.
+	// Object to the result, or take back a concession you already gave. Marks the
+	// match contested for as long as the objection stands, which keeps it out of
+	// every clean number while leaving it fully visible as a match.
+	//
+	// This is the whole of what protects the record, now that nothing is pending.
+	// Anybody in the match may say a result did not happen, at any point in its
+	// life, without needing anybody's permission and without a majority — one
+	// objection is enough, and it can be taken back just as freely. The likeliest
+	// moment somebody notices a bogus result is when they see it in the
+	// standings, which is why it has to work forever rather than during a window.
 	DisputeMatch(context.Context, *connect.Request[v1.DisputeMatchRequest]) (*connect.Response[v1.DisputeMatchResponse], error)
-	// Owner only, and only once the match is genuinely stuck — see
-	// Match.organizer_may_resolve. Settles it by naming the winning team, or
-	// voids it.
-	ResolveDispute(context.Context, *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error)
 	CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error)
+	// Service administrator only, and the only way anything leaves the permanent
+	// record. The match is erased — its teams, its participations, every
+	// concession and objection on it — rather than marked, so it stops existing
+	// everywhere at once instead of lingering as a row every stats query has to
+	// remember to skip.
+	//
+	// Deliberately not offered to a family organizer, however sour the match got.
+	// Undoing a result is not adjudication, it is correcting a mistake in the
+	// record, and the whole argument of this app is that nobody in the family
+	// gets to do that. What a player gets is an objection, which is loud and
+	// permanent and still leaves the result standing.
+	VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error)
 	GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error)
 	ListMatches(context.Context, *connect.Request[v1.ListMatchesRequest]) (*connect.Response[v1.ListMatchesResponse], error)
 }
@@ -426,24 +464,6 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(matchServiceMethods.ByName("SetTeams")),
 		connect.WithHandlerOptions(opts...),
 	)
-	matchServiceSetContractHandler := connect.NewUnaryHandler(
-		MatchServiceSetContractProcedure,
-		svc.SetContract,
-		connect.WithSchema(matchServiceMethods.ByName("SetContract")),
-		connect.WithHandlerOptions(opts...),
-	)
-	matchServiceSetReadyHandler := connect.NewUnaryHandler(
-		MatchServiceSetReadyProcedure,
-		svc.SetReady,
-		connect.WithSchema(matchServiceMethods.ByName("SetReady")),
-		connect.WithHandlerOptions(opts...),
-	)
-	matchServiceStartMatchHandler := connect.NewUnaryHandler(
-		MatchServiceStartMatchProcedure,
-		svc.StartMatch,
-		connect.WithSchema(matchServiceMethods.ByName("StartMatch")),
-		connect.WithHandlerOptions(opts...),
-	)
 	matchServiceClaimVictoryHandler := connect.NewUnaryHandler(
 		MatchServiceClaimVictoryProcedure,
 		svc.ClaimVictory,
@@ -468,16 +488,16 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(matchServiceMethods.ByName("DisputeMatch")),
 		connect.WithHandlerOptions(opts...),
 	)
-	matchServiceResolveDisputeHandler := connect.NewUnaryHandler(
-		MatchServiceResolveDisputeProcedure,
-		svc.ResolveDispute,
-		connect.WithSchema(matchServiceMethods.ByName("ResolveDispute")),
-		connect.WithHandlerOptions(opts...),
-	)
 	matchServiceCancelMatchHandler := connect.NewUnaryHandler(
 		MatchServiceCancelMatchProcedure,
 		svc.CancelMatch,
 		connect.WithSchema(matchServiceMethods.ByName("CancelMatch")),
+		connect.WithHandlerOptions(opts...),
+	)
+	matchServiceVoidMatchHandler := connect.NewUnaryHandler(
+		MatchServiceVoidMatchProcedure,
+		svc.VoidMatch,
+		connect.WithSchema(matchServiceMethods.ByName("VoidMatch")),
 		connect.WithHandlerOptions(opts...),
 	)
 	matchServiceGetMatchHandler := connect.NewUnaryHandler(
@@ -506,12 +526,6 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 			matchServiceInvitePlayersHandler.ServeHTTP(w, r)
 		case MatchServiceSetTeamsProcedure:
 			matchServiceSetTeamsHandler.ServeHTTP(w, r)
-		case MatchServiceSetContractProcedure:
-			matchServiceSetContractHandler.ServeHTTP(w, r)
-		case MatchServiceSetReadyProcedure:
-			matchServiceSetReadyHandler.ServeHTTP(w, r)
-		case MatchServiceStartMatchProcedure:
-			matchServiceStartMatchHandler.ServeHTTP(w, r)
 		case MatchServiceClaimVictoryProcedure:
 			matchServiceClaimVictoryHandler.ServeHTTP(w, r)
 		case MatchServiceWithdrawClaimProcedure:
@@ -520,10 +534,10 @@ func NewMatchServiceHandler(svc MatchServiceHandler, opts ...connect.HandlerOpti
 			matchServiceConcedeHandler.ServeHTTP(w, r)
 		case MatchServiceDisputeMatchProcedure:
 			matchServiceDisputeMatchHandler.ServeHTTP(w, r)
-		case MatchServiceResolveDisputeProcedure:
-			matchServiceResolveDisputeHandler.ServeHTTP(w, r)
 		case MatchServiceCancelMatchProcedure:
 			matchServiceCancelMatchHandler.ServeHTTP(w, r)
+		case MatchServiceVoidMatchProcedure:
+			matchServiceVoidMatchHandler.ServeHTTP(w, r)
 		case MatchServiceGetMatchProcedure:
 			matchServiceGetMatchHandler.ServeHTTP(w, r)
 		case MatchServiceListMatchesProcedure:
@@ -561,18 +575,6 @@ func (UnimplementedMatchServiceHandler) SetTeams(context.Context, *connect.Reque
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.SetTeams is not implemented"))
 }
 
-func (UnimplementedMatchServiceHandler) SetContract(context.Context, *connect.Request[v1.SetContractRequest]) (*connect.Response[v1.SetContractResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.SetContract is not implemented"))
-}
-
-func (UnimplementedMatchServiceHandler) SetReady(context.Context, *connect.Request[v1.SetReadyRequest]) (*connect.Response[v1.SetReadyResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.SetReady is not implemented"))
-}
-
-func (UnimplementedMatchServiceHandler) StartMatch(context.Context, *connect.Request[v1.StartMatchRequest]) (*connect.Response[v1.StartMatchResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.StartMatch is not implemented"))
-}
-
 func (UnimplementedMatchServiceHandler) ClaimVictory(context.Context, *connect.Request[v1.ClaimVictoryRequest]) (*connect.Response[v1.ClaimVictoryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.ClaimVictory is not implemented"))
 }
@@ -589,12 +591,12 @@ func (UnimplementedMatchServiceHandler) DisputeMatch(context.Context, *connect.R
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.DisputeMatch is not implemented"))
 }
 
-func (UnimplementedMatchServiceHandler) ResolveDispute(context.Context, *connect.Request[v1.ResolveDisputeRequest]) (*connect.Response[v1.ResolveDisputeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.ResolveDispute is not implemented"))
-}
-
 func (UnimplementedMatchServiceHandler) CancelMatch(context.Context, *connect.Request[v1.CancelMatchRequest]) (*connect.Response[v1.CancelMatchResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.CancelMatch is not implemented"))
+}
+
+func (UnimplementedMatchServiceHandler) VoidMatch(context.Context, *connect.Request[v1.VoidMatchRequest]) (*connect.Response[v1.VoidMatchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.MatchService.VoidMatch is not implemented"))
 }
 
 func (UnimplementedMatchServiceHandler) GetMatch(context.Context, *connect.Request[v1.GetMatchRequest]) (*connect.Response[v1.GetMatchResponse], error) {

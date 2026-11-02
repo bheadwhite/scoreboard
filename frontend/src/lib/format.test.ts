@@ -3,10 +3,14 @@ import { describe, expect, it } from "vitest";
 import { ContractKind } from "../gen/scoreboard/v1/common_pb.js";
 import { messageOf } from "../features/match/match_presenter.js";
 import {
+  contestedLine,
   contractText,
+  debtLine,
+  droughtVerdict,
   initials,
   rivalryVerdict,
   streakLabel,
+  unfinishedLine,
   winRateText,
 } from "./format.js";
 
@@ -116,5 +120,57 @@ describe("messageOf", () => {
   it("falls back for anything that is not an Error", () => {
     expect(messageOf(undefined)).toBe("Something went wrong. Try again.");
     expect(messageOf("a bare string")).toBe("Something went wrong. Try again.");
+  });
+});
+
+describe("droughtVerdict", () => {
+  it("says never rather than counting to it", () => {
+    expect(droughtVerdict(true, 4, "Dad", true)).toBe("You have never beaten Dad.");
+  });
+
+  it("counts meetings, not days", () => {
+    expect(droughtVerdict(false, 6, "Dad", true)).toBe("6 meetings since you last beat Dad.");
+  });
+
+  it("singularizes one meeting", () => {
+    expect(droughtVerdict(false, 1, "Dad", true)).toBe("1 meeting since you last beat Dad.");
+  });
+
+  it("speaks about somebody else's record in the third person", () => {
+    expect(droughtVerdict(true, 2, "Dad", false)).toBe("Has never beaten Dad.");
+  });
+});
+
+describe("debtLine", () => {
+  it("says what it would take", () => {
+    expect(debtLine(4, "Dad", true)).toBe("4 straight wins to draw level with Dad.");
+  });
+
+  it("is empty when there is nothing owed", () => {
+    expect(debtLine(0, "Dad", true)).toBe("");
+    expect(debtLine(-2, "Dad", true)).toBe("");
+  });
+});
+
+describe("unfinishedLine", () => {
+  it("calls a tie a tie", () => {
+    expect(unfinishedLine(3, 3, "Dad")).toBe("Dead even with Dad at 3–3.");
+  });
+
+  it("points at the game that swings it", () => {
+    expect(unfinishedLine(3, 2, "Dad")).toBe("3–2 with Dad. One game swings it.");
+  });
+});
+
+describe("contestedLine", () => {
+  it("names both sides when there are both", () => {
+    expect(contestedLine(1, 2)).toBe("1 win and 2 losses");
+  });
+
+  it("does not imply losses when there are none", () => {
+    // "3 games contested" reads as three defeats being argued about. It is the
+    // reason this spells the split out rather than counting matches.
+    expect(contestedLine(3, 0)).toBe("3 wins");
+    expect(contestedLine(0, 1)).toBe("1 loss");
   });
 });

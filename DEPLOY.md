@@ -1,7 +1,12 @@
-# Deploying Scoreboard
+# Deploying Gauntlet
 
 One Cloud Run service. The Go binary serves the built SPA, so everything is
 same-origin and CORS never enters the picture.
+
+The service is still called `scoreboard`, and should stay that way: its name is
+what the `*.run.app` URL is built from, and `APP_URL` plus the OAuth redirect
+URI are both derived from that URL. Renaming it breaks every sign-in until the
+Google console is updated to match.
 
 ---
 
@@ -93,22 +98,25 @@ Useful flags:
 
 ---
 
-## 4. The sweeper cron — do not skip this
+## 4. The keepalive cron
 
 ```
 POST /tasks/sweep     every 15 minutes, Authorization: Bearer $SWEEP_TOKEN
 ```
 
-It does **two** jobs:
+One job now: **keeping the Supabase project awake.** A free-tier project is
+paused after a stretch of inactivity, and a family scoreboard is exactly the
+kind of app that goes quiet for two weeks and then gets used hard on
+Thanksgiving. A request every 15 minutes prevents that.
 
-1. **Finalizes claims whose 24-hour concession window has closed.** Without it,
-   a match where somebody never responds stays pending forever. (Matches are
-   also finalized lazily whenever they are read, so the record stays correct if
-   the cron is down — but only for matches somebody actually looks at.)
-2. **Keeps the Supabase project awake.** A free-tier project is paused after a
-   stretch of inactivity, and a family scoreboard is exactly the kind of app
-   that goes quiet for two weeks and then gets used hard on Thanksgiving. A
-   request every 15 minutes prevents that.
+It used to have a second job, and that job was the reason it existed —
+finalizing claims whose concession window had closed. There are no pending
+claims any more: naming a winner records the result, so nothing anywhere is
+waiting on a clock and no match's outcome depends on this endpoint being called.
+Missing it now costs you a paused database, not a wrong record.
+
+The path and the token are unchanged, so an existing Cloud Scheduler job keeps
+working across the deploy with nothing to reconfigure.
 
 `--scheduler` sets it up. Verify with:
 
@@ -124,7 +132,10 @@ gcloud scheduler jobs list --location us-central1
 curl -fsS https://YOUR-SERVICE-URL/health      # pings the database, prints "ok"
 ```
 
-Then sign in, create a family, and play a game through to a concession.
+Then sign in, play a game, name a winner, and check it lands on the scoreboard
+immediately. Objecting to it from another account should take it straight back
+off the standings, and conceding should put it back. Signing in puts you on the
+scoreboard — there is one, and nothing asks you to pick or create it.
 
 ---
 
@@ -135,17 +146,18 @@ connections at 16. `--min-instances 0` means scale to zero, so a cold start cost
 a second or two on the first request after a quiet spell. That is the right trade
 for a family app. Consider a billing budget alert.
 
-**Changing the concession window.** `CONCEDE_WINDOW` is a Go duration (`168h`,
-`30m`), defaulting to a week. It is a backstop for a match everybody walked away
-from, not a deadline players are meant to race: an unanswered claim stays on
-everyone's list the whole time, and any player can change their answer until it
-finalizes. Shortening it to a day makes an ordinary weekend away ripen into a
-concession nobody gave.
+**`CONCEDE_WINDOW` is gone.** Nothing reads it, and setting it does nothing. It
+can be removed from the service configuration whenever convenient; leaving it
+set is harmless.
 
-It applies to newly claimed matches; already-claimed matches keep the deadline
-they were given. Withdrawing the last dispute on a match restarts the clock with
-a full window, because the players who were still silent had nothing to answer
-while the argument was live.
+**The deploy that removes the window is one-way in practice.** Migration
+`0009_the_claim_is_the_result.sql` finalizes every claim that was in flight,
+which is where each of them was already headed. Rolling back to the previous
+revision leaves those matches settled — the older binary reads them as ordinary
+final matches, which is exactly what they are — so nothing breaks, but the
+claims do not go back to being pending. `concede_deadline` is deliberately left
+on the table rather than dropped, so the older binary still selects it and the
+rollback works at all.
 
 **Rollback.**
 

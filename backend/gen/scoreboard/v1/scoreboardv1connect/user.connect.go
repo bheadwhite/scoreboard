@@ -38,12 +38,35 @@ const (
 	// UserServiceUpdateProfileProcedure is the fully-qualified name of the UserService's UpdateProfile
 	// RPC.
 	UserServiceUpdateProfileProcedure = "/scoreboard.v1.UserService/UpdateProfile"
+	// UserServiceLinkPlaceholderProcedure is the fully-qualified name of the UserService's
+	// LinkPlaceholder RPC.
+	UserServiceLinkPlaceholderProcedure = "/scoreboard.v1.UserService/LinkPlaceholder"
 )
 
 // UserServiceClient is a client for the scoreboard.v1.UserService service.
 type UserServiceClient interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	UpdateProfile(context.Context, *connect.Request[v1.UpdateProfileRequest]) (*connect.Response[v1.UpdateProfileResponse], error)
+	// Declares that a placeholder and a real account are the same person, and
+	// makes it true: everything the placeholder did becomes the account's, and
+	// the placeholder stops existing.
+	//
+	// Service administrator only, and gated on ADMIN_EMAILS rather than on any
+	// family role — the same gate as MatchService.VoidMatch, for the same reason.
+	// Both rewrite the permanent record, and moving somebody's wins onto another
+	// player is not something a family organizer should be able to do to the
+	// people they play against.
+	//
+	// Irreversible, and the rewrite runs the whole way: participations, the
+	// matches they set up, the claims they made, the games they added, their
+	// membership. The account's own id is what survives, because it is the one
+	// tied to a sign-in. Nothing is left pointing at the placeholder afterward
+	// because the placeholder is deleted.
+	//
+	// Refused outright when the two are both in the same match. That is either a
+	// person entered twice or a placeholder that is not who somebody thinks it
+	// is, and neither can be resolved by guessing which row to keep.
+	LinkPlaceholder(context.Context, *connect.Request[v1.LinkPlaceholderRequest]) (*connect.Response[v1.LinkPlaceholderResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the scoreboard.v1.UserService service. By default,
@@ -69,13 +92,20 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UpdateProfile")),
 			connect.WithClientOptions(opts...),
 		),
+		linkPlaceholder: connect.NewClient[v1.LinkPlaceholderRequest, v1.LinkPlaceholderResponse](
+			httpClient,
+			baseURL+UserServiceLinkPlaceholderProcedure,
+			connect.WithSchema(userServiceMethods.ByName("LinkPlaceholder")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // userServiceClient implements UserServiceClient.
 type userServiceClient struct {
-	getMe         *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
-	updateProfile *connect.Client[v1.UpdateProfileRequest, v1.UpdateProfileResponse]
+	getMe           *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
+	updateProfile   *connect.Client[v1.UpdateProfileRequest, v1.UpdateProfileResponse]
+	linkPlaceholder *connect.Client[v1.LinkPlaceholderRequest, v1.LinkPlaceholderResponse]
 }
 
 // GetMe calls scoreboard.v1.UserService.GetMe.
@@ -88,10 +118,35 @@ func (c *userServiceClient) UpdateProfile(ctx context.Context, req *connect.Requ
 	return c.updateProfile.CallUnary(ctx, req)
 }
 
+// LinkPlaceholder calls scoreboard.v1.UserService.LinkPlaceholder.
+func (c *userServiceClient) LinkPlaceholder(ctx context.Context, req *connect.Request[v1.LinkPlaceholderRequest]) (*connect.Response[v1.LinkPlaceholderResponse], error) {
+	return c.linkPlaceholder.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the scoreboard.v1.UserService service.
 type UserServiceHandler interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	UpdateProfile(context.Context, *connect.Request[v1.UpdateProfileRequest]) (*connect.Response[v1.UpdateProfileResponse], error)
+	// Declares that a placeholder and a real account are the same person, and
+	// makes it true: everything the placeholder did becomes the account's, and
+	// the placeholder stops existing.
+	//
+	// Service administrator only, and gated on ADMIN_EMAILS rather than on any
+	// family role — the same gate as MatchService.VoidMatch, for the same reason.
+	// Both rewrite the permanent record, and moving somebody's wins onto another
+	// player is not something a family organizer should be able to do to the
+	// people they play against.
+	//
+	// Irreversible, and the rewrite runs the whole way: participations, the
+	// matches they set up, the claims they made, the games they added, their
+	// membership. The account's own id is what survives, because it is the one
+	// tied to a sign-in. Nothing is left pointing at the placeholder afterward
+	// because the placeholder is deleted.
+	//
+	// Refused outright when the two are both in the same match. That is either a
+	// person entered twice or a placeholder that is not who somebody thinks it
+	// is, and neither can be resolved by guessing which row to keep.
+	LinkPlaceholder(context.Context, *connect.Request[v1.LinkPlaceholderRequest]) (*connect.Response[v1.LinkPlaceholderResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -113,12 +168,20 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateProfile")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceLinkPlaceholderHandler := connect.NewUnaryHandler(
+		UserServiceLinkPlaceholderProcedure,
+		svc.LinkPlaceholder,
+		connect.WithSchema(userServiceMethods.ByName("LinkPlaceholder")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/scoreboard.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetMeProcedure:
 			userServiceGetMeHandler.ServeHTTP(w, r)
 		case UserServiceUpdateProfileProcedure:
 			userServiceUpdateProfileHandler.ServeHTTP(w, r)
+		case UserServiceLinkPlaceholderProcedure:
+			userServiceLinkPlaceholderHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -134,4 +197,8 @@ func (UnimplementedUserServiceHandler) GetMe(context.Context, *connect.Request[v
 
 func (UnimplementedUserServiceHandler) UpdateProfile(context.Context, *connect.Request[v1.UpdateProfileRequest]) (*connect.Response[v1.UpdateProfileResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.UserService.UpdateProfile is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) LinkPlaceholder(context.Context, *connect.Request[v1.LinkPlaceholderRequest]) (*connect.Response[v1.LinkPlaceholderResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("scoreboard.v1.UserService.LinkPlaceholder is not implemented"))
 }

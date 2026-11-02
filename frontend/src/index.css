@@ -1,5 +1,5 @@
 /*
- * Scoreboard — the look.
+ * Gauntlet — the look.
  *
  * The reference is a chalkboard in a garage where someone has been tracking
  * ping pong for a decade: warm, worn, a little ceremonial. Numbers are the
@@ -692,6 +692,17 @@ button {
   color: var(--ink-dim);
 }
 
+/* The lines under a verdict: the drought, the debt. Quieter than the verdict
+   itself, because the verdict is the headline and these are the evidence. */
+.verdict__note {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
 /* ── Stat tiles ───────────────────────────────────────────────────────────── */
 
 .tiles {
@@ -929,6 +940,25 @@ button {
 .alert--info {
   border-color: var(--line);
   background: var(--chalk);
+}
+
+/* Offered when a deploy has left this tab behind. In normal flow above the
+   sticky top bar, so it never covers the title or the back button. */
+.update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: calc(8px + env(safe-area-inset-top));
+  padding: 10px 12px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--chalk);
+  font-size: 0.9rem;
+}
+
+.update__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .sheet {

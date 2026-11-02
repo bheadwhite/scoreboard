@@ -2,10 +2,24 @@ syntax = "proto3";
 
 package scoreboard.v1;
 
+import "google/protobuf/timestamp.proto";
 import "scoreboard/v1/common.proto";
 
 // StatsService is the bragging-rights layer. Everything here is computed on
 // read from finalized matches; nothing is materialized.
+//
+// Every tally in this file counts clean results only. A finalized match with an
+// objection standing on it is contested, and contested matches are held out of
+// the wins, the losses, the streaks, the rivalries and the game kings alike —
+// they are reported separately, as a count, so a record reads "14–3, plus 2
+// contested" rather than quietly folding a disputed win into a number somebody
+// is going to quote at dinner.
+//
+// Contested counts are not a second scoreboard. They exist so the clean number
+// can be trusted and so a result nobody agrees about is still visible instead of
+// vanishing. An objection is retractable at any time, so a match can move
+// between the two at any time, and every one of these numbers is recomputed on
+// read anyway.
 service StatsService {
   rpc GetStandings(GetStandingsRequest) returns (GetStandingsResponse);
   rpc GetHeadToHead(GetHeadToHeadRequest) returns (GetHeadToHeadResponse);
@@ -20,15 +34,52 @@ enum StatsRange {
   STATS_RANGE_MONTH = 3;
 }
 
-message StandingsRow {
-  User user = 1;
+// One pairing, from the viewer's point of view, phrased for the screens that
+// needle people with it: the drought, the debt, the rivalry nobody has settled.
+//
+// Every field is derived from the same finalized matches the tallies are; this
+// message exists so the client does not have to recompute "how long has it been"
+// from a list of results.
+message RivalryLine {
+  User opponent = 1;
   int32 wins = 2;
   int32 losses = 3;
-  // 0..1. Zero when the player has no finalized matches.
+  // Meetings since the viewer last beat this opponent. Zero means the most
+  // recent meeting was a win.
+  int32 meetings_since_last_win = 4;
+  // True when the viewer has never beaten them at all, which no count of
+  // meetings can express — and which is the more damning line to print.
+  bool never_beaten = 5;
+  // When that last win landed. Unset when never_beaten.
+  google.protobuf.Timestamp last_win_at = 6;
+  // Wins needed to draw level. Zero when already level or ahead.
+  int32 debt = 7;
+}
+
+// Who owns a game. One per game with a finalized match in range.
+message GameKing {
+  Game game = 1;
+  User user = 2;
+  int32 wins = 3;
+  int32 losses = 4;
+}
+
+message StandingsRow {
+  User user = 1;
+  // Clean results only.
+  int32 wins = 2;
+  int32 losses = 3;
+  // 0..1, over the clean results. Zero when the player has none.
   double win_rate = 4;
-  // Positive for an active winning streak, negative for a losing one.
+  // Positive for an active winning streak, negative for a losing one. Contested
+  // matches do not break a streak any more than they extend one — they are not
+  // in the sequence at all.
   int32 streak = 5;
   int32 rank = 6;
+  // Settled matches this player was in that somebody is objecting to. Counted
+  // in neither wins nor losses.
+  int32 contested_wins = 7;
+  int32 contested_losses = 8;
 }
 
 message GetStandingsRequest {
@@ -49,6 +100,13 @@ message GetStandingsResponse {
   // Not narrowed by game_id: selecting a filter must not collapse the list of
   // filters to the one already chosen.
   repeated Game played_games = 3;
+  // Who owns each game that has been finished in range. One per game, and the
+  // reason the scoreboard can say "Lisa owns Catan" without a request per game.
+  repeated GameKing game_kings = 4;
+  // Settled matches in range that somebody is objecting to. Not included in
+  // total_matches, and the reason the two numbers can disagree with a raw count
+  // of the match list.
+  int32 contested_matches = 5;
 }
 
 // One game's slice of a head-to-head record.
@@ -83,6 +141,13 @@ message GetHeadToHeadResponse {
   repeated Match recent_matches = 8;
   // From user's point of view: positive is a winning streak against opponent.
   int32 streak = 9;
+  // The same pairing as a story: how long since user last won, and what it
+  // would take to draw level.
+  RivalryLine rivalry = 10;
+  // Meetings on opposing teams that somebody is objecting to. Held out of wins,
+  // losses, games, streak and rivalry alike.
+  int32 contested_wins = 11;
+  int32 contested_losses = 12;
 }
 
 message GetPlayerProfileRequest {
@@ -108,4 +173,22 @@ message GetPlayerProfileResponse {
   int32 victim_losses = 12;
   // Per-game record, most-played first.
   repeated HeadToHeadGame games = 13;
+  // Wins needed to draw level with the nemesis. Zero when there is no nemesis.
+  int32 nemesis_debt = 14;
+  // The opponent it has been longest since beating — by meetings, not by
+  // calendar, because six meetings without a win is the sentence that stings.
+  // Unset when this player has beaten everyone they have recently faced.
+  RivalryLine drought = 15;
+  // The closest rivalry with enough matches to argue about. Unset until some
+  // pairing qualifies.
+  RivalryLine unfinished_business = 16;
+  // Settled matches this player was in that somebody is objecting to. Held out
+  // of every other number here, including the nemesis and the drought.
+  int32 contested_wins = 17;
+  int32 contested_losses = 18;
+  // Whether the caller may link this player to an account. True only when the
+  // subject is a placeholder and the caller runs the service — the profile
+  // screen is where a placeholder is actually looked at, so it is where the
+  // administrator is offered the link.
+  bool viewer_may_link = 19;
 }

@@ -25,6 +25,23 @@ func match(id string, seq int64, gameID string, winners, losers []string) []Part
 	return out
 }
 
+// freeForAll builds a match where every player is their own team, which is how
+// the app stores a game with no sides. winner beats everybody in losers, and
+// the losers did not beat each other.
+func freeForAll(id string, seq int64, gameID, winner string, losers ...string) []Participation {
+	out := []Participation{{
+		MatchID: id, UserID: winner, TeamID: id + "-" + winner, GameID: gameID,
+		Result: model.ResultWin, Seq: seq,
+	}}
+	for _, u := range losers {
+		out = append(out, Participation{
+			MatchID: id, UserID: u, TeamID: id + "-" + u, GameID: gameID,
+			Result: model.ResultLoss, Seq: seq,
+		})
+	}
+	return out
+}
+
 func concat(groups ...[]Participation) []Participation {
 	var out []Participation
 	for _, g := range groups {
@@ -253,6 +270,184 @@ func TestStandingsIsDeterministicAcrossRuns(t *testing.T) {
 				t.Fatalf("ranking changed between runs at %d: %s vs %s",
 					j, first[j].UserID, again[j].UserID)
 			}
+		}
+	}
+}
+
+func TestHeadToHeadIgnoresTwoPlayersWhoBothLost(t *testing.T) {
+	// Lisa wins a three-player game. Brent and Kaylee are on opposing teams —
+	// everyone is, in a free-for-all — but neither beat the other.
+	ps := freeForAll("m1", 1, "catan", "lisa", "brent", "kaylee")
+
+	h := HeadToHead(ps, "brent", "kaylee")
+	if h.Wins != 0 || h.Losses != 0 {
+		t.Errorf("brent vs kaylee = %d–%d, want 0–0: they both lost to lisa", h.Wins, h.Losses)
+	}
+	if h.Streak != 0 {
+		t.Errorf("streak = %d, want 0 — nothing happened between them", h.Streak)
+	}
+	if len(h.MatchIDs) != 0 {
+		t.Errorf("meetings = %v, want none", h.MatchIDs)
+	}
+	if len(h.Games) != 0 {
+		t.Errorf("per-game records = %v, want none", h.Games)
+	}
+
+	// The player who actually won it still counts, both ways.
+	won := HeadToHead(ps, "lisa", "brent")
+	if won.Wins != 1 || won.Losses != 0 {
+		t.Errorf("lisa vs brent = %d–%d, want 1–0", won.Wins, won.Losses)
+	}
+	lost := HeadToHead(ps, "brent", "lisa")
+	if lost.Wins != 0 || lost.Losses != 1 {
+		t.Errorf("brent vs lisa = %d–%d, want 0–1", lost.Wins, lost.Losses)
+	}
+}
+
+func TestPlayerProfileCoLosersAreNotNemeses(t *testing.T) {
+	// Two free-for-alls, both won by lisa. Brent and kaylee have never played
+	// each other in any sense that should show up on a profile.
+	ps := concat(
+		freeForAll("m1", 1, "catan", "lisa", "brent", "kaylee"),
+		freeForAll("m2", 2, "catan", "lisa", "brent", "kaylee"),
+	)
+
+	p := PlayerProfile(ps, "kaylee")
+	if p.NemesisID != "lisa" {
+		t.Errorf("nemesis = %q, want lisa — she is the one who won them", p.NemesisID)
+	}
+	if p.HasDrought && p.Drought.OpponentID == "brent" {
+		t.Error("brent is not a drought: he never beat kaylee")
+	}
+	if p.HasUnfinished && p.Unfinished.OpponentID == "brent" {
+		t.Error("brent is not unfinished business: they have never faced off")
+	}
+}
+
+// contest marks every row of a match as objected to, the way LoadParticipations
+// reports one that somebody is still disputing.
+func contest(ps []Participation) []Participation {
+	out := make([]Participation, len(ps))
+	for i, p := range ps {
+		p.Contested = true
+		out[i] = p
+	}
+	return out
+}
+
+func TestContestedResultsCountForNobody(t *testing.T) {
+	ps := append(match("m1", 1, "rook", []string{"ann"}, []string{"bob"}),
+		contest(match("m2", 2, "rook", []string{"ann"}, []string{"bob"}))...)
+
+	rows := Standings(ps)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2", len(rows))
+	}
+	ann := rows[0]
+	if ann.UserID != "ann" {
+		t.Fatalf("top row = %s, want ann", ann.UserID)
+	}
+	if ann.Wins != 1 || ann.Losses != 0 {
+		t.Errorf("ann = %d–%d, want 1–0: the contested win is not a win", ann.Wins, ann.Losses)
+	}
+	if ann.ContestedWins != 1 || ann.ContestedLosses != 0 {
+		t.Errorf("ann contested = %d–%d, want 1–0", ann.ContestedWins, ann.ContestedLosses)
+	}
+	// Two wins in a row would read as a streak of 2. Only one of them happened
+	// as far as the scoreboard is concerned.
+	if ann.Streak != 1 {
+		t.Errorf("streak = %d, want 1 — a contested result is not in the sequence", ann.Streak)
+	}
+}
+
+func TestContestedResultsDoNotBreakAStreakEither(t *testing.T) {
+	// Win, contested loss, win. The loss is not a loss, so the run is two.
+	ps := match("m1", 1, "rook", []string{"ann"}, []string{"bob"})
+	ps = append(ps, contest(match("m2", 2, "rook", []string{"bob"}, []string{"ann"}))...)
+	ps = append(ps, match("m3", 3, "rook", []string{"ann"}, []string{"bob"})...)
+
+	if got := Standings(ps)[0].Streak; got != 2 {
+		t.Errorf("streak = %d, want 2 — the contested loss is neither a break nor a link", got)
+	}
+}
+
+func TestHeadToHeadReportsContestedMeetingsSeparately(t *testing.T) {
+	ps := append(match("m1", 1, "rook", []string{"ann"}, []string{"bob"}),
+		contest(match("m2", 2, "rook", []string{"bob"}, []string{"ann"}))...)
+
+	h := HeadToHead(ps, "ann", "bob")
+	if h.Wins != 1 || h.Losses != 0 {
+		t.Errorf("record = %d–%d, want 1–0", h.Wins, h.Losses)
+	}
+	if h.ContestedWins != 0 || h.ContestedLosses != 1 {
+		t.Errorf("contested = %d–%d, want 0–1", h.ContestedWins, h.ContestedLosses)
+	}
+	// The contested match must not be offered as evidence of a record it is not
+	// part of.
+	if len(h.MatchIDs) != 1 || h.MatchIDs[0] != "m1" {
+		t.Errorf("recent meetings = %v, want [m1]", h.MatchIDs)
+	}
+	if len(h.Games) != 1 || h.Games[0].Wins != 1 || h.Games[0].Losses != 0 {
+		t.Errorf("per-game = %+v, want one 1–0 row", h.Games)
+	}
+}
+
+func TestContestedMeetingsAreNotRivalries(t *testing.T) {
+	// Every meeting between these two is contested, so as far as the rivalry
+	// layer is concerned they have never played. A drought counted off results
+	// bob is objecting to would be needling him with something he denies.
+	ps := contest(match("m1", 1, "rook", []string{"bob"}, []string{"ann"}))
+	ps = append(ps, contest(match("m2", 2, "rook", []string{"bob"}, []string{"ann"}))...)
+
+	if got := Rivalries(ps, "ann"); len(got) != 0 {
+		t.Fatalf("rivalries = %+v, want none", got)
+	}
+
+	p := PlayerProfile(ps, "ann")
+	if p.HasDrought {
+		t.Error("no clean meetings; there is no drought to report")
+	}
+	if p.NemesisID != "" {
+		t.Errorf("nemesis = %s, want none", p.NemesisID)
+	}
+	if p.ContestedLosses != 2 {
+		t.Errorf("contested losses = %d, want 2", p.ContestedLosses)
+	}
+}
+
+func TestContestedMatchesCrownNobody(t *testing.T) {
+	// Ann is 3–0 at Rook on paper, but every one of those results is disputed.
+	// A crown is the loudest claim on the scoreboard and it does not get made
+	// on results the loser is publicly denying.
+	var ps []Participation
+	for i, id := range []string{"m1", "m2", "m3"} {
+		ps = append(ps, contest(match(id, int64(i+1), "rook", []string{"ann"}, []string{"bob"}))...)
+	}
+	if got := GameKings(ps); len(got) != 0 {
+		t.Fatalf("kings = %+v, want none", got)
+	}
+
+	// One clean win and the crown is real again.
+	ps = append(ps, match("m4", 4, "rook", []string{"ann"}, []string{"bob"})...)
+	kings := GameKings(ps)
+	if len(kings) != 1 || kings[0].UserID != "ann" || kings[0].Wins != 1 {
+		t.Fatalf("kings = %+v, want ann at 1 win", kings)
+	}
+}
+
+func TestPlayerWithOnlyContestedMatchesStillAppears(t *testing.T) {
+	// They played. Dropping them entirely would read as never having been in a
+	// match, which is a different and worse claim than 0–0 plus an asterisk.
+	rows := Standings(contest(match("m1", 1, "rook", []string{"ann"}, []string{"bob"})))
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2", len(rows))
+	}
+	for _, r := range rows {
+		if r.Wins != 0 || r.Losses != 0 {
+			t.Errorf("%s = %d–%d, want 0–0", r.UserID, r.Wins, r.Losses)
+		}
+		if r.ContestedWins+r.ContestedLosses != 1 {
+			t.Errorf("%s has no contested count", r.UserID)
 		}
 	}
 }

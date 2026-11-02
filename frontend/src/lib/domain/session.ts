@@ -38,6 +38,16 @@ const AUTH_ERRORS: Record<string, string> = {
 export class Session {
   private readonly _status = new Signal<AuthStatus>("loading");
   private readonly _user = new Signal<User | null>(null);
+  /**
+   * Whether this player runs the service. The only capability the client knows
+   * about outside the context of a particular match — everything else is a
+   * per-match flag the server computes — and it exists so a placeholder's
+   * profile can offer the link control to the one person allowed to use it.
+   *
+   * Never load-bearing on its own: every administrator action is gated again on
+   * the server, and this is only whether to draw the button.
+   */
+  private readonly _admin = new Signal<boolean>(false);
   private readonly _error = new Signal<string | null>(null);
   /** What the server says it supports. Unknown until init() has run. */
   private readonly _capabilities = new Signal<Capabilities | null>(null);
@@ -53,6 +63,14 @@ export class Session {
 
   get errorBroadcast() {
     return this._error.broadcast;
+  }
+
+  get adminBroadcast() {
+    return this._admin.broadcast;
+  }
+
+  get admin(): boolean {
+    return this._admin.get();
   }
 
   get status(): AuthStatus {
@@ -81,13 +99,15 @@ export class Session {
     return this.googleEnabled || this.devLoginEnabled;
   }
 
-  setUser(user: User | null): void {
+  setUser(user: User | null, admin = false): void {
+    this._admin.set(admin);
     this._user.set(user);
     this._status.set(user ? "signed_in" : "signed_out");
   }
 
   setSignedOut(): void {
     this._user.set(null);
+    this._admin.set(false);
     this._status.set("signed_out");
   }
 
@@ -145,6 +165,7 @@ export class Session {
   dispose(): void {
     this._status.dispose();
     this._user.dispose();
+    this._admin.dispose();
     this._error.dispose();
     this._capabilities.dispose();
   }

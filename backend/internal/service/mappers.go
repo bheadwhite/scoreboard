@@ -9,6 +9,7 @@ import (
 
 	scoreboardv1 "github.com/bheadwhite/scoreboard/backend/gen/scoreboard/v1"
 	"github.com/bheadwhite/scoreboard/backend/internal/model"
+	"github.com/bheadwhite/scoreboard/backend/internal/stats"
 	"github.com/bheadwhite/scoreboard/backend/internal/store"
 )
 
@@ -66,6 +67,7 @@ func userPB(u model.User) *scoreboardv1.User {
 		DisplayName: u.DisplayName,
 		AvatarUrl:   u.AvatarURL,
 		CreatedAt:   ts(u.CreatedAt),
+		Placeholder: u.Placeholder,
 	}
 }
 
@@ -115,16 +117,10 @@ func gamePB(g model.Game) *scoreboardv1.Game {
 
 func statusPB(s model.Status) scoreboardv1.MatchStatus {
 	switch s {
-	case model.StatusLobby:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_LOBBY
 	case model.StatusInProgress:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS
-	case model.StatusClaimed:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED
 	case model.StatusFinal:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_FINAL
-	case model.StatusDisputed:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_DISPUTED
 	case model.StatusCanceled:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_CANCELED
 	default:
@@ -134,16 +130,10 @@ func statusPB(s model.Status) scoreboardv1.MatchStatus {
 
 func statusFromPB(s scoreboardv1.MatchStatus) (model.Status, bool) {
 	switch s {
-	case scoreboardv1.MatchStatus_MATCH_STATUS_LOBBY:
-		return model.StatusLobby, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS:
 		return model.StatusInProgress, true
-	case scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED:
-		return model.StatusClaimed, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_FINAL:
 		return model.StatusFinal, true
-	case scoreboardv1.MatchStatus_MATCH_STATUS_DISPUTED:
-		return model.StatusDisputed, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_CANCELED:
 		return model.StatusCanceled, true
 	default:
@@ -237,26 +227,29 @@ func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 		Status:        participantStatusPB(p.Status),
 		InvitedAt:     ts(p.InvitedAt),
 		RespondedAt:   tsp(p.RespondedAt),
-		ReadyAt:       tsp(p.ReadyAt),
 		DisputeReason: p.DisputeReason,
 	}
 }
 
-// matchPB converts a match for viewerID, filling in the convenience fields the
-// UI needs: who still owes a concession, and whether the viewer is one of them.
+// matchPB converts a match for one viewer, filling in the convenience fields the
+// UI needs: who is objecting to the result, whether anybody could have, and
+// where the viewer stands.
 //
-// viewerIsOrganizer controls one piece of redaction. Who disputed a result is
-// only sent to the family organizer, because they are the person who has to
-// settle it. Everyone else sees that the match is disputed without seeing which
-// relative called foul — the app already asks people to concede to each other's
-// faces, and naming the objector turns a paused game into a grudge. Redacted
-// here rather than hidden in the UI, so the name is not merely off-screen while
-// still sitting in the response.
+// It used to send an awaiting_concession list too — who the claim was still
+// waiting on — and that list is gone with the waiting. What replaces it is
+// unwitnessed, which answers a question the old list could not: not "who has
+// not spoken yet", but "could anybody have".
 //
-// A method rather than a function because whether the organizer may step in
-// depends on the concession window, which lives on base. A service constructed
-// without one still maps correctly — see Match.Deadlocked.
-func (b base) matchPB(m model.Match, viewerID string, viewerIsOrganizer bool) *scoreboardv1.Match {
+// Nothing here is redacted. An objection used to be shown only to the family
+// organizer and its own author, because the organizer was the one who had to
+// settle it and naming the objector to everybody else turned a paused game into
+// a grudge. Nobody settles anything now — the objection is the outcome — and an
+// asterisk on somebody's win that nobody can attribute or read the grounds for
+// is worse than the grudge it was avoiding. If you are going to say a result
+// did not happen, you say it under your own name.
+//
+// A method rather than a function for consistency with the rest of base.
+func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 	out := &scoreboardv1.Match{
 		Id:              m.ID,
 		FamilyId:        m.FamilyID,
@@ -267,7 +260,7 @@ func (b base) matchPB(m model.Match, viewerID string, viewerIsOrganizer bool) *s
 		StartedAt:       tsp(m.StartedAt),
 		ClaimedAt:       tsp(m.ClaimedAt),
 		ClaimedByTeamId: deref(m.ClaimedByTeamID),
-		ConcedeDeadline: tsp(m.ConcedeDeadline),
+		ClaimedByUserId: deref(m.ClaimedByUserID),
 		FinalizedAt:     tsp(m.FinalizedAt),
 	}
 	if m.Game != nil {
@@ -277,58 +270,45 @@ func (b base) matchPB(m model.Match, viewerID string, viewerIsOrganizer bool) *s
 		out.Teams = append(out.Teams, teamPB(t))
 	}
 	for _, p := range m.Participants {
-		out.Participants = append(out.Participants, redactDispute(participantPB(p), p, viewerID, viewerIsOrganizer))
+		out.Participants = append(out.Participants, participantPB(p))
 	}
 	// Split rosters so the UI never has to re-derive who is actually playing.
 	for _, p := range m.JoinedParticipants() {
-		out.Joined = append(out.Joined, redactDispute(participantPB(p), p, viewerID, viewerIsOrganizer))
+		out.Joined = append(out.Joined, participantPB(p))
 	}
 	for _, p := range m.PendingInvites() {
 		out.Invited = append(out.Invited, participantPB(p))
-		if p.User.ID == viewerID {
+		if p.User.ID == v.id {
 			out.ViewerIsInvited = true
 		}
 	}
 
-	out.AllReady = m.AllReady()
-	out.ViewerIsCreator = m.CreatedBy == viewerID
-	for _, p := range m.AwaitingReady() {
-		out.AwaitingReady = append(out.AwaitingReady, userPB(p.User))
-	}
-	for _, p := range m.JoinedParticipants() {
-		if p.User.ID == viewerID && p.ReadyAt != nil {
-			out.ViewerIsReady = true
-		}
-	}
-	for _, p := range m.AwaitingConcession() {
-		out.AwaitingConcession = append(out.AwaitingConcession, userPB(p.User))
-		if p.User.ID == viewerID {
-			out.ViewerOwesConcession = true
+	out.ViewerIsCreator = m.CreatedBy == v.id
+
+	// A result nobody in the match is in a position to deny. Reported rather
+	// than prevented — see model.Match.Unwitnessed.
+	out.Unwitnessed = m.Unwitnessed()
+
+	out.Contested = m.Contested()
+	for _, p := range m.Objectors() {
+		out.Objectors = append(out.Objectors, userPB(p.User))
+		if p.User.ID == v.id {
+			out.ViewerObjected = true
 		}
 	}
 
-	out.ViewerIsClaimant = m.OnClaimingTeam(viewerID)
-	out.OrganizerMayResolve = m.Deadlocked(b.concedeWindow)
+	out.ViewerIsClaimant = m.OnClaimingTeam(v.id)
+	// Unconditional on status: a finalized match is exactly the one an admin is
+	// most likely to need gone, and it is the only status nothing else can
+	// touch.
+	out.ViewerMayVoid = v.admin
 	return out
 }
 
-// redactDispute strips who objected unless the viewer is the organizer, or it
-// is their own objection — you always know what you did.
-func redactDispute(
-	pb *scoreboardv1.MatchParticipant, p model.MatchParticipant, viewerID string, organizer bool,
-) *scoreboardv1.MatchParticipant {
-	if organizer || p.User.ID == viewerID {
-		return pb
-	}
-	pb.DisputedAt = nil
-	pb.DisputeReason = ""
-	return pb
-}
-
-func (b base) matchesPB(ms []model.Match, viewerID string, viewerIsOrganizer bool) []*scoreboardv1.Match {
+func (b base) matchesPB(ms []model.Match, v viewer) []*scoreboardv1.Match {
 	out := make([]*scoreboardv1.Match, 0, len(ms))
 	for _, m := range ms {
-		out = append(out, b.matchPB(m, viewerID, viewerIsOrganizer))
+		out = append(out, b.matchPB(m, v))
 	}
 	return out
 }
@@ -344,4 +324,32 @@ func rangeStart(r scoreboardv1.StatsRange, now time.Time) time.Time {
 	default:
 		return time.Time{}
 	}
+}
+
+// rivalryPB maps one pairing. Nil for an opponent who is no longer known, and
+// for the zero Rivalry — a pairing with no opponent id is the absence of a
+// rivalry, not a rivalry with nobody, and the screens read the field's presence
+// to decide whether to show the line at all.
+func rivalryPB(r stats.Rivalry, users map[string]model.User) *scoreboardv1.RivalryLine {
+	if r.OpponentID == "" {
+		return nil
+	}
+	u, ok := users[r.OpponentID]
+	if !ok {
+		return nil
+	}
+
+	out := &scoreboardv1.RivalryLine{
+		Opponent:             userPB(u),
+		Wins:                 r.Wins,
+		Losses:               r.Losses,
+		MeetingsSinceLastWin: r.MeetingsSinceLastWin,
+		NeverBeaten:          r.NeverBeaten,
+		Debt:                 r.Debt(),
+	}
+	// Seq is the finalization instant in microseconds — see store.LoadParticipations.
+	if !r.NeverBeaten && r.LastWinSeq > 0 {
+		out.LastWinAt = ts(time.UnixMicro(r.LastWinSeq))
+	}
+	return out
 }

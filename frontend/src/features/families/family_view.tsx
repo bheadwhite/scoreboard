@@ -9,8 +9,12 @@ import { Alert, Avatar, Empty } from "../../components/ui.js";
 import { displayName } from "../../lib/format.js";
 
 /**
- * The family screen: the invite code to read out loud, everyone in it, and the
- * switcher for people who belong to more than one.
+ * The family screen: the invite link that brings the next relative in, and
+ * everyone who is already here.
+ *
+ * There is nothing to choose between. One scoreboard, so the family is never
+ * named and never switched — the only thing this screen is for is the roster
+ * and the link.
  */
 export function FamilyView({
   presenter,
@@ -24,18 +28,11 @@ export function FamilyView({
   const familyId = useSignalValue(app.familyIdBroadcast);
   const copied = useSignalValue(presenter.copiedBroadcast);
   const error = useSignalValue(presenter.errorBroadcast);
-  const code = useSignalValue(presenter.codeBroadcast);
-  const newName = useSignalValue(presenter.nameBroadcast);
   const members = useCollection(presenter.members(familyId));
 
   const family = families.find((f) => f.id === familyId);
   const isOwner = family?.viewerRole === FamilyRole.OWNER;
   const meId = app.domain.session.user?.id;
-
-  const familyName = family?.name ?? "";
-  useEffect(() => {
-    if (familyName) app.setScreenTitle(familyName);
-  }, [app, familyName]);
 
   useEffect(() => {
     if (!familyId) return;
@@ -44,13 +41,13 @@ export function FamilyView({
   }, [presenter, familyId]);
 
   if (!family) {
-    return <Empty emoji="👋">Pick a family to get started.</Empty>;
+    return <Empty emoji="👋">You are not on the scoreboard yet.</Empty>;
   }
 
   return (
     <div className="stack stack--lg">
       <section className="stack">
-        <span className="section-label">Invite code</span>
+        <span className="section-label">Invite</span>
         <div className="card" style={{ textAlign: "center" }}>
           <div
             className="num"
@@ -66,12 +63,12 @@ export function FamilyView({
             {family.inviteCode}
           </div>
           <p style={{ margin: "8px 0 14px", color: "var(--ink-dim)", fontSize: "0.88rem" }}>
-            Anyone with this code can join {family.name}.
+            Send this to whoever is playing. They sign in and they are on the scoreboard.
           </p>
           <div className="stack" style={{ gap: 8 }}>
             <button
               className="btn btn--primary btn--block"
-              onClick={() => void presenter.shareInvite(family.name, family.inviteCode)}
+              onClick={() => void presenter.shareInvite(family.inviteCode)}
             >
               {copied ? "Link copied ✓" : "Share invite link"}
             </button>
@@ -102,7 +99,7 @@ export function FamilyView({
 
       <section className="stack">
         <span className="section-label">
-          {members.length} member{members.length === 1 ? "" : "s"}
+          {members.length} player{members.length === 1 ? "" : "s"}
         </span>
         <div className="card card--flush">
           {members.map((m) => (
@@ -139,76 +136,6 @@ export function FamilyView({
               )}
             </div>
           ))}
-        </div>
-      </section>
-
-      {families.length > 1 && (
-        <section className="stack">
-          <span className="section-label">Switch family</span>
-          <div className="card card--flush">
-            {families.map((f) => (
-              <button
-                key={f.id}
-                className="rowbtn"
-                aria-pressed={f.id === familyId}
-                onClick={() => app.selectFamily(f.id)}
-              >
-                <span className="rowbtn__main">
-                  <span className="rowbtn__name">{f.name}</span>
-                  <span className="rowbtn__meta num">{f.memberCount} members</span>
-                </span>
-                {f.id === familyId && <span style={{ color: "var(--gold)" }}>✓</span>}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Both routes into another family. Creating one used to be reachable
-          only during onboarding, so anyone who already had a family could never
-          start a second one. */}
-      <section className="stack">
-        <span className="section-label">Join another family</span>
-        <div className="card stack">
-          <input
-            className="input input--code"
-            placeholder="ABC123"
-            maxLength={6}
-            autoCapitalize="characters"
-            autoComplete="off"
-            value={code}
-            onChange={(e) => presenter.setCode(e.target.value)}
-          />
-          <button
-            className="btn btn--block"
-            disabled={code.trim().length < 4}
-            onClick={() => void presenter.join()}
-          >
-            Join with this code
-          </button>
-        </div>
-      </section>
-
-      <section className="stack">
-        <span className="section-label">Start another family</span>
-        <div className="card stack">
-          <input
-            className="input"
-            placeholder="The Cousins"
-            value={newName}
-            onChange={(e) => presenter.setName(e.target.value)}
-          />
-          <button
-            className="btn btn--block"
-            disabled={newName.trim().length === 0}
-            onClick={() => void presenter.create()}
-          >
-            Create family
-          </button>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-faint)" }}>
-            A separate scoreboard with its own members and record. You can belong to as many as you
-            like and switch between them here.
-          </p>
         </div>
       </section>
 

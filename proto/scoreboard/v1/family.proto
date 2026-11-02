@@ -17,9 +17,35 @@ service FamilyService {
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
   rpc LeaveFamily(LeaveFamilyRequest) returns (LeaveFamilyResponse);
 
+  // Adds somebody who has not signed up, so a game they were actually in can be
+  // recorded with everybody in it. Open to any member: the moment you need one
+  // is while you are setting up a game with the person standing next to you,
+  // and routing that through an administrator would mean the game gets entered
+  // wrong or not at all.
+  //
+  // What it creates is a real player — see User.placeholder. They cannot be
+  // asked to concede anything, so adding them to a match joins them outright
+  // rather than inviting them: you are stating that they played, not asking
+  // whether they would like to. That is a claim you are making about somebody
+  // else, and the check on it is that they can dispute any of it once they sign
+  // up and an administrator links them.
+  rpc AddPlaceholderPlayer(AddPlaceholderPlayerRequest) returns (AddPlaceholderPlayerResponse);
+
   // Owner only.
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
   rpc RegenerateInviteCode(RegenerateInviteCodeRequest) returns (RegenerateInviteCodeResponse);
+}
+
+message AddPlaceholderPlayerRequest {
+  string family_id = 1;
+  // What to call them. Reused rather than duplicated when it matches a
+  // placeholder this family already has, so two people setting up two games do
+  // not end up with two of Grandma.
+  string display_name = 2;
+}
+
+message AddPlaceholderPlayerResponse {
+  User user = 1;
 }
 
 message CreateFamilyRequest {

@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Family, FamilyMember } from "./common_pb.js";
+import type { Family, FamilyMember, User } from "./common_pb.js";
 import { file_scoreboard_v1_common } from "./common_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -12,7 +12,50 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/family.proto.
  */
 export const file_scoreboard_v1_family: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2ZhbWlseS5wcm90bxINc2NvcmVib2FyZC52MSIjChNDcmVhdGVGYW1pbHlSZXF1ZXN0EgwKBG5hbWUYASABKAkiPQoUQ3JlYXRlRmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiKAoRSm9pbkZhbWlseVJlcXVlc3QSEwoLaW52aXRlX2NvZGUYASABKAkiOwoSSm9pbkZhbWlseVJlc3BvbnNlEiUKBmZhbWlseRgBIAEoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IisKFFByZXZpZXdJbnZpdGVSZXF1ZXN0EhMKC2ludml0ZV9jb2RlGAEgASgJImcKFVByZXZpZXdJbnZpdGVSZXNwb25zZRIMCgRuYW1lGAEgASgJEhQKDG1lbWJlcl9jb3VudBgCIAEoBRISCgpvd25lcl9uYW1lGAMgASgJEhYKDmFscmVhZHlfbWVtYmVyGAQgASgIIhcKFUxpc3RNeUZhbWlsaWVzUmVxdWVzdCJBChZMaXN0TXlGYW1pbGllc1Jlc3BvbnNlEicKCGZhbWlsaWVzGAEgAygLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJQoQR2V0RmFtaWx5UmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkiOgoRR2V0RmFtaWx5UmVzcG9uc2USJQoGZmFtaWx5GAEgASgLMhUuc2NvcmVib2FyZC52MS5GYW1pbHkiJwoSTGlzdE1lbWJlcnNSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCSJDChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiwKB21lbWJlcnMYASADKAsyGy5zY29yZWJvYXJkLnYxLkZhbWlseU1lbWJlciInChJMZWF2ZUZhbWlseVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIhUKE0xlYXZlRmFtaWx5UmVzcG9uc2UiOQoTUmVtb3ZlTWVtYmVyUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSIWChRSZW1vdmVNZW1iZXJSZXNwb25zZSIwChtSZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIjMKHFJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2USEwoLaW52aXRlX2NvZGUYASABKAkyvAYKDUZhbWlseVNlcnZpY2USVwoMQ3JlYXRlRmFtaWx5EiIuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXF1ZXN0GiMuc2NvcmVib2FyZC52MS5DcmVhdGVGYW1pbHlSZXNwb25zZRJRCgpKb2luRmFtaWx5EiAuc2NvcmVib2FyZC52MS5Kb2luRmFtaWx5UmVxdWVzdBohLnNjb3JlYm9hcmQudjEuSm9pbkZhbWlseVJlc3BvbnNlEloKDVByZXZpZXdJbnZpdGUSIy5zY29yZWJvYXJkLnYxLlByZXZpZXdJbnZpdGVSZXF1ZXN0GiQuc2NvcmVib2FyZC52MS5QcmV2aWV3SW52aXRlUmVzcG9uc2USXQoOTGlzdE15RmFtaWxpZXMSJC5zY29yZWJvYXJkLnYxLkxpc3RNeUZhbWlsaWVzUmVxdWVzdBolLnNjb3JlYm9hcmQudjEuTGlzdE15RmFtaWxpZXNSZXNwb25zZRJOCglHZXRGYW1pbHkSHy5zY29yZWJvYXJkLnYxLkdldEZhbWlseVJlcXVlc3QaIC5zY29yZWJvYXJkLnYxLkdldEZhbWlseVJlc3BvbnNlElQKC0xpc3RNZW1iZXJzEiEuc2NvcmVib2FyZC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkxpc3RNZW1iZXJzUmVzcG9uc2USVAoLTGVhdmVGYW1pbHkSIS5zY29yZWJvYXJkLnYxLkxlYXZlRmFtaWx5UmVxdWVzdBoiLnNjb3JlYm9hcmQudjEuTGVhdmVGYW1pbHlSZXNwb25zZRJXCgxSZW1vdmVNZW1iZXISIi5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlcXVlc3QaIy5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlc3BvbnNlEm8KFFJlZ2VuZXJhdGVJbnZpdGVDb2RlEiouc2NvcmVib2FyZC52MS5SZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QaKy5zY29yZWJvYXJkLnYxLlJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2VCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtGYW1pbHlQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2ZhbWlseS5wcm90bxINc2NvcmVib2FyZC52MSJGChtBZGRQbGFjZWhvbGRlclBsYXllclJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCSJBChxBZGRQbGFjZWhvbGRlclBsYXllclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXIiIwoTQ3JlYXRlRmFtaWx5UmVxdWVzdBIMCgRuYW1lGAEgASgJIj0KFENyZWF0ZUZhbWlseVJlc3BvbnNlEiUKBmZhbWlseRgBIAEoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IigKEUpvaW5GYW1pbHlSZXF1ZXN0EhMKC2ludml0ZV9jb2RlGAEgASgJIjsKEkpvaW5GYW1pbHlSZXNwb25zZRIlCgZmYW1pbHkYASABKAsyFS5zY29yZWJvYXJkLnYxLkZhbWlseSIrChRQcmV2aWV3SW52aXRlUmVxdWVzdBITCgtpbnZpdGVfY29kZRgBIAEoCSJnChVQcmV2aWV3SW52aXRlUmVzcG9uc2USDAoEbmFtZRgBIAEoCRIUCgxtZW1iZXJfY291bnQYAiABKAUSEgoKb3duZXJfbmFtZRgDIAEoCRIWCg5hbHJlYWR5X21lbWJlchgEIAEoCCIXChVMaXN0TXlGYW1pbGllc1JlcXVlc3QiQQoWTGlzdE15RmFtaWxpZXNSZXNwb25zZRInCghmYW1pbGllcxgBIAMoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IiUKEEdldEZhbWlseVJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJIjoKEUdldEZhbWlseVJlc3BvbnNlEiUKBmZhbWlseRgBIAEoCzIVLnNjb3JlYm9hcmQudjEuRmFtaWx5IicKEkxpc3RNZW1iZXJzUmVxdWVzdBIRCglmYW1pbHlfaWQYASABKAkiQwoTTGlzdE1lbWJlcnNSZXNwb25zZRIsCgdtZW1iZXJzGAEgAygLMhsuc2NvcmVib2FyZC52MS5GYW1pbHlNZW1iZXIiJwoSTGVhdmVGYW1pbHlSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCSIVChNMZWF2ZUZhbWlseVJlc3BvbnNlIjkKE1JlbW92ZU1lbWJlclJlcXVlc3QSEQoJZmFtaWx5X2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkiFgoUUmVtb3ZlTWVtYmVyUmVzcG9uc2UiMAobUmVnZW5lcmF0ZUludml0ZUNvZGVSZXF1ZXN0EhEKCWZhbWlseV9pZBgBIAEoCSIzChxSZWdlbmVyYXRlSW52aXRlQ29kZVJlc3BvbnNlEhMKC2ludml0ZV9jb2RlGAEgASgJMq0HCg1GYW1pbHlTZXJ2aWNlElcKDENyZWF0ZUZhbWlseRIiLnNjb3JlYm9hcmQudjEuQ3JlYXRlRmFtaWx5UmVxdWVzdBojLnNjb3JlYm9hcmQudjEuQ3JlYXRlRmFtaWx5UmVzcG9uc2USUQoKSm9pbkZhbWlseRIgLnNjb3JlYm9hcmQudjEuSm9pbkZhbWlseVJlcXVlc3QaIS5zY29yZWJvYXJkLnYxLkpvaW5GYW1pbHlSZXNwb25zZRJaCg1QcmV2aWV3SW52aXRlEiMuc2NvcmVib2FyZC52MS5QcmV2aWV3SW52aXRlUmVxdWVzdBokLnNjb3JlYm9hcmQudjEuUHJldmlld0ludml0ZVJlc3BvbnNlEl0KDkxpc3RNeUZhbWlsaWVzEiQuc2NvcmVib2FyZC52MS5MaXN0TXlGYW1pbGllc1JlcXVlc3QaJS5zY29yZWJvYXJkLnYxLkxpc3RNeUZhbWlsaWVzUmVzcG9uc2USTgoJR2V0RmFtaWx5Eh8uc2NvcmVib2FyZC52MS5HZXRGYW1pbHlSZXF1ZXN0GiAuc2NvcmVib2FyZC52MS5HZXRGYW1pbHlSZXNwb25zZRJUCgtMaXN0TWVtYmVycxIhLnNjb3JlYm9hcmQudjEuTGlzdE1lbWJlcnNSZXF1ZXN0GiIuc2NvcmVib2FyZC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElQKC0xlYXZlRmFtaWx5EiEuc2NvcmVib2FyZC52MS5MZWF2ZUZhbWlseVJlcXVlc3QaIi5zY29yZWJvYXJkLnYxLkxlYXZlRmFtaWx5UmVzcG9uc2USbwoUQWRkUGxhY2Vob2xkZXJQbGF5ZXISKi5zY29yZWJvYXJkLnYxLkFkZFBsYWNlaG9sZGVyUGxheWVyUmVxdWVzdBorLnNjb3JlYm9hcmQudjEuQWRkUGxhY2Vob2xkZXJQbGF5ZXJSZXNwb25zZRJXCgxSZW1vdmVNZW1iZXISIi5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlcXVlc3QaIy5zY29yZWJvYXJkLnYxLlJlbW92ZU1lbWJlclJlc3BvbnNlEm8KFFJlZ2VuZXJhdGVJbnZpdGVDb2RlEiouc2NvcmVib2FyZC52MS5SZWdlbmVyYXRlSW52aXRlQ29kZVJlcXVlc3QaKy5zY29yZWJvYXJkLnYxLlJlZ2VuZXJhdGVJbnZpdGVDb2RlUmVzcG9uc2VCvgEKEWNvbS5zY29yZWJvYXJkLnYxQgtGYW1pbHlQcm90b1ABWkdnaXRodWIuY29tL2JoZWFkd2hpdGUvc2NvcmVib2FyZC9iYWNrZW5kL2dlbi9zY29yZWJvYXJkL3YxO3Njb3JlYm9hcmR2MaICA1NYWKoCDVNjb3JlYm9hcmQuVjHKAg1TY29yZWJvYXJkXFYx4gIZU2NvcmVib2FyZFxWMVxHUEJNZXRhZGF0YeoCDlNjb3JlYm9hcmQ6OlYxYgZwcm90bzM", [file_scoreboard_v1_common]);
+
+/**
+ * @generated from message scoreboard.v1.AddPlaceholderPlayerRequest
+ */
+export type AddPlaceholderPlayerRequest = Message<"scoreboard.v1.AddPlaceholderPlayerRequest"> & {
+  /**
+   * @generated from field: string family_id = 1;
+   */
+  familyId: string;
+
+  /**
+   * What to call them. Reused rather than duplicated when it matches a
+   * placeholder this family already has, so two people setting up two games do
+   * not end up with two of Grandma.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+};
+
+/**
+ * Describes the message scoreboard.v1.AddPlaceholderPlayerRequest.
+ * Use `create(AddPlaceholderPlayerRequestSchema)` to create a new message.
+ */
+export const AddPlaceholderPlayerRequestSchema: GenMessage<AddPlaceholderPlayerRequest> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_family, 0);
+
+/**
+ * @generated from message scoreboard.v1.AddPlaceholderPlayerResponse
+ */
+export type AddPlaceholderPlayerResponse = Message<"scoreboard.v1.AddPlaceholderPlayerResponse"> & {
+  /**
+   * @generated from field: scoreboard.v1.User user = 1;
+   */
+  user?: User | undefined;
+};
+
+/**
+ * Describes the message scoreboard.v1.AddPlaceholderPlayerResponse.
+ * Use `create(AddPlaceholderPlayerResponseSchema)` to create a new message.
+ */
+export const AddPlaceholderPlayerResponseSchema: GenMessage<AddPlaceholderPlayerResponse> = /*@__PURE__*/
+  messageDesc(file_scoreboard_v1_family, 1);
 
 /**
  * @generated from message scoreboard.v1.CreateFamilyRequest
@@ -29,7 +72,7 @@ export type CreateFamilyRequest = Message<"scoreboard.v1.CreateFamilyRequest"> &
  * Use `create(CreateFamilyRequestSchema)` to create a new message.
  */
 export const CreateFamilyRequestSchema: GenMessage<CreateFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 0);
+  messageDesc(file_scoreboard_v1_family, 2);
 
 /**
  * @generated from message scoreboard.v1.CreateFamilyResponse
@@ -46,7 +89,7 @@ export type CreateFamilyResponse = Message<"scoreboard.v1.CreateFamilyResponse">
  * Use `create(CreateFamilyResponseSchema)` to create a new message.
  */
 export const CreateFamilyResponseSchema: GenMessage<CreateFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 1);
+  messageDesc(file_scoreboard_v1_family, 3);
 
 /**
  * @generated from message scoreboard.v1.JoinFamilyRequest
@@ -65,7 +108,7 @@ export type JoinFamilyRequest = Message<"scoreboard.v1.JoinFamilyRequest"> & {
  * Use `create(JoinFamilyRequestSchema)` to create a new message.
  */
 export const JoinFamilyRequestSchema: GenMessage<JoinFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 2);
+  messageDesc(file_scoreboard_v1_family, 4);
 
 /**
  * @generated from message scoreboard.v1.JoinFamilyResponse
@@ -82,7 +125,7 @@ export type JoinFamilyResponse = Message<"scoreboard.v1.JoinFamilyResponse"> & {
  * Use `create(JoinFamilyResponseSchema)` to create a new message.
  */
 export const JoinFamilyResponseSchema: GenMessage<JoinFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 3);
+  messageDesc(file_scoreboard_v1_family, 5);
 
 /**
  * @generated from message scoreboard.v1.PreviewInviteRequest
@@ -99,7 +142,7 @@ export type PreviewInviteRequest = Message<"scoreboard.v1.PreviewInviteRequest">
  * Use `create(PreviewInviteRequestSchema)` to create a new message.
  */
 export const PreviewInviteRequestSchema: GenMessage<PreviewInviteRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 4);
+  messageDesc(file_scoreboard_v1_family, 6);
 
 /**
  * Deliberately narrow: enough to recognise the family, and nothing that would
@@ -139,7 +182,7 @@ export type PreviewInviteResponse = Message<"scoreboard.v1.PreviewInviteResponse
  * Use `create(PreviewInviteResponseSchema)` to create a new message.
  */
 export const PreviewInviteResponseSchema: GenMessage<PreviewInviteResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 5);
+  messageDesc(file_scoreboard_v1_family, 7);
 
 /**
  * @generated from message scoreboard.v1.ListMyFamiliesRequest
@@ -152,7 +195,7 @@ export type ListMyFamiliesRequest = Message<"scoreboard.v1.ListMyFamiliesRequest
  * Use `create(ListMyFamiliesRequestSchema)` to create a new message.
  */
 export const ListMyFamiliesRequestSchema: GenMessage<ListMyFamiliesRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 6);
+  messageDesc(file_scoreboard_v1_family, 8);
 
 /**
  * @generated from message scoreboard.v1.ListMyFamiliesResponse
@@ -169,7 +212,7 @@ export type ListMyFamiliesResponse = Message<"scoreboard.v1.ListMyFamiliesRespon
  * Use `create(ListMyFamiliesResponseSchema)` to create a new message.
  */
 export const ListMyFamiliesResponseSchema: GenMessage<ListMyFamiliesResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 7);
+  messageDesc(file_scoreboard_v1_family, 9);
 
 /**
  * @generated from message scoreboard.v1.GetFamilyRequest
@@ -186,7 +229,7 @@ export type GetFamilyRequest = Message<"scoreboard.v1.GetFamilyRequest"> & {
  * Use `create(GetFamilyRequestSchema)` to create a new message.
  */
 export const GetFamilyRequestSchema: GenMessage<GetFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 8);
+  messageDesc(file_scoreboard_v1_family, 10);
 
 /**
  * @generated from message scoreboard.v1.GetFamilyResponse
@@ -203,7 +246,7 @@ export type GetFamilyResponse = Message<"scoreboard.v1.GetFamilyResponse"> & {
  * Use `create(GetFamilyResponseSchema)` to create a new message.
  */
 export const GetFamilyResponseSchema: GenMessage<GetFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 9);
+  messageDesc(file_scoreboard_v1_family, 11);
 
 /**
  * @generated from message scoreboard.v1.ListMembersRequest
@@ -220,7 +263,7 @@ export type ListMembersRequest = Message<"scoreboard.v1.ListMembersRequest"> & {
  * Use `create(ListMembersRequestSchema)` to create a new message.
  */
 export const ListMembersRequestSchema: GenMessage<ListMembersRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 10);
+  messageDesc(file_scoreboard_v1_family, 12);
 
 /**
  * @generated from message scoreboard.v1.ListMembersResponse
@@ -237,7 +280,7 @@ export type ListMembersResponse = Message<"scoreboard.v1.ListMembersResponse"> &
  * Use `create(ListMembersResponseSchema)` to create a new message.
  */
 export const ListMembersResponseSchema: GenMessage<ListMembersResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 11);
+  messageDesc(file_scoreboard_v1_family, 13);
 
 /**
  * @generated from message scoreboard.v1.LeaveFamilyRequest
@@ -254,7 +297,7 @@ export type LeaveFamilyRequest = Message<"scoreboard.v1.LeaveFamilyRequest"> & {
  * Use `create(LeaveFamilyRequestSchema)` to create a new message.
  */
 export const LeaveFamilyRequestSchema: GenMessage<LeaveFamilyRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 12);
+  messageDesc(file_scoreboard_v1_family, 14);
 
 /**
  * @generated from message scoreboard.v1.LeaveFamilyResponse
@@ -267,7 +310,7 @@ export type LeaveFamilyResponse = Message<"scoreboard.v1.LeaveFamilyResponse"> &
  * Use `create(LeaveFamilyResponseSchema)` to create a new message.
  */
 export const LeaveFamilyResponseSchema: GenMessage<LeaveFamilyResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 13);
+  messageDesc(file_scoreboard_v1_family, 15);
 
 /**
  * @generated from message scoreboard.v1.RemoveMemberRequest
@@ -289,7 +332,7 @@ export type RemoveMemberRequest = Message<"scoreboard.v1.RemoveMemberRequest"> &
  * Use `create(RemoveMemberRequestSchema)` to create a new message.
  */
 export const RemoveMemberRequestSchema: GenMessage<RemoveMemberRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 14);
+  messageDesc(file_scoreboard_v1_family, 16);
 
 /**
  * @generated from message scoreboard.v1.RemoveMemberResponse
@@ -302,7 +345,7 @@ export type RemoveMemberResponse = Message<"scoreboard.v1.RemoveMemberResponse">
  * Use `create(RemoveMemberResponseSchema)` to create a new message.
  */
 export const RemoveMemberResponseSchema: GenMessage<RemoveMemberResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 15);
+  messageDesc(file_scoreboard_v1_family, 17);
 
 /**
  * @generated from message scoreboard.v1.RegenerateInviteCodeRequest
@@ -319,7 +362,7 @@ export type RegenerateInviteCodeRequest = Message<"scoreboard.v1.RegenerateInvit
  * Use `create(RegenerateInviteCodeRequestSchema)` to create a new message.
  */
 export const RegenerateInviteCodeRequestSchema: GenMessage<RegenerateInviteCodeRequest> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 16);
+  messageDesc(file_scoreboard_v1_family, 18);
 
 /**
  * @generated from message scoreboard.v1.RegenerateInviteCodeResponse
@@ -336,7 +379,7 @@ export type RegenerateInviteCodeResponse = Message<"scoreboard.v1.RegenerateInvi
  * Use `create(RegenerateInviteCodeResponseSchema)` to create a new message.
  */
 export const RegenerateInviteCodeResponseSchema: GenMessage<RegenerateInviteCodeResponse> = /*@__PURE__*/
-  messageDesc(file_scoreboard_v1_family, 17);
+  messageDesc(file_scoreboard_v1_family, 19);
 
 /**
  * FamilyService manages families and their membership. Every other service
@@ -403,6 +446,27 @@ export const FamilyService: GenService<{
     methodKind: "unary";
     input: typeof LeaveFamilyRequestSchema;
     output: typeof LeaveFamilyResponseSchema;
+  },
+  /**
+   * Adds somebody who has not signed up, so a game they were actually in can be
+   * recorded with everybody in it. Open to any member: the moment you need one
+   * is while you are setting up a game with the person standing next to you,
+   * and routing that through an administrator would mean the game gets entered
+   * wrong or not at all.
+   *
+   * What it creates is a real player — see User.placeholder. They cannot be
+   * asked to concede anything, so adding them to a match joins them outright
+   * rather than inviting them: you are stating that they played, not asking
+   * whether they would like to. That is a claim you are making about somebody
+   * else, and the check on it is that they can dispute any of it once they sign
+   * up and an administrator links them.
+   *
+   * @generated from rpc scoreboard.v1.FamilyService.AddPlaceholderPlayer
+   */
+  addPlaceholderPlayer: {
+    methodKind: "unary";
+    input: typeof AddPlaceholderPlayerRequestSchema;
+    output: typeof AddPlaceholderPlayerResponseSchema;
   },
   /**
    * Owner only.

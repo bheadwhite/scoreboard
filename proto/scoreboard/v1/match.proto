@@ -7,56 +7,110 @@ import "scoreboard/v1/common.proto";
 // MatchService runs the match lifecycle, including the concession protocol that
 // is the whole point of this app:
 //
-//   LOBBY -> IN_PROGRESS -> CLAIMED -> FINAL       (all opponents concede, or timeout)
-//                              ^  \
-//                              |   -> DISPUTED -> FINAL | CANCELED  (owner resolves)
-//                              |        |
-//                              +--------+   (the last objection is withdrawn)
+//   IN_PROGRESS -> CLAIMED -> FINAL        (everyone answers, or the clock runs out)
+//        ^            |
+//        +------------+                    (the claim is withdrawn)
 //
-// CLAIMED and DISPUTED are two readings of the same situation — a claim on the
-// table and a set of answers to it — rather than two destinations. Nobody is
-// held to the answer they first gave: an opponent can move between conceding
-// and objecting for as long as the match is open, and WithdrawClaim takes the
-// whole thing back to IN_PROGRESS. Only FINAL is a one-way door, and only FINAL
-// matches count toward the scoreboard.
+// There is no lobby and no ready check. Posting a match declares the game, the
+// contract and who is invited, and it is live from that moment; each person
+// invited confirms on their own device by joining, and joining is the entire
+// commitment. Somebody who wanders in halfway through can still join, right up
+// until a winner is named.
+//
+// Nobody declares a win into the record on their own say-so. A claim is a
+// question put to everybody else, and it settles when they have all answered or
+// when the window closes.
+//
+// Objecting does not block. It marks. A match with an objection standing on it
+// is contested: still a real match, still shown, still carrying a named winner,
+// but kept out of the clean numbers on the scoreboard until whoever objected
+// takes it back. That is why there is no dispute resolution here, and no
+// referee — there is nothing for one to settle, because a dispute is not a
+// deadlock any more. It is a permanent, retractable asterisk that one player
+// can put on a result and one player can take off.
+//
+// The consequence worth stating plainly: a claim always finalizes. What varies
+// is whether it finalizes clean.
 service MatchService {
+  // Posts a match: a game, its contract, and the people being asked. Live
+  // immediately.
   rpc CreateMatch(CreateMatchRequest) returns (CreateMatchResponse);
+  // Confirms you are playing, under the contract as posted. This is the only
+  // commitment step there is. Open until a winner is named, so latecomers count.
+  //
+  // Whoever posted the match may also do this for somebody they invited, which
+  // is how a game gets under way when everybody is at the table and nobody has
+  // picked up their phone. It converts a pending invitation into a player and
+  // nothing more: a refusal cannot be overridden, and the person put in still
+  // owes any claim an answer, so this buys the host a game that can start, not
+  // a result they can manufacture.
   rpc JoinMatch(JoinMatchRequest) returns (JoinMatchResponse);
   rpc LeaveMatch(LeaveMatchRequest) returns (LeaveMatchResponse);
   // Turn down an invitation. The match carries on without you.
   rpc DeclineMatch(DeclineMatchRequest) returns (DeclineMatchResponse);
-  // Ask more players once the lobby already exists.
+  // Ask more players once the match exists.
   rpc InvitePlayers(InvitePlayersRequest) returns (InvitePlayersResponse);
-  // Replaces the whole team layout while still in the lobby.
+  // Replaces the whole team layout. Creator only, and only while the match has
+  // no result — who is on which side is what the result is written against.
   rpc SetTeams(SetTeamsRequest) returns (SetTeamsResponse);
-  rpc SetContract(SetContractRequest) returns (SetContractResponse);
-  // Affirm, or withdraw, that you are ready to play under the current
-  // contract. Changing the contract or the teams clears everyone's.
-  rpc SetReady(SetReadyRequest) returns (SetReadyResponse);
-  // Locks the contract and begins play. Creator only, and only once every
-  // joined player is ready.
-  rpc StartMatch(StartMatchRequest) returns (StartMatchResponse);
 
-  // Claim victory for the caller's team. Starts the concession clock.
-  // Idempotent: re-claiming by the same team is a no-op.
+  // Names the winner, which records the result. Any player may name their own
+  // side; whoever posted the match may name any side, which is the short
+  // circuit for a game that is plainly over and where the winner is not the one
+  // holding the phone. Idempotent: re-naming the same side is a no-op.
+  //
+  // There is no pending stage between this and the record. There used to be —
+  // the claim sat collecting answers and settled on the last one or on a
+  // week-long clock — and it decided nothing, because both endings wrote the
+  // same result. What keeps a manufactured win from standing is not a delay in
+  // front of it, it is that everybody in the match can object to it afterward,
+  // for as long as the record exists.
   rpc ClaimVictory(ClaimVictoryRequest) returns (ClaimVictoryResponse);
-  // Take back a claim your own team made. The match returns to IN_PROGRESS with
-  // no winner and every answer cleared — this is "never mind", not "you won".
-  // Anyone on the claiming team may do it, and only until the match finalizes.
+  // Refuse the win. The match returns to IN_PROGRESS with no winner, every
+  // answer cleared and every result back to pending — "never mind", not "they
+  // won": if the other side actually won, they have to name themselves.
+  //
+  // Open to the side the result names, and to nobody else. Not to whoever
+  // called it, which is the one rule this app cannot bend: in a match you
+  // posted you could name the other side the winner and then take your own loss
+  // back off the board, and a record you can retract a defeat from is not a
+  // record. So a win can always be refused and a loss can never be erased.
+  // Somebody who called a game wrong and cannot fix it objects to it instead.
   rpc WithdrawClaim(WithdrawClaimRequest) returns (WithdrawClaimResponse);
-  // Acknowledge the standing claim. Idempotent, and reversible: this also
-  // withdraws an objection you made earlier. Taking back the last objection
-  // returns the match to CLAIMED and restarts its clock.
+  // Say the result is right. Idempotent, and reversible: this also withdraws an
+  // objection you made earlier, at any point in the match's life.
+  //
+  // It changes no tally — the result already counts — so this is a position on
+  // the answer board rather than a step in a protocol. It matters as the way
+  // back from an objection, and as the difference between a player who agrees
+  // and one who has not looked.
   rpc Concede(ConcedeRequest) returns (ConcedeResponse);
-  // Reject the standing claim, or take back a concession you already gave.
-  // Stops the concession clock for as long as the objection stands.
+  // Object to the result, or take back a concession you already gave. Marks the
+  // match contested for as long as the objection stands, which keeps it out of
+  // every clean number while leaving it fully visible as a match.
+  //
+  // This is the whole of what protects the record, now that nothing is pending.
+  // Anybody in the match may say a result did not happen, at any point in its
+  // life, without needing anybody's permission and without a majority — one
+  // objection is enough, and it can be taken back just as freely. The likeliest
+  // moment somebody notices a bogus result is when they see it in the
+  // standings, which is why it has to work forever rather than during a window.
   rpc DisputeMatch(DisputeMatchRequest) returns (DisputeMatchResponse);
-  // Owner only, and only once the match is genuinely stuck — see
-  // Match.organizer_may_resolve. Settles it by naming the winning team, or
-  // voids it.
-  rpc ResolveDispute(ResolveDisputeRequest) returns (ResolveDisputeResponse);
 
   rpc CancelMatch(CancelMatchRequest) returns (CancelMatchResponse);
+
+  // Service administrator only, and the only way anything leaves the permanent
+  // record. The match is erased — its teams, its participations, every
+  // concession and objection on it — rather than marked, so it stops existing
+  // everywhere at once instead of lingering as a row every stats query has to
+  // remember to skip.
+  //
+  // Deliberately not offered to a family organizer, however sour the match got.
+  // Undoing a result is not adjudication, it is correcting a mistake in the
+  // record, and the whole argument of this app is that nobody in the family
+  // gets to do that. What a player gets is an objection, which is loud and
+  // permanent and still leaves the result standing.
+  rpc VoidMatch(VoidMatchRequest) returns (VoidMatchResponse);
 
   rpc GetMatch(GetMatchRequest) returns (GetMatchResponse);
   rpc ListMatches(ListMatchesRequest) returns (ListMatchesResponse);
@@ -66,8 +120,11 @@ message CreateMatchRequest {
   string family_id = 1;
   string game_id = 2;
   // Players to invite. They are asked, not added — each decides for themselves,
-  // and the match can start without the ones who never answer.
+  // and the match runs without the ones who never answer.
   repeated string invite_user_ids = 3;
+  // How this one is won. Required, and fixed once set: it is the term everyone
+  // who joins is agreeing to, so it cannot be edited out from under them.
+  Contract contract = 4;
 }
 
 message CreateMatchResponse {
@@ -76,6 +133,10 @@ message CreateMatchResponse {
 
 message JoinMatchRequest {
   string match_id = 1;
+  // Who to put in. Empty means you, which is the ordinary case. Naming somebody
+  // else is the creator's alone, and only works on somebody with an unanswered
+  // invitation to this match.
+  string user_id = 2;
 }
 
 message JoinMatchResponse {
@@ -116,7 +177,7 @@ message TeamAssignment {
 
 message SetTeamsRequest {
   string match_id = 1;
-  // The complete team layout. Every participant must appear exactly once.
+  // The complete team layout. Every joined player must appear exactly once.
   repeated TeamAssignment teams = 2;
 }
 
@@ -124,35 +185,10 @@ message SetTeamsResponse {
   Match match = 1;
 }
 
-message SetContractRequest {
-  string match_id = 1;
-  Contract contract = 2;
-}
-
-message SetContractResponse {
-  Match match = 1;
-}
-
-message SetReadyRequest {
-  string match_id = 1;
-  bool ready = 2;
-}
-
-message SetReadyResponse {
-  Match match = 1;
-}
-
-message StartMatchRequest {
-  string match_id = 1;
-}
-
-message StartMatchResponse {
-  Match match = 1;
-}
-
 message ClaimVictoryRequest {
   string match_id = 1;
-  // Defaults to the caller's own team.
+  // The side that won. Defaults to the caller's own. Naming anybody else's is
+  // the creator's privilege alone.
   string team_id = 2;
 }
 
@@ -178,22 +214,12 @@ message ConcedeResponse {
 
 message DisputeMatchRequest {
   string match_id = 1;
-  // Shown to the family owner when they resolve it.
+  // Why. Shown to everybody, alongside your name — an asterisk on somebody's
+  // win that nobody can question back is not an argument, it is a smear.
   string reason = 2;
 }
 
 message DisputeMatchResponse {
-  Match match = 1;
-}
-
-message ResolveDisputeRequest {
-  string match_id = 1;
-  // The team that actually won. Leave empty to void the match instead.
-  string winning_team_id = 2;
-  bool void_match = 3;
-}
-
-message ResolveDisputeResponse {
   Match match = 1;
 }
 
@@ -203,6 +229,19 @@ message CancelMatchRequest {
 
 message CancelMatchResponse {
   Match match = 1;
+}
+
+message VoidMatchRequest {
+  string match_id = 1;
+  // Why. Written to the server log, which is the only trace a voided match
+  // leaves. Optional — the log records who, what and when either way.
+  string reason = 2;
+}
+
+message VoidMatchResponse {
+  // The family it belonged to, so the caller knows what to refresh. There is no
+  // match to send back.
+  string family_id = 1;
 }
 
 message GetMatchRequest {

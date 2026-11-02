@@ -1,0 +1,36 @@
+-- Players who have not signed up.
+--
+-- Somebody at the table has no account. Under the old rules they simply were
+-- not on the scoreboard, which meant every game they played in was recorded
+-- wrong — a four-handed game of Rook entered as two players, or not entered at
+-- all because entering it would have been a lie.
+--
+-- So a placeholder is an ordinary `users` row that nobody can sign in to. It is
+-- the whole of the mechanism, and it is deliberate: every table that matters
+-- keys on users.id, so a placeholder joins matches, holds a team, takes a win
+-- or a loss, appears in the standings, has a profile and turns up in somebody's
+-- head-to-head record without a single query knowing they exist. Modelling them
+-- separately would have meant teaching every one of those about a second kind
+-- of player.
+--
+-- What they cannot do is answer. There is no device to answer from, so the
+-- concession protocol skips them — see model.Match.Answerable — and a claim
+-- that only placeholders could have answered settles on the clock rather than
+-- on anybody's word. Their agreement is not assumed, it is deferred: when the
+-- person behind the placeholder does sign up, an administrator links the two,
+-- the whole history becomes genuinely theirs, and because an objection outlives
+-- finalization they can go back and flag anything in it they disagree with.
+--
+-- The marker is the provider identity, because that is exactly what they lack.
+-- provider_id is a fresh uuid rather than empty: users_provider_identity_idx is
+-- a plain unique index on (provider, provider_id) — it has to be, since the
+-- sign-in upsert names it as an ON CONFLICT target — so two placeholders
+-- sharing a blank id would collide with each other.
+--
+-- Idempotent, like every migration here.
+
+-- Nothing to add to the table: a placeholder is a row with provider =
+-- 'placeholder'. This index is what keeps "who has no account" cheap to ask,
+-- which the roster screens and the administrator's link screen both do.
+CREATE INDEX IF NOT EXISTS users_placeholder_idx
+    ON users (provider) WHERE provider = 'placeholder';

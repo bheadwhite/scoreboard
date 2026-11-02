@@ -33,18 +33,6 @@ export function timeAgo(ts: Timestamp | undefined): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/** How much of the concession window is left, phrased for a person. */
-export function timeLeft(ts: Timestamp | undefined): string {
-  const date = toDate(ts);
-  if (!date) return "";
-
-  const seconds = Math.floor((date.getTime() - Date.now()) / 1000);
-  if (seconds <= 0) return "any moment now";
-  if (seconds < 3600) return `${Math.max(1, Math.floor(seconds / 60))} min`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr`;
-  return `${Math.floor(seconds / 86400)} days`;
-}
-
 /** The contract in plain words: "First to 500", "Best of 3". */
 export function contractText(contract: Contract | undefined): string {
   if (!contract) return "No contract set";
@@ -70,20 +58,23 @@ export function gameLabel(game: Game | undefined): string {
   return game.emoji ? `${game.emoji} ${game.name}` : game.name;
 }
 
+/**
+ * What a match's status is called on screen.
+ *
+ * Deliberately not where "contested" is expressed. Being objected to is a
+ * property that sits alongside the status rather than replacing it — a
+ * contested match is still a final one — so the screens show the mark next to
+ * this label rather than instead of it. Collapsing the two would lose the fact
+ * that a contested result is a real, settled result.
+ */
 export function statusLabel(status: MatchStatus): string {
   switch (status) {
-    case MatchStatus.LOBBY:
-      return "Getting ready";
     case MatchStatus.IN_PROGRESS:
       return "In play";
-    case MatchStatus.CLAIMED:
-      return "Awaiting concession";
     case MatchStatus.FINAL:
       return "Final";
-    case MatchStatus.DISPUTED:
-      return "Disputed";
     case MatchStatus.CANCELED:
-      return "Canceled";
+      return "Called off";
     default:
       return "";
   }
@@ -135,4 +126,63 @@ export function rivalryVerdict(wins: number, losses: number, opponent: string): 
     return margin >= 5 ? `You own ${opponent}.` : `You are ahead of ${opponent}.`;
   }
   return margin <= -5 ? `${opponent} owns you.` : `${opponent} is ahead of you.`;
+}
+
+/**
+ * How long it has been, counted in meetings rather than days.
+ *
+ * Deliberately not a date. "Six meetings and counting" is the sentence that
+ * stings, and unlike a calendar it cannot be improved by avoiding somebody.
+ */
+export function droughtVerdict(
+  neverBeaten: boolean,
+  meetings: number,
+  opponent: string,
+  isMe: boolean,
+): string {
+  if (neverBeaten) {
+    return isMe
+      ? `You have never beaten ${opponent}.`
+      : `Has never beaten ${opponent}.`;
+  }
+  const since = `${meetings} meeting${meetings === 1 ? "" : "s"}`;
+  return isMe
+    ? `${since} since you last beat ${opponent}.`
+    : `${since} since they last beat ${opponent}.`;
+}
+
+/**
+ * What it would take to draw level — the number nobody wants read aloud.
+ * Empty when the record is level or ahead, because there is no debt to state.
+ */
+export function debtLine(debt: number, opponent: string, isMe: boolean): string {
+  if (debt <= 0) return "";
+  const wins = `${debt} straight win${debt === 1 ? "" : "s"}`;
+  return isMe
+    ? `${wins} to draw level with ${opponent}.`
+    : `${wins} behind ${opponent}.`;
+}
+
+/** A rivalry close enough that the next game decides something. */
+export function unfinishedLine(wins: number, losses: number, opponent: string): string {
+  if (wins === losses) return `Dead even with ${opponent} at ${wins}–${losses}.`;
+  return `${wins}–${losses} with ${opponent}. One game swings it.`;
+}
+
+/**
+ * "2 games" or "1 win and 2 losses", for the line that explains why a record is
+ * smaller than the games somebody remembers playing.
+ *
+ * Contested results are held out of every tally, so without a sentence like
+ * this the numbers silently disagree with the match list and there is nothing
+ * on screen to explain it. Spelled out win-and-loss when both sides have one,
+ * because "3 games contested" invites the reading that they were all losses.
+ */
+export function contestedLine(wins: number, losses: number): string {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  if (wins > 0 && losses > 0) {
+    return `${plural(wins, "win", "wins")} and ${plural(losses, "loss", "losses")}`;
+  }
+  if (wins > 0) return plural(wins, "win", "wins");
+  return plural(losses, "loss", "losses");
 }

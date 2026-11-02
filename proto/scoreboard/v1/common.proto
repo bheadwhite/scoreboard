@@ -4,12 +4,28 @@ package scoreboard.v1;
 
 import "google/protobuf/timestamp.proto";
 
-// A player. Mirrors a Supabase auth user; the id is the Supabase user id.
+// A player.
 message User {
   string id = 1;
   string display_name = 2;
   string avatar_url = 3;
   google.protobuf.Timestamp created_at = 4;
+
+  // True for somebody who has not signed up — a player another player added so
+  // that a game they were actually in could be recorded honestly.
+  //
+  // A placeholder is a player in every way the scoreboard cares about: they
+  // join matches, hold a team, win, lose, appear in the standings and turn up
+  // in head-to-head records. What they cannot do is answer a claim, because
+  // there is no device to answer from. The protocol therefore never asks them
+  // — see Match.awaiting_concession — and a claim only they could have answered
+  // settles on the clock instead of on anybody's word.
+  //
+  // Their agreement is deferred rather than assumed. When the person behind the
+  // placeholder signs up, an administrator links the two, and since an
+  // objection outlives finalization they can go back and flag anything in the
+  // history they just inherited.
+  bool placeholder = 5;
 }
 
 // What a member may do inside a family.
@@ -17,7 +33,8 @@ enum FamilyRole {
   FAMILY_ROLE_UNSPECIFIED = 0;
   // Can play, and nothing else.
   FAMILY_ROLE_MEMBER = 1;
-  // Can remove members, resolve disputes, and rotate the invite code.
+  // Can remove members, call off a match in play, and rotate the invite code.
+  // Notably cannot settle an argument about a result — nobody can.
   FAMILY_ROLE_OWNER = 2;
 }
 
@@ -56,8 +73,10 @@ message Game {
   google.protobuf.Timestamp created_at = 8;
 }
 
-// How victory is defined for a match. Declared before play begins and locked
-// once the match starts, so the win condition cannot be relitigated afterward.
+// How victory is defined for a match. Declared when the match is posted and
+// never editable, so the win condition cannot be relitigated afterward — and so
+// that joining, which is the only commitment anybody makes, is unambiguously a
+// commitment to these terms.
 enum ContractKind {
   CONTRACT_KIND_UNSPECIFIED = 0;
   // First side to reach contract_target points.
@@ -80,25 +99,36 @@ message Contract {
   string detail = 3;
 }
 
-// Where a match is in its lifecycle. Only MATCH_STATUS_FINAL matches count
-// toward the scoreboard.
+// Where a match is in its lifecycle. Two live values: it has a result or it
+// does not. Only MATCH_STATUS_FINAL matches count toward the scoreboard.
+//
+// Three values are gone from earlier versions of this app and their numbers are
+// reserved. LOBBY went when joining became the commitment — there is no
+// staging area to sit in any more, so a match is in play from the moment it is
+// posted. DISPUTED went when an objection stopped blocking anything: a
+// contested match is an ordinary match carrying a flag, at every stage of its
+// life including after it finalizes, so being contested is a property rather
+// than a place in this list.
+//
+// CLAIMED is the newest departure and the largest. A claim used to sit here
+// pending, collecting answers, until either everyone had spoken or a week ran
+// out — and then it settled exactly as claimed either way. The waiting decided
+// nothing: an unanswered claim and a unanimously rejected one both landed on
+// the board, so the pending state bought a delay rather than a check. Naming a
+// winner now writes the result immediately, and what protects the record is
+// what always actually protected it — anybody in the match can object to a
+// result at any time, forever, and a contested result counts for nobody.
 enum MatchStatus {
   MATCH_STATUS_UNSPECIFIED = 0;
-  // Players are still joining and the contract is not locked.
-  MATCH_STATUS_LOBBY = 1;
-  // Contract locked, play underway.
+  reserved 1, 3, 5;
+  reserved "MATCH_STATUS_LOBBY", "MATCH_STATUS_CLAIMED", "MATCH_STATUS_DISPUTED";
+  // Posted and open. Players are joining, and any of them may name the winner.
   MATCH_STATUS_IN_PROGRESS = 2;
-  // Someone claimed victory; opponents owe a concession. Nobody is locked into
-  // the answer they gave — an answer stands until its author changes it, and
-  // the claimant can withdraw the claim outright.
-  MATCH_STATUS_CLAIMED = 3;
-  // Ratified. Counts on the scoreboard.
+  // Decided, and on the record. Counts on the scoreboard, unless it is
+  // contested — and it can become contested, or stop being, at any point from
+  // here on.
   MATCH_STATUS_FINAL = 4;
-  // At least one opponent is rejecting the claim. The clock is stopped, and it
-  // stays stopped until either the objection is withdrawn — which puts the
-  // match back to CLAIMED — or the family owner settles a genuine deadlock.
-  MATCH_STATUS_DISPUTED = 5;
-  // Abandoned before finalizing. Never counts.
+  // Abandoned before anybody named a winner. Never counts.
   MATCH_STATUS_CANCELED = 6;
 }
 
@@ -106,11 +136,16 @@ enum MatchStatus {
 // match up only creates an invitation — nobody is dragged into a game, and only
 // PARTICIPANT_STATUS_JOINED players take teams, claim, concede, or appear in
 // the record.
+//
+// Joining is the whole of the commitment. There is no second step where you
+// affirm you are ready: the match is already under way, and tapping join on
+// your own device is you saying you are playing under the posted contract.
 enum ParticipantStatus {
   PARTICIPANT_STATUS_UNSPECIFIED = 0;
   // Asked, but has not answered yet.
   PARTICIPANT_STATUS_INVITED = 1;
-  // In. Holds a team and counts toward starting.
+  // In, and playing. Holds a team, may claim or answer a claim, and reaches
+  // the record.
   PARTICIPANT_STATUS_JOINED = 2;
   // Said no. Kept rather than deleted so the invitation is not re-sent.
   PARTICIPANT_STATUS_DECLINED = 3;
@@ -139,23 +174,28 @@ message MatchParticipant {
   // Empty until the player joins — an invitation carries no team.
   string team_id = 3;
   ParticipantResult result = 4;
-  // When this player acknowledged the claim. Unset if they have not.
+  // When this player accepted the claim. Unset if they have not.
   google.protobuf.Timestamp conceded_at = 5;
-  // When this player disputed the claim. Unset if they have not.
+  // When this player objected to the claim. Unset if they have not.
+  //
+  // An objection outlives the claim it answers: a match can be settled and
+  // still carry one, which is what keeps it off the clean scoreboard. It is
+  // still not permanent — conceding withdraws it at any point, including years
+  // later.
   google.protobuf.Timestamp disputed_at = 6;
 
   ParticipantStatus status = 7;
   google.protobuf.Timestamp invited_at = 8;
   google.protobuf.Timestamp responded_at = 9;
 
-  // When this player affirmed they are ready to play under the contract as it
-  // then stood. Cleared whenever the contract or the teams change, so it always
-  // refers to the terms currently on screen.
-  google.protobuf.Timestamp ready_at = 10;
+  reserved 10;
+  reserved "ready_at";
 
-  // Why this player objected to the claim. Sent only to the family organizer,
-  // who has to settle it, and back to the player who wrote it. Everyone else
-  // gets an empty string — see the note on matchPB.
+  // Why this player objected. Public, unlike in earlier versions of this app:
+  // an objection used to be routed to the organizer to settle, so the name and
+  // the grounds were kept between the two of them. Nobody settles it now — the
+  // flag is the outcome — and a mark on a result that nobody can read the
+  // reasons for is worse than no mark at all.
   string dispute_reason = 11;
 }
 
@@ -164,6 +204,8 @@ message Match {
   string family_id = 2;
   Game game = 3;
   MatchStatus status = 4;
+  // Declared when the match is posted and fixed from then on. Joining is
+  // agreeing to it, which is why there is nothing to affirm separately.
   Contract contract = 5;
   string created_by = 6;
 
@@ -171,26 +213,21 @@ message Match {
   repeated MatchParticipant participants = 8;
 
   google.protobuf.Timestamp created_at = 9;
+  // When play began, which is when the match was posted. Kept as its own field
+  // because every stats query and every list already reads it.
   google.protobuf.Timestamp started_at = 10;
 
-  // Set when victory is claimed.
+  // When somebody named a winner. The same instant as finalized_at now that a
+  // claim is the result rather than a proposal, and kept as its own field
+  // because it says a different thing: who spoke, versus what the record says.
   google.protobuf.Timestamp claimed_at = 11;
+  // The team said to have won.
   string claimed_by_team_id = 12;
-  // After this instant, outstanding concessions are assumed and the match
-  // finalizes on its own. A dispute clears this and stops the clock.
-  //
-  // This is a backstop for a match everyone abandoned, not a countdown anybody
-  // is meant to race — it is a week by default, and the claim sits on every
-  // player's list for all of it.
-  google.protobuf.Timestamp concede_deadline = 13;
+
+  reserved 13, 15, 16;
+  reserved "concede_deadline", "awaiting_concession", "viewer_owes_concession";
 
   google.protobuf.Timestamp finalized_at = 14;
-
-  // Convenience for the UI: opponents of the claiming team who have not yet
-  // conceded or disputed.
-  repeated User awaiting_concession = 15;
-  // Whether the caller personally still owes a concession.
-  bool viewer_owes_concession = 16;
 
   // Players who have agreed to play. This is the roster that matters.
   repeated MatchParticipant joined = 17;
@@ -199,25 +236,51 @@ message Match {
   // Whether the caller has an unanswered invitation to this match.
   bool viewer_is_invited = 19;
 
-  // Whether the caller has affirmed the current contract.
-  bool viewer_is_ready = 20;
-  // Whether every joined player has. Until this is true, nobody can start.
-  bool all_ready = 21;
-  // Joined players who have not affirmed the current contract yet.
-  repeated User awaiting_ready = 22;
-  // Whether the caller set this match up. Only they may start it.
+  reserved 20, 21, 22, 24;
+  reserved "viewer_is_ready", "all_ready", "awaiting_ready", "organizer_may_resolve";
+
+  // Whether the caller posted this match. Only they may name a winner other
+  // than their own side, and only they may set the teams.
   bool viewer_is_creator = 23;
 
-  // Whether the family organizer may step in and settle this match now.
-  //
-  // Deliberately not "is this disputed". An organizer ruling on a disagreement
-  // the players are still having takes the argument away from them, and the
-  // argument is the point. It only opens once the match is genuinely stuck:
-  // everybody has had their say and they still disagree, or the claim has stood
-  // unanswered for longer than the concession window.
-  bool organizer_may_resolve = 24;
-
-  // Whether the caller is on the team that claimed the win, and so answers for
-  // the claim itself rather than owing a concession to it.
+  // Whether the caller is on the team said to have won, and so answers for the
+  // claim rather than owing it an answer.
   bool viewer_is_claimant = 25;
+
+  // Whether the caller may erase this match outright. Service administrators
+  // only — this is not a family role, and no organizer ever gets it.
+  bool viewer_may_void = 26;
+
+  // Who said the winner won. Usually somebody on the winning side; when the
+  // creator settles a game on everyone's behalf it is them, and then their own
+  // claim counts as their answer to it.
+  string claimed_by_user_id = 27;
+
+  // Whether an objection stands against the claim. Derived from the answers,
+  // not stored, and true at any stage including MATCH_STATUS_FINAL — a settled
+  // match can be contested and a contested match can stop being contested, so
+  // this is read fresh every time rather than latched.
+  //
+  // A contested result still exists and is still shown; it is simply kept out
+  // of the numbers people argue about. See the stats messages.
+  bool contested = 28;
+  // The players objecting, if any. Everyone can see who and why.
+  repeated User objectors = 29;
+  // Whether the caller is one of them.
+  bool viewer_objected = 30;
+
+  // Whether this result stands with nobody in a position to contradict it —
+  // every opponent of the named side is a player with no account.
+  //
+  // It counts, and it is shown as a result like any other. What it carries is a
+  // mark, because the thing that makes every other result trustworthy is absent
+  // from this one: there is nobody who could object. The old protocol gestured
+  // at this by refusing to ratify such a claim early and letting the week run
+  // out instead, which delayed the identical outcome by seven days and told
+  // nobody anything. Saying so on the result is the honest version.
+  //
+  // It is not permanent. When a placeholder signs up and an administrator links
+  // them, they inherit the history and can object to any of it — which is the
+  // whole justification for one player being able to enter another into a game.
+  bool unwitnessed = 31;
 }

@@ -5,12 +5,17 @@ import (
 	"time"
 )
 
-// A two-a-side match with the "winners" team claiming. Answers are filled in by
-// each test.
-func claimed(answers map[string]string) Match {
+// A two-a-side match that the "winners" team has been credited with. Answers
+// are filled in by each test.
+//
+// StatusFinal rather than the claimed status this helper used to build, because
+// there is no longer a stage between a claim and a result. Everything these
+// tests exercise — objecting, taking it back, who could have contradicted it —
+// happens on a settled match now, which is also where it happens in real life.
+func decided(answers map[string]string) Match {
 	winners, losers := "t-win", "t-lose"
 	m := Match{
-		Status:          StatusClaimed,
+		Status:          StatusFinal,
 		ClaimedByTeamID: &winners,
 		Teams:           []MatchTeam{{ID: winners}, {ID: losers}},
 	}
@@ -36,107 +41,161 @@ func claimed(answers map[string]string) Match {
 }
 
 func TestObjectorsCountsOnlyStandingObjections(t *testing.T) {
-	m := claimed(map[string]string{"cal": "disputed", "dee": "conceded"})
+	m := decided(map[string]string{"cal": "disputed", "dee": "conceded"})
 	if got := len(m.Objectors()); got != 1 {
 		t.Fatalf("objectors = %d, want 1", got)
 	}
 
 	// Conceding withdraws the objection — the position is gone, not archived.
-	m = claimed(map[string]string{"cal": "conceded", "dee": "conceded"})
+	m = decided(map[string]string{"cal": "conceded", "dee": "conceded"})
 	if got := len(m.Objectors()); got != 0 {
 		t.Fatalf("objectors after both conceded = %d, want 0", got)
 	}
 }
 
-func TestObjectorsIgnoresTheClaimingTeam(t *testing.T) {
-	// A claimant cannot object to their own claim, so even if the column were
-	// somehow set it must not read as a dispute.
-	m := claimed(nil)
+func TestObjectorsIncludesTheNamedWinner(t *testing.T) {
+	// Wider than Answerable on purpose. Ann is on the side the result credits,
+	// so she is not one of the people it was recorded against — but "I did not
+	// win this", from her, is the strongest objection there is, and it has to
+	// count. It matters more now than it used to: whoever posts a match can
+	// credit any side, and the result is on the board before the person it
+	// names has looked at their phone.
+	m := decided(nil)
 	at := time.Now()
 	m.Participants[0].DisputedAt = &at
-	if got := len(m.Objectors()); got != 0 {
-		t.Fatalf("objectors = %d, want 0 — the claiming team does not answer its own claim", got)
+
+	if got := len(m.Objectors()); got != 1 {
+		t.Fatalf("objectors = %d, want 1", got)
+	}
+	if !m.Contested() {
+		t.Error("the named winner denies it; nothing is more contested than that")
+	}
+	// And she is still not one of the people it was recorded against.
+	if got := len(m.Answerable()); got != 2 {
+		t.Errorf("answerable = %d, want 2 — objecting is not the same as being on the losing side", got)
 	}
 }
 
 func TestOnClaimingTeam(t *testing.T) {
-	m := claimed(nil)
+	m := decided(nil)
 	if !m.OnClaimingTeam("ann") {
-		t.Error("ann claimed; want true")
+		t.Error("ann is credited with the win; want true")
 	}
 	if m.OnClaimingTeam("cal") {
-		t.Error("cal is an opponent; want false")
+		t.Error("cal lost; want false")
 	}
 	if m.OnClaimingTeam("nobody") {
-		t.Error("a stranger to the match is not on the claiming team")
+		t.Error("a stranger to the match is not on the winning team")
 	}
 
-	// Nothing claimed yet: nobody answers for a claim that does not exist.
+	// Nothing credited: there is no side to be on.
 	m.ClaimedByTeamID = nil
 	if m.OnClaimingTeam("ann") {
-		t.Error("no claim standing; want false")
+		t.Error("no result standing; want false")
 	}
 }
 
-func TestDeadlockedNeedsEveryoneToHaveAnswered(t *testing.T) {
-	week := 7 * 24 * time.Hour
-	claimedAt := time.Now().Add(-time.Hour)
-
-	// Cal objects, Dee has said nothing. Dee conceding could still settle it, so
-	// this is a live disagreement and not the organizer's to call.
-	m := claimed(map[string]string{"cal": "disputed"})
-	m.Status = StatusDisputed
-	m.ClaimedAt = &claimedAt
-	if m.Deadlocked(week) {
-		t.Error("someone has yet to answer; the players are not stuck")
+func TestContestedTracksStandingObjections(t *testing.T) {
+	clean := decided(nil)
+	if clean.Contested() {
+		t.Error("nobody has objected; want clean")
+	}
+	lone := decided(map[string]string{"cal": "disputed"})
+	if !lone.Contested() {
+		t.Error("one objection is enough — a majority was never the bar")
 	}
 
-	// Now everyone has had their say and they disagree. Nothing the players can
-	// do moves it, short of somebody changing their mind.
-	m = claimed(map[string]string{"cal": "disputed", "dee": "conceded"})
-	m.Status = StatusDisputed
-	m.ClaimedAt = &claimedAt
-	if !m.Deadlocked(week) {
-		t.Error("everyone answered and they disagree; the organizer should be able to step in")
+	// The whole point of an objection being a position rather than an event:
+	// taking it back makes the result clean again, at any time. This is the
+	// only thing standing between the record and somebody entering whatever
+	// they like, so it has to work on a settled match and it has to be
+	// reversible in both directions.
+	m := decided(map[string]string{"cal": "disputed"})
+	if !m.Contested() {
+		t.Error("a settled match carries its objections; that is what keeps it off the scoreboard")
 	}
-}
-
-func TestDeadlockedFallsOpenOnceTheClaimOutlivesItsWindow(t *testing.T) {
-	week := 7 * 24 * time.Hour
-	stale := time.Now().Add(-8 * 24 * time.Hour)
-
-	// An objection stops the clock, so a silent player would otherwise freeze
-	// the match forever. Age is the escape hatch.
-	m := claimed(map[string]string{"cal": "disputed"})
-	m.Status = StatusDisputed
-	m.ClaimedAt = &stale
-	if !m.Deadlocked(week) {
-		t.Error("claim has stood longer than the window; the organizer needs a way in")
-	}
-
-	// A window of zero disables the age test rather than making it always true.
-	if m.Deadlocked(0) {
-		t.Error("no window configured; only the everyone-answered test should apply")
+	m.Participants[2].DisputedAt = nil
+	at := time.Now()
+	m.Participants[2].ConcededAt = &at
+	if m.Contested() {
+		t.Error("the objection was withdrawn; the result is clean again")
 	}
 }
 
-func TestDeadlockedIsFalseWithoutAStandingObjection(t *testing.T) {
-	week := 7 * 24 * time.Hour
-	claimedAt := time.Now().Add(-30 * 24 * time.Hour)
-
-	// Old, and nobody has answered — but nobody is objecting either, so this is
-	// silence. Silence belongs to the concession clock, not the organizer.
-	m := claimed(nil)
-	m.ClaimedAt = &claimedAt
-	if m.Deadlocked(week) {
-		t.Error("nothing is disputed; there is no deadlock to break")
+func TestAnswerableIsTheLosingSideWithAccounts(t *testing.T) {
+	// The people the result was recorded against, who have a way to say it is
+	// wrong. Not a queue of outstanding answers — nothing is outstanding, the
+	// result already counts — but the list that decides whether anybody could
+	// have contradicted it at all.
+	m := decided(map[string]string{"cal": "conceded"})
+	if got := len(m.Answerable()); got != 2 {
+		t.Fatalf("answerable = %d, want 2 — conceding does not remove you from it", got)
 	}
+	if m.Unwitnessed() {
+		t.Error("two people could have denied this; it is witnessed whatever they said")
+	}
+}
 
-	// A match still in play is not resolvable however old it is.
-	m = claimed(map[string]string{"cal": "disputed"})
+// placeholderize marks one of the seats as a player with no account.
+func withoutAccount(m Match, userID string) Match {
+	for i := range m.Participants {
+		if m.Participants[i].User.ID == userID {
+			m.Participants[i].User.Placeholder = true
+		}
+	}
+	return m
+}
+
+func TestPlaceholdersAreNeverAsked(t *testing.T) {
+	// Cal has no account. Dee is the only person who could contradict this, and
+	// that is enough for the result to have been open to challenge.
+	m := withoutAccount(decided(map[string]string{"dee": "conceded"}), "cal")
+
+	if got := len(m.Answerable()); got != 1 {
+		t.Fatalf("answerable = %d, want 1 — only Dee can speak", got)
+	}
+	if m.Unwitnessed() {
+		t.Error("Dee could have objected; one is enough")
+	}
+}
+
+func TestAResultNobodyCouldDenyIsMarked(t *testing.T) {
+	// Both losers are placeholders. Nobody in this match is in a position to
+	// contradict the winner, so the check every other result on the board is
+	// subject to was simply unavailable here.
+	//
+	// The old protocol expressed this as a refusal to ratify early, which made
+	// the match sit out the week and then settle exactly as claimed anyway —
+	// seven days of silence from people with no way to make a sound, reported
+	// as a wait. Saying so on the result is what is left, and it is the honest
+	// version of the same worry.
+	m := withoutAccount(withoutAccount(decided(nil), "cal"), "dee")
+
+	if got := len(m.Answerable()); got != 0 {
+		t.Fatalf("answerable = %d, want 0", got)
+	}
+	if !m.Unwitnessed() {
+		t.Error("nobody could deny this result; it has to say so")
+	}
+}
+
+func TestUnwitnessedNeedsAResult(t *testing.T) {
+	// A game still in play is not an unwitnessed result, it is not a result.
+	m := withoutAccount(withoutAccount(decided(nil), "cal"), "dee")
 	m.Status = StatusInProgress
-	m.ClaimedAt = &claimedAt
-	if m.Deadlocked(week) {
-		t.Error("not disputed; want false")
+	m.ClaimedByTeamID = nil
+
+	if m.Unwitnessed() {
+		t.Error("nothing has been claimed; there is nothing to be unwitnessed")
+	}
+}
+
+func TestPlaceholdersDoNotContestAnything(t *testing.T) {
+	// A placeholder has no way to object either, so a match with one in it is
+	// not contested on their behalf. Their objection is deferred, not assumed:
+	// it arrives if they ever sign up and get linked.
+	m := withoutAccount(decided(nil), "cal")
+	if m.Contested() {
+		t.Error("nobody objected")
 	}
 }
