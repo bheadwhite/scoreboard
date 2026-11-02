@@ -159,7 +159,7 @@ export function HeadToHeadView({
           )}
 
           <section className="stack">
-            <span className="section-label">Recent meetings</span>
+            <span className="section-label">Every meeting</span>
             <div className="card card--flush">
               {record.recentMatches.length === 0 ? (
                 <Empty emoji="🤝">You two have never faced off. Somebody has to start it.</Empty>

@@ -1,13 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSignalValue } from "@tcn/state/react";
 import { useCollection } from "../../lib/domain/use_collection.js";
 
 import type { AppPresenter } from "../../app/app_presenter.js";
 import type { ScoreboardPresenter } from "./scoreboard_presenter.js";
-import type { Match } from "../../gen/scoreboard/v1/common_pb.js";
+import type { FamilyMember, Match } from "../../gen/scoreboard/v1/common_pb.js";
 import { ContractKind, MatchStatus } from "../../gen/scoreboard/v1/common_pb.js";
 import { StatsRange } from "../../gen/scoreboard/v1/stats_pb.js";
-import { AsyncBoundary, Avatar, Empty, Record } from "../../components/ui.js";
+import { AsyncBoundary, Avatar, Empty, Record, Sheet } from "../../components/ui.js";
 import {
   contractText,
   displayName,
@@ -134,25 +134,7 @@ export function ScoreboardView({
             the people on this board are all measured over the same games. With
             two members or fewer it would only ever show the same table. */}
         {members.length > 2 && (
-          <div className="chips" role="group" aria-label="Filter by players">
-            <button
-              className="chip"
-              aria-pressed={playerIds.length === 0}
-              onClick={presenter.clearPlayers}
-            >
-              Everyone
-            </button>
-            {members.map((member) => (
-              <button
-                key={member.user?.id}
-                className="chip"
-                aria-pressed={playerIds.includes(member.user?.id ?? "")}
-                onClick={() => member.user && presenter.togglePlayer(member.user.id)}
-              >
-                {displayName(member.user)}
-              </button>
-            ))}
-          </div>
+          <PlayerSelect presenter={presenter} members={members} playerIds={playerIds} />
         )}
 
         {/* Only what this family has actually finished. Offering the whole
@@ -335,6 +317,87 @@ export function ScoreboardView({
         </section>
       )}
     </div>
+  );
+}
+
+/** Who the board is narrowed to, in the fewest words that still say it. */
+function playersLabel(members: FamilyMember[], playerIds: string[]): string {
+  if (playerIds.length === 0) return "Everyone";
+  const names = members
+    .filter((m) => m.user && playerIds.includes(m.user.id))
+    .map((m) => displayName(m.user).split(" ")[0]);
+  // Somebody picked on this device may have since been linked to an account, and
+  // their old id names nobody. Do not read as fewer people than are being asked for.
+  if (names.length < playerIds.length) return `${playerIds.length} players`;
+  return names.join(", ");
+}
+
+/**
+ * One control rather than a chip per person, which ran off the side of the
+ * screen. It applies as you tick, so the board behind the sheet is already right
+ * by the time you close it.
+ */
+function PlayerSelect({
+  presenter,
+  members,
+  playerIds,
+}: {
+  presenter: ScoreboardPresenter;
+  members: FamilyMember[];
+  playerIds: string[];
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        className="select select--button"
+        aria-haspopup="dialog"
+        aria-label="Filter by players"
+        onClick={() => setOpen(true)}
+      >
+        <span className="select__value">{playersLabel(members, playerIds)}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      {open && (
+        <Sheet title="Whose games?" onDismiss={() => setOpen(false)}>
+          <h2>Whose games?</h2>
+          <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
+            Only games everybody you pick played in count, so all of them are measured over the same
+            games.
+          </p>
+          <div className="stack">
+            <div className="card card--flush sheet__list">
+              {members.map((member) => (
+                <label key={member.user?.id} className="rowbtn">
+                  <Avatar user={member.user} size="sm" />
+                  <span className="rowbtn__main">
+                    <span className="rowbtn__name">{displayName(member.user)}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="check"
+                    checked={playerIds.includes(member.user?.id ?? "")}
+                    onChange={() => member.user && presenter.togglePlayer(member.user.id)}
+                  />
+                </label>
+              ))}
+            </div>
+            <button className="btn btn--primary btn--block" onClick={() => setOpen(false)}>
+              Done
+            </button>
+            <button
+              className="btn btn--ghost btn--block"
+              disabled={playerIds.length === 0}
+              onClick={presenter.clearPlayers}
+            >
+              Back to everyone
+            </button>
+          </div>
+        </Sheet>
+      )}
+    </>
   );
 }
 

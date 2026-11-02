@@ -109,6 +109,11 @@ export class ProfilePresenter {
     return this._domain.store.profiles.for(key.profile(this._familyId, this._userId));
   }
 
+  /** Every finished game this player was in, newest first. */
+  get matches() {
+    return this._domain.store.playerMatches.for(key.playerMatches(this._familyId, this._userId));
+  }
+
   get members() {
     return this._domain.store.members.for(this._familyId);
   }
@@ -119,7 +124,7 @@ export class ProfilePresenter {
   }
 
   load(): Promise<unknown> {
-    return Promise.all([this.profile.load(), this.members.load()]);
+    return Promise.all([this.profile.load(), this.matches.load(), this.members.load()]);
   }
 
   dispose(): void {

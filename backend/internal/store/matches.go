@@ -52,30 +52,62 @@ func loadMatch(ctx context.Context, q querier, id string) (model.Match, error) {
 
 // hydrate fills in the game, teams and participants of an already-scanned match.
 func hydrate(ctx context.Context, q querier, m *model.Match) error {
-	var g model.Game
-	err := q.QueryRow(ctx, `
-		SELECT id, family_id, name, emoji, team_based, min_players, max_players, created_at
-		FROM games WHERE id = $1`, m.GameID).
-		Scan(&g.ID, &g.FamilyID, &g.Name, &g.Emoji, &g.TeamBased,
-			&g.MinPlayers, &g.MaxPlayers, &g.CreatedAt)
-	if err != nil {
-		return noRows(err)
+	ms := []model.Match{*m}
+	if err := hydrateAll(ctx, q, ms); err != nil {
+		return err
 	}
-	m.Game = &g
+	*m = ms[0]
+	return nil
+}
 
-	teamRows, err := q.Query(ctx,
-		`SELECT id, match_id, name, ordinal FROM match_teams WHERE match_id = $1 ORDER BY ordinal, id`, m.ID)
+// hydrateAll fills in the game, teams and participants of every match in ms, in
+// three queries however many matches there are. A list of a player's whole
+// history must not cost a round trip to the pooler per game, let alone three.
+func hydrateAll(ctx context.Context, q querier, ms []model.Match) error {
+	if len(ms) == 0 {
+		return nil
+	}
+	matchIDs := make([]string, 0, len(ms))
+	gameIDs := make([]string, 0, len(ms))
+	for _, m := range ms {
+		matchIDs = append(matchIDs, m.ID)
+		gameIDs = append(gameIDs, m.GameID)
+	}
+
+	gameRows, err := q.Query(ctx, `
+		SELECT id, family_id, name, emoji, team_based, min_players, max_players, created_at
+		FROM games WHERE id = ANY($1)`, gameIDs)
 	if err != nil {
 		return err
 	}
-	m.Teams = nil
+	games := make(map[string]model.Game)
+	for gameRows.Next() {
+		var g model.Game
+		if err := gameRows.Scan(&g.ID, &g.FamilyID, &g.Name, &g.Emoji, &g.TeamBased,
+			&g.MinPlayers, &g.MaxPlayers, &g.CreatedAt); err != nil {
+			gameRows.Close()
+			return err
+		}
+		games[g.ID] = g
+	}
+	gameRows.Close()
+	if err := gameRows.Err(); err != nil {
+		return err
+	}
+
+	teamRows, err := q.Query(ctx,
+		`SELECT id, match_id, name, ordinal FROM match_teams WHERE match_id = ANY($1) ORDER BY ordinal, id`, matchIDs)
+	if err != nil {
+		return err
+	}
+	teams := make(map[string][]model.MatchTeam, len(ms))
 	for teamRows.Next() {
 		var t model.MatchTeam
 		if err := teamRows.Scan(&t.ID, &t.MatchID, &t.Name, &t.Ordinal); err != nil {
 			teamRows.Close()
 			return err
 		}
-		m.Teams = append(m.Teams, t)
+		teams[t.MatchID] = append(teams[t.MatchID], t)
 	}
 	teamRows.Close()
 	if err := teamRows.Err(); err != nil {
@@ -88,14 +120,14 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 		       u.id, u.display_name, u.avatar_url, u.created_at, `+isPlaceholder+`
 		FROM match_participants p
 		JOIN users u ON u.id = p.user_id
-		WHERE p.match_id = $1
-		ORDER BY u.display_name`, m.ID)
+		WHERE p.match_id = ANY($1)
+		ORDER BY u.display_name`, matchIDs)
 	if err != nil {
 		return err
 	}
 	defer partRows.Close()
 
-	m.Participants = nil
+	participants := make(map[string][]model.MatchParticipant, len(ms))
 	for partRows.Next() {
 		var p model.MatchParticipant
 		if err := partRows.Scan(&p.MatchID, &p.TeamID, &p.Result, &p.ConcededAt, &p.DisputedAt,
@@ -104,9 +136,22 @@ func hydrate(ctx context.Context, q querier, m *model.Match) error {
 			&p.User.Placeholder); err != nil {
 			return err
 		}
-		m.Participants = append(m.Participants, p)
+		participants[p.MatchID] = append(participants[p.MatchID], p)
 	}
-	return partRows.Err()
+	if err := partRows.Err(); err != nil {
+		return err
+	}
+
+	for i := range ms {
+		g, ok := games[ms[i].GameID]
+		if !ok {
+			return noRows(pgx.ErrNoRows)
+		}
+		ms[i].Game = &g
+		ms[i].Teams = teams[ms[i].ID]
+		ms[i].Participants = participants[ms[i].ID]
+	}
+	return nil
 }
 
 // invitePlayer records an invitation. No team is created — an invitation is a
@@ -994,7 +1039,7 @@ func (s *Store) ListMatches(ctx context.Context, f ListMatchesFilter) ([]model.M
 	if f.UserID != "" {
 		args = append(args, f.UserID)
 		q += fmt.Sprintf(
-			` AND EXISTS (SELECT 1 FROM match_participants p WHERE p.match_id = m.id AND p.user_id = $%d)`,
+			` AND EXISTS (SELECT 1 FROM match_participants p WHERE p.match_id = m.id AND p.user_id = $%d AND p.status = 'joined')`,
 			len(args))
 	}
 	args = append(args, limit, f.Offset)
@@ -1020,10 +1065,8 @@ func (s *Store) ListMatches(ctx context.Context, f ListMatchesFilter) ([]model.M
 		return nil, err
 	}
 
-	for i := range out {
-		if err := hydrate(ctx, s.pool, &out[i]); err != nil {
-			return nil, err
-		}
+	if err := hydrateAll(ctx, s.pool, out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

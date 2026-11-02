@@ -26,9 +26,6 @@ func NewStatsService(s *store.Store, hub *events.Hub, admins auth.Admins) *Stats
 	return &StatsService{base: base{store: s, hub: hub, admins: admins}}
 }
 
-// How many recent meetings the head-to-head screen shows.
-const recentMeetings = 10
-
 func (svc *StatsService) GetStandings(
 	ctx context.Context, req *connect.Request[scoreboardv1.GetStandingsRequest],
 ) (*connect.Response[scoreboardv1.GetStandingsResponse], error) {
@@ -242,11 +239,7 @@ func (svc *StatsService) GetHeadToHead(
 
 	h := stats.HeadToHead(ps, subject, opponent)
 
-	ids := h.MatchIDs
-	if len(ids) > recentMeetings {
-		ids = ids[:recentMeetings]
-	}
-	recent, err := svc.store.GetMatchesByIDs(ctx, ids)
+	recent, err := svc.store.GetMatchesByIDs(ctx, h.MatchIDs)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -335,6 +328,14 @@ func (svc *StatsService) GetPlayerProfile(
 	}
 	if p.HasUnfinished {
 		res.UnfinishedBusiness = rivalryPB(p.Unfinished, users)
+	}
+	for _, c := range p.PlayedWith {
+		if u, ok := users[c.UserID]; ok {
+			res.PlayedWith = append(res.PlayedWith, &scoreboardv1.PlayedWith{
+				User:  userPB(u),
+				Games: c.Games,
+			})
+		}
 	}
 	// A placeholder's profile is where an administrator actually looks at one,
 	// so it is where the link is offered. Both halves are required: there is

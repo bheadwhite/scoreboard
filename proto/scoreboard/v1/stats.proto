@@ -147,7 +147,7 @@ message GetHeadToHeadResponse {
   int32 together_losses = 6;
   // Per-game breakdown, most-played first.
   repeated HeadToHeadGame games = 7;
-  // Most recent meetings, newest first.
+  // Every meeting, newest first.
   repeated Match recent_matches = 8;
   // From user's point of view: positive is a winning streak against opponent.
   int32 streak = 9;
@@ -164,6 +164,12 @@ message GetPlayerProfileRequest {
   string family_id = 1;
   string user_id = 2;
   StatsRange range = 3;
+}
+
+// Somebody a player has been in a game with, on either side of it.
+message PlayedWith {
+  User user = 1;
+  int32 games = 2;
 }
 
 message GetPlayerProfileResponse {
@@ -201,4 +207,7 @@ message GetPlayerProfileResponse {
   // screen is where a placeholder is actually looked at, so it is where the
   // administrator is offered the link.
   bool viewer_may_link = 19;
+  // Everybody this player has shared a clean result with, most games first.
+  // Nobody they have never played with is listed.
+  repeated PlayedWith played_with = 20;
 }

@@ -6,6 +6,7 @@ import { useCollection } from "../../lib/domain/use_collection.js";
 import type { AppPresenter } from "../../app/app_presenter.js";
 import type { ProfilePresenter } from "./profile_presenter.js";
 import type { GetPlayerProfileResponse } from "../../gen/scoreboard/v1/stats_pb.js";
+import type { Match } from "../../gen/scoreboard/v1/common_pb.js";
 import { Alert, AsyncBoundary, Avatar, Empty, Record, Sheet } from "../../components/ui.js";
 import {
   contestedLine,
@@ -14,8 +15,11 @@ import {
   droughtVerdict,
   gameLabel,
   streakLabel,
+  timeAgo,
   unfinishedLine,
   winRateText,
+  winners,
+  winningTeamName,
 } from "../../lib/format.js";
 
 /**
@@ -31,7 +35,7 @@ export function ProfileView({
   app: AppPresenter;
 }) {
   const profile = useCollection(presenter.profile);
-  const members = useCollection(presenter.members);
+  const matches = useCollection(presenter.matches);
 
   useEffect(() => {
     void presenter.load();
@@ -41,8 +45,6 @@ export function ProfileView({
   useEffect(() => {
     if (who) app.setScreenTitle(who);
   }, [app, who]);
-
-  const others = members.filter((m) => m.user?.id !== presenter.userId);
 
   return (
     <AsyncBoundary runner={presenter.profile.broadcast} hideChildrenWhilePending={!profile}>
@@ -219,37 +221,58 @@ export function ProfileView({
             </section>
           )}
 
-          <section className="stack">
-            <span className="section-label">
-              {presenter.isMe ? "Your rivalries" : "Head to head"}
-            </span>
-            <div className="card card--flush">
-              {others.length === 0 ? (
-                <Empty emoji="👥">Nobody else here yet.</Empty>
-              ) : (
-                others.map((m) => (
+          {/* Only people they have actually played with, most games first. A list of
+              everybody on the board says nothing about who they play with, and
+              sends you to head-to-heads that are empty. */}
+          {profile.playedWith.length > 0 && (
+            <section className="stack">
+              <span className="section-label">Played with</span>
+              <div className="card card--flush">
+                {profile.playedWith.map((c) => (
                   <button
-                    key={m.user?.id}
+                    key={c.user?.id}
                     className="rowbtn"
                     onClick={() =>
-                      m.user &&
+                      c.user &&
                       app.navigate({
                         name: "head_to_head",
                         userId: presenter.userId,
-                        opponentId: m.user.id,
+                        opponentId: c.user.id,
                       })
                     }
                   >
-                    <Avatar user={m.user} size="sm" />
+                    <Avatar user={c.user} size="sm" />
                     <span className="rowbtn__main">
-                      <span className="rowbtn__name">{displayName(m.user)}</span>
+                      <span className="rowbtn__name">{displayName(c.user)}</span>
                     </span>
-                    <span style={{ color: "var(--ink-faint)" }}>›</span>
+                    <span className="num" style={{ color: "var(--ink-faint)" }}>
+                      {c.games} {c.games === 1 ? "game" : "games"} ›
+                    </span>
                   </button>
-                ))
-              )}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <AsyncBoundary runner={presenter.matches.broadcast}>
+            {matches.length > 0 && (
+              <section className="stack">
+                <span className="section-label">
+                  All games · <span className="num">{matches.length}</span>
+                </span>
+                <div className="card card--flush">
+                  {matches.map((match) => (
+                    <GameRow
+                      key={match.id}
+                      match={match}
+                      userId={presenter.userId}
+                      onOpen={() => app.openMatch(match.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </AsyncBoundary>
 
           {profile.wins + profile.losses === 0 && (
             <Empty emoji="🫥">
@@ -397,5 +420,47 @@ function LinkPlaceholder({
         </Sheet>
       )}
     </>
+  );
+}
+
+/**
+ * One game from this player's side of it: who won, who else was there, and how
+ * it went for them. A contested game is listed like any other, flagged rather
+ * than given a W or an L, because it counts for nobody.
+ */
+function GameRow({
+  match,
+  userId,
+  onOpen,
+}: {
+  match: Match;
+  userId: string;
+  onOpen: () => void;
+}) {
+  const players = winners(match);
+  const won = players.some((p) => p.id === userId);
+  const others = match.joined
+    .filter((p) => p.user?.id !== userId)
+    .map((p) => displayName(p.user).split(" ")[0]);
+
+  return (
+    <button className="rowbtn" onClick={onOpen}>
+      <Avatar user={players[0]} size="sm" />
+      <span className="rowbtn__main">
+        <span className="rowbtn__name">
+          {players.length === 1 ? displayName(players[0]) : winningTeamName(match)}{" "}
+          <span style={{ color: "var(--ink-faint)" }}>won</span>
+        </span>
+        <span className="rowbtn__meta">
+          {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+          {others.length > 0 && ` · with ${others.join(", ")}`}
+        </span>
+      </span>
+      {match.contested ? (
+        <span className="badge badge--wait">⚑</span>
+      ) : (
+        <span className={`badge ${won ? "badge--live" : "badge--cold"}`}>{won ? "W" : "L"}</span>
+      )}
+    </button>
   );
 }
