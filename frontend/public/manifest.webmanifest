@@ -1,7 +1,7 @@
 {
   "name": "Gauntlet",
   "short_name": "Gauntlet",
-  "description": "Every game, every rivalry, on the record. A win only counts when the losers concede it.",
+  "description": "Every game, every rivalry, on the record. Anybody can call a win. Everybody can say it did not happen.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1b1512",
