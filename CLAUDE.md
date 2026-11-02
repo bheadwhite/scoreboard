@@ -14,26 +14,38 @@ clients for nothing, and renaming the Cloud Run service changes the URL, which
 `APP_URL` and the OAuth redirect URI are both derived from. The name lives in
 what a player sees: the title, the manifest, the sign-in hero, the share sheet.
 
-**The mechanic that defines the app: a win is a claim, and everybody else gets
-asked.** Somebody names the winner, the claim sits publicly pending, and every
-other player answers it. Only settled matches touch the scoreboard, and only
-settled matches nobody is objecting to touch the *clean* scoreboard — which is
-the number people actually argue about.
+**The mechanic that defines the app: anybody can declare a win, and everybody
+can say it did not happen.** Somebody names the winner and the result is on the
+board immediately — there is no pending stage and no clock. Only settled matches
+touch the scoreboard, and only settled matches nobody is objecting to touch the
+*clean* scoreboard, which is the number people actually argue about.
 
-**Objecting marks a result; it does not block one.** Anybody who was not on the
-named side can say "that is not what happened", at any point in the match's life
-including years after it settled. The claim still settles on schedule. What the
-objection does is make the match **contested**, and a contested match is held
-out of every tally on the scoreboard — wins, losses, streaks, rivalries, game
-kings — while staying completely visible as a match, with the objector's name
-and reasons on it. It stops being contested the moment they take it back.
+**The protection is behind the result, not in front of it.** There was a
+week-long concession window here and it is gone, because it protected nothing:
+an unanswered claim settled exactly as claimed, and a unanimously rejected claim
+settled exactly as claimed and contested. Both endings wrote the same row, so
+the wait was a delay between somebody saying a thing and the app admitting they
+had said it. What actually kept the record honest was the objection, and the
+objection works just as well on a settled match — which is where people notice
+wrong results anyway, since that is when they appear in the standings.
 
-Nothing about any of this is a one-way door except settling itself. Every answer
-is a *position held*, not an event logged: a player can move between conceding
-and objecting whenever they like, and whoever made a claim — or anybody on the
-side it named — can withdraw it outright. Silence eventually reads as agreement,
-but the window is a week: a backstop for a match everybody walked away from, not
-a countdown anyone is meant to race.
+**Objecting marks a result; it does not block one.** Anybody in the match can
+say "that is not what happened", at any point in its life including years later,
+with nobody's permission and no majority needed. One objection is enough. What
+it does is make the match **contested**, and a contested match is held out of
+every tally on the scoreboard — wins, losses, streaks, rivalries, game kings —
+while staying completely visible as a match, with the objector's name and
+reasons on it. It stops being contested the moment they take it back. Since
+nothing is pending any more, this is the *whole* of what stops somebody entering
+a row of wins for themselves, which is why every path to it is kept as cheap and
+as wide as it can be.
+
+Nothing about any of this is a one-way door. Every answer is a *position held*,
+not an event logged: a player can move between conceding and objecting whenever
+they like. And the side a result credits can refuse it outright, which takes it
+off the board and puts the match back in play — but only that side, never the
+person who called it. **A win can always be refused; a loss can never be
+erased.**
 
 **Nobody adjudicates.** There is no dispute resolution, no referee and no
 deadlock, because an objection cannot deadlock anything. The organizer can call
@@ -54,10 +66,12 @@ not at all. They join matches, hold a team, win, lose, and appear in the
 standings and in other people's head-to-head records, all without a single query
 knowing they are different.
 
-The one thing they cannot do is answer, so the protocol never asks them, and a
-claim only they could have answered settles on the clock instead of on anybody's
-word. Their agreement is deferred rather than assumed: when they sign up, a
-service administrator links the two, the whole history becomes genuinely theirs,
+The one thing they cannot do is answer, so nothing ever waits on them — and a
+result whose losing side is *entirely* placeholders is marked **unwitnessed**,
+because nobody in it was in a position to contradict it. It counts like any
+other; the mark is the app saying out loud that the check every other result is
+subject to was unavailable here. Their agreement is deferred rather than
+assumed: when they sign up, a service administrator links the two, the whole history becomes genuinely theirs,
 and because objections outlive finalization they can go back and flag anything
 in it. That deferred objection is the entire justification for one player being
 able to enter another person into a game without asking.
@@ -235,15 +249,18 @@ placeholder would sit unanswered forever while the person plainly sitting at the
 table never appeared in the game. The branch lives in that one function so
 `CreateMatch` and `InvitePlayers` cannot disagree about it.
 
-**`Match.Answered()` needs somebody who *could* answer, not just an empty
-queue.** `AwaitingConcession` skips placeholders, so a game whose only opponents
-are placeholders has nobody outstanding from the first instant — and would
-ratify immediately, recording a win on the say-so of the one person who claimed
-it against players who by construction cannot contradict them. Hence the second
-condition: `len(Answerable()) > 0`. Such a match waits out the concession window
-and settles on the clock, which is silence read as agreement rather than
-agreement invented from an empty list. Drop that condition and the app's central
-rule has a hole in it exactly the size of one placeholder.
+**`Match.Unwitnessed()` is what is left of a rule that used to be enforced by
+delay.** `Match.Answered()` required at least one opponent who could actually
+speak before a claim could ratify, so a game whose only losers were placeholders
+could not settle early and sat out the week instead. The intent was right and
+the mechanism did nothing: at the end of the week it settled exactly as claimed
+anyway, against players who by construction cannot contradict anybody. Seven
+days of silence from people with no way to make a sound is not agreement, and
+reporting it as a wait was worse than saying nothing. So the app says so on the
+result instead — it counts, and it carries the one fact that makes it different.
+Do not turn this back into a refusal to record: the honest options are marking
+it or forbidding placeholder-only matches outright, and the second one bans real
+games.
 
 **Linking is admin-only and irreversible.** `UserService.LinkPlaceholder` is
 gated on `ADMIN_EMAILS`, the same as `VoidMatch` and for the same reason — both
@@ -274,47 +291,57 @@ scoreboard. The same question is asked once in SQL — the `EXISTS` in
 team test: a stray `disputed_at` on somebody on the winning side, left by a
 claim that was withdrawn and remade, is not an objection to this result.
 
-**An objection does not touch `concede_deadline`.** It used to clear it, to
-separate disagreement from silence. Nothing turns on that difference now, and
-leaving the clock alone is what guarantees every claim terminates: a match
-everybody objected to settles exactly as promptly as one everybody accepted, and
-lands contested. Clear the deadline again and you reintroduce the match nobody
-can finish.
+**There is no clock and no pending stage. Do not add one back.** `ClaimVictory`
+calls `finalize()` in the same transaction. The `claimed` status, `Answered()`,
+`AwaitingConcession()`, `finalizeIfRatified`, `finalizeIfExpired`,
+`SweepExpiredClaims` and `CONCEDE_WINDOW` are all gone, and `concede_deadline`
+survives only as an unread column (see below). If a "let people confirm first"
+requirement turns up again, the thing to re-read is why it went: every ending
+that stage could reach wrote the identical row, so it delayed the record without
+filtering it. A confirmation step that cannot change the outcome is a lobby with
+a countdown on it.
 
-**`finalizeIfRatified` fires when every opponent has *answered*, not agreed.**
-That one word is the difference. Waiting for unanimous concession made sense
-when an objection put the match in front of a referee; with no referee, waiting
-means waiting forever.
+**`concede_deadline` is still in the schema and nothing reads it.** Same reason
+`ready_at` is still there: dropping a column in the release that stops reading
+it takes the rollback with it, and the previous binary selects it on every match
+read. `0009` nulls it and drops `matches_sweep_idx`. Drop both columns in a
+later migration, once nobody would roll back that far.
 
-**`Concede` and `DisputeMatch` both accept a `final` match on purpose.** That is
-how a result gets flagged after the fact — which is when most people first
-notice one they disagree with, since they see it in the standings — and how the
-flag comes off again. Narrow `answerable()` to `claimed` and the only remedy for
-a bogus settled result becomes an administrator erasing the match.
+**`Concede` and `DisputeMatch` only ever see a `final` match now.** That is not
+a narrowing, it is the only state a match with a result can be in. Objecting
+after the fact is when most people first notice a result they disagree with,
+since they see it in the standings — and it is now the *only* check on the
+record, so `answerable()` is deliberately as permissive as it can be: in the
+match, and there is a result.
 
-**On a settled match the named winner may object too.** `answerable()` shuts
-them out only while the claim is live, where they have the better door:
-`WithdrawClaim` takes the whole thing off the table instead of leaving an
-asterisk on a result that stands anyway. After it settles that door is closed,
-and shutting them out as well would leave the person credited with the win as
-the only player unable to say it did not happen — which is a position the
-creator's short circuit can put somebody in, instantly, in a two-player game
-where the creator's own claim is also the only answer it needs. So
-`Match.Objectors()` scans every joined player while `AwaitingConcession()` still
-only asks the opposing side: owing the claim an answer and being able to call it
-wrong are different questions.
+**On a settled result the named winner may object too.** `answerable()` lets
+everybody in the match answer, including the side credited with the win.
+Shutting them out would leave the person a result names as the only player
+unable to say it did not happen — a position the creator's short circuit can put
+somebody in instantly, since whoever posts a match can name any side and the
+result lands before the supposed winner has looked at their phone. So
+`Match.Objectors()` scans every joined player, while `Answerable()` still only
+names the losing side: being the person a result was recorded against and being
+able to call it wrong are different questions.
 
 **Only the creator may name somebody else the winner.** Anyone may claim their
 own side; `ClaimVictory` gates a different side on `m.CreatedBy`. When they do,
 their claim is written as their own concession in the same transaction — they
 are an opponent of the team they just crowned, and they have plainly already
-accepted it — which is what lets `AwaitingConcession` and everything downstream
-stay ignorant of who made the claim. `claimed_by_user_id` records who said it,
-as distinct from `claimed_by_team_id` for who won.
+accepted it — which puts their position on the answer board where everybody can
+see whose word the result rests on. `claimed_by_user_id` records who said it, as
+distinct from `claimed_by_team_id` for who won.
 
-**`WithdrawClaim` is open to the claim's author *and* the side it named.** The
-second half is the counterweight to the first rule: being handed a win you did
-not earn should be refusable outright, not only objectable to.
+**`WithdrawClaim` belongs to the side the result names, and to nobody else.**
+Not to whoever called it, which is the one rule here that cannot bend. Whoever
+posts a match can name any side, so an author who could retract would be able to
+credit their opponent, take the loss, and then take the loss back off the board
+— and a record you can retract a defeat from is not a record. Hence: **a win can
+always be refused; a loss can never be erased.** It reaches a `final` match,
+which is what makes finalizing no longer irreversible, and that is the price of
+having no pending stage to catch a misplaced tap in. Somebody who called a game
+wrong and is not on the winning side objects to it instead, or asks an
+administrator to void it.
 
 **Voiding is the only exit from the permanent record, and it is a hard delete.**
 `MatchService.VoidMatch` erases the row; participants and teams go with it. That
@@ -327,20 +354,22 @@ handler it does not require family membership — running the deployment is the
 authorization. Organizers get `CancelMatch` on a game other people are in, and
 that is all — nothing anywhere lets one player decide a result, and voiding is
 not a way around that. It is for a match that should never have existed: a test
-game played against real people, a claim the sweeper ratified while everybody
-was away. A result somebody merely disagrees with is what objecting is for, and
+game played against real people, a result somebody entered against players who
+were never there. A result somebody merely disagrees with is what objecting is for, and
 objecting does not need anybody's permission.
 
-**Finalization happens in two places** — `finalizeIfRatified` (last answer
-lands) and `finalizeIfExpired` (clock ran out, checked lazily on read *and* by
-the sweeper). Both funnel through `finalize()`, which is the only place a match
-enters the permanent record, and finalizing is the *only* irreversible step in
-the whole protocol. Note what it is not: it is not the moment a result becomes
-uncontestable, because objections outlive it.
+**Finalization happens in one place** — `finalize()`, called by `ClaimVictory`
+and nothing else. It is the only place a match enters the permanent record. Note
+what it is *not*: it is not the moment a result becomes uncontestable, because
+objections outlive it; and it is not irreversible either, because the side a
+result credits can hand it back. What it is is the moment a result starts
+counting.
 
-**`POST /tasks/sweep` does double duty**: it finalizes timed-out claims and the
-request itself keeps a free-tier Supabase project from being paused for
-inactivity. Cloud Scheduler hits it every 15 minutes.
+**`POST /tasks/sweep` no longer sweeps anything.** It pings the database, which
+keeps a free-tier Supabase project from being paused for inactivity. Cloud
+Scheduler hits it every 15 minutes. The name, path and token are kept so the
+existing scheduler job keeps working; nothing anywhere depends on it being
+called for correctness any more.
 
 **The health endpoint is `/health`, not `/healthz`.** Google Front End reserves
 `/healthz` on `*.run.app` and answers it with its own 404 before the request

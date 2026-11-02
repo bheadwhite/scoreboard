@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
 
@@ -19,10 +18,8 @@ type MatchService struct {
 	base
 }
 
-func NewMatchService(
-	s *store.Store, hub *events.Hub, concedeWindow time.Duration, admins auth.Admins,
-) *MatchService {
-	return &MatchService{base: base{store: s, hub: hub, concedeWindow: concedeWindow, admins: admins}}
+func NewMatchService(s *store.Store, hub *events.Hub, admins auth.Admins) *MatchService {
+	return &MatchService{base: base{store: s, hub: hub, admins: admins}}
 }
 
 const maxContractDetail = 140
@@ -100,7 +97,8 @@ func parseContract(in *scoreboardv1.Contract) (model.Contract, error) {
 // game cannot begin until the other three find their phones. The exception is
 // kept as narrow as it can be — an unanswered invitation only, never a refusal —
 // and it buys a game that can start rather than a result that can be
-// manufactured, because everybody put in this way still has to answer the claim.
+// manufactured, because everybody put in this way can object to whatever gets
+// recorded, for as long as the record exists.
 func (svc *MatchService) JoinMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.JoinMatchRequest],
 ) (*connect.Response[scoreboardv1.JoinMatchResponse], error) {
@@ -189,8 +187,8 @@ func (svc *MatchService) SetTeams(
 		return nil, err
 	}
 	// One person owns the shape of the match, the same way they own its terms.
-	// Letting anyone rearrange sides would let one player decide who is going
-	// to owe the eventual claim an answer.
+	// Letting anyone rearrange sides would let one player decide, after the
+	// fact, which side a win and a loss get written against.
 	if m.CreatedBy != v.id {
 		return nil, denied("only whoever set this game up can set the teams")
 	}
@@ -211,9 +209,14 @@ func (svc *MatchService) SetTeams(
 	return connect.NewResponse(&scoreboardv1.SetTeamsResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-// ClaimVictory names the winner and starts the clock. Everything downstream of
-// this — the answers, the timeout, the eventual place in the record — is the
-// point of the app, so it is deliberately not a plain "record the score" call.
+// ClaimVictory names the winner, and the result is on the record when it
+// returns. There is nothing in between.
+//
+// There used to be a week in between, and the honest reading of it is that the
+// week decided nothing: an unanswered claim and a unanimously rejected one both
+// landed exactly as claimed. What the app has instead is not a weaker check but
+// the same one it always really had — anybody in the match can object to any
+// result, at any point in its life, and a contested result counts for nobody.
 //
 // Who may name whom is enforced in the store, where the teams are: your own
 // side is anybody's to claim, and any side at all is the creator's.
@@ -228,7 +231,7 @@ func (svc *MatchService) ClaimVictory(
 		return nil, denied("only players in this match can claim it")
 	}
 
-	out, err := svc.store.ClaimVictory(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetTeamId(), svc.concedeWindow)
+	out, err := svc.store.ClaimVictory(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetTeamId())
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -236,9 +239,14 @@ func (svc *MatchService) ClaimVictory(
 	return connect.NewResponse(&scoreboardv1.ClaimVictoryResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-// WithdrawClaim takes a claim back off the table. Whoever made it and whoever
-// it named can, and only before the match settles — after that the record is
-// the record, and objecting to it is the route.
+// WithdrawClaim takes a result back off the board, returning the match to being
+// in play with nobody credited.
+//
+// The side the result names may do it, and nobody else — not whoever called it.
+// That narrowing is what keeps the record a record: in a match you posted you
+// can name any side, so an author who could retract would be able to take his
+// own loss back off the board. A win can always be refused; a loss can never be
+// erased. See the store, where the rule is argued out in full.
 func (svc *MatchService) WithdrawClaim(
 	ctx context.Context, req *connect.Request[scoreboardv1.WithdrawClaimRequest],
 ) (*connect.Response[scoreboardv1.WithdrawClaimResponse], error) {
@@ -247,7 +255,7 @@ func (svc *MatchService) WithdrawClaim(
 		return nil, err
 	}
 	if !isParticipant(m, v.id) {
-		return nil, denied("only players in this match can withdraw a claim")
+		return nil, denied("only players in this match can take a result back")
 	}
 
 	out, err := svc.store.WithdrawClaim(ctx, req.Msg.GetMatchId(), v.id)
@@ -258,9 +266,10 @@ func (svc *MatchService) WithdrawClaim(
 	return connect.NewResponse(&scoreboardv1.WithdrawClaimResponse{Match: svc.matchPB(out, v)}), nil
 }
 
-// Concede accepts the claim. It is also how an objection is taken back, which
-// is why it is reachable on a settled match and not only a claimed one — see
-// answerable in the store.
+// Concede says the result is right. It moves no tally — the result already
+// counts — so what it is for is taking an objection back, and saying out loud
+// that you have looked at a result and agree with it rather than not having
+// looked. See answerable in the store.
 func (svc *MatchService) Concede(
 	ctx context.Context, req *connect.Request[scoreboardv1.ConcedeRequest],
 ) (*connect.Response[scoreboardv1.ConcedeResponse], error) {
@@ -269,7 +278,7 @@ func (svc *MatchService) Concede(
 		return nil, err
 	}
 
-	out, err := svc.store.Concede(ctx, req.Msg.GetMatchId(), v.id, svc.concedeWindow)
+	out, err := svc.store.Concede(ctx, req.Msg.GetMatchId(), v.id)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -279,13 +288,15 @@ func (svc *MatchService) Concede(
 
 const maxDisputeReason = 280
 
-// DisputeMatch marks the result contested. It does not stop the clock, does not
-// stop the match settling, and is not routed to anybody for a ruling — it holds
-// the result off the clean scoreboard for exactly as long as the objection
-// stands, and the objector can take it down whenever they like.
+// DisputeMatch marks the result contested. Nobody rules on it and nobody has to
+// agree — it holds the result off the clean scoreboard for exactly as long as
+// the objection stands, and the objector can take it down whenever they like.
 //
-// Reachable on a settled match, which is where most real objections will be
-// raised: people notice a wrong result when they see it in the standings.
+// With nothing pending in front of a result any more, this is the whole of what
+// protects the permanent record, so it is deliberately the cheapest call in the
+// app: no permission, no majority, no deadline, and reversible. People notice a
+// wrong result when they see it in the standings, which is always after it has
+// landed.
 func (svc *MatchService) DisputeMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.DisputeMatchRequest],
 ) (*connect.Response[scoreboardv1.DisputeMatchResponse], error) {
@@ -297,7 +308,7 @@ func (svc *MatchService) DisputeMatch(
 		return nil, invalid("keep the explanation short")
 	}
 
-	out, err := svc.store.Dispute(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetReason(), svc.concedeWindow)
+	out, err := svc.store.Dispute(ctx, req.Msg.GetMatchId(), v.id, req.Msg.GetReason())
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -346,8 +357,8 @@ func (svc *MatchService) CancelMatch(
 // for. Not for a result somebody dislikes — that is what claiming, conceding
 // and disputing are for, and an organizer settling a deadlock still ends with
 // somebody named as the winner. This is for a match that should never have
-// existed at all: a test game played against real people, a claim the sweeper
-// ratified while everyone was away, a family created twice.
+// existed at all: a test game played against real people, a result somebody
+// entered against players who were never there, a family created twice.
 //
 // It deletes rather than marks. A voided match kept as a row would be a fourth
 // thing every stats query has to remember to skip, and the day one of them

@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file scoreboard/v1/common.proto.
  */
 export const file_scoreboard_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSKBAQoEVXNlchIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEgoKYXZhdGFyX3VybBgDIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtwbGFjZWhvbGRlchgFIAEoCCK/AQoGRmFtaWx5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLaW52aXRlX2NvZGUYAyABKAkSEAoIb3duZXJfaWQYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoLdmlld2VyX3JvbGUYBiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSFAoMbWVtYmVyX2NvdW50GAcgASgFIokBCgxGYW1pbHlNZW1iZXISIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchInCgRyb2xlGAIgASgOMhkuc2NvcmVib2FyZC52MS5GYW1pbHlSb2xlEi0KCWpvaW5lZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAisAEKBEdhbWUSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEgwKBG5hbWUYAyABKAkSDQoFZW1vamkYBCABKAkSEgoKdGVhbV9iYXNlZBgFIAEoCBITCgttaW5fcGxheWVycxgGIAEoBRITCgttYXhfcGxheWVycxgHIAEoBRIuCgpjcmVhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCghDb250cmFjdBIpCgRraW5kGAEgASgOMhsuc2NvcmVib2FyZC52MS5Db250cmFjdEtpbmQSDgoGdGFyZ2V0GAIgASgFEg4KBmRldGFpbBgDIAEoCSJICglNYXRjaFRlYW0SCgoCaWQYASABKAkSEAoIbWF0Y2hfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdvcmRpbmFsGAQgASgFIqgDChBNYXRjaFBhcnRpY2lwYW50EhAKCG1hdGNoX2lkGAEgASgJEiEKBHVzZXIYAiABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDwoHdGVhbV9pZBgDIAEoCRIwCgZyZXN1bHQYBCABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50UmVzdWx0Ei8KC2NvbmNlZGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkaXNwdXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoGc3RhdHVzGAcgASgOMiAuc2NvcmVib2FyZC52MS5QYXJ0aWNpcGFudFN0YXR1cxIuCgppbnZpdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxyZXNwb25kZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRpc3B1dGVfcmVhc29uGAsgASgJSgQIChALUghyZWFkeV9hdCKTCAoFTWF0Y2gSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEiEKBGdhbWUYAyABKAsyEy5zY29yZWJvYXJkLnYxLkdhbWUSKgoGc3RhdHVzGAQgASgOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIpCghjb250cmFjdBgFIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QSEgoKY3JlYXRlZF9ieRgGIAEoCRInCgV0ZWFtcxgHIAMoCzIYLnNjb3JlYm9hcmQudjEuTWF0Y2hUZWFtEjUKDHBhcnRpY2lwYW50cxgIIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpzdGFydGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjbGFpbWVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJjbGFpbWVkX2J5X3RlYW1faWQYDCABKAkSNAoQY29uY2VkZV9kZWFkbGluZRgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZmluYWxpemVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwChNhd2FpdGluZ19jb25jZXNzaW9uGA8gAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEh4KFnZpZXdlcl9vd2VzX2NvbmNlc3Npb24YECABKAgSLwoGam9pbmVkGBEgAygLMh8uc2NvcmVib2FyZC52MS5NYXRjaFBhcnRpY2lwYW50EjAKB2ludml0ZWQYEiADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSGQoRdmlld2VyX2lzX2ludml0ZWQYEyABKAgSGQoRdmlld2VyX2lzX2NyZWF0b3IYFyABKAgSGgoSdmlld2VyX2lzX2NsYWltYW50GBkgASgIEhcKD3ZpZXdlcl9tYXlfdm9pZBgaIAEoCBIaChJjbGFpbWVkX2J5X3VzZXJfaWQYGyABKAkSEQoJY29udGVzdGVkGBwgASgIEiYKCW9iamVjdG9ycxgdIAMoCzITLnNjb3JlYm9hcmQudjEuVXNlchIXCg92aWV3ZXJfb2JqZWN0ZWQYHiABKAhKBAgUEBVKBAgVEBZKBAgWEBdKBAgYEBlSD3ZpZXdlcl9pc19yZWFkeVIJYWxsX3JlYWR5Ug5hd2FpdGluZ19yZWFkeVIVb3JnYW5pemVyX21heV9yZXNvbHZlKlgKCkZhbWlseVJvbGUSGwoXRkFNSUxZX1JPTEVfVU5TUEVDSUZJRUQQABIWChJGQU1JTFlfUk9MRV9NRU1CRVIQARIVChFGQU1JTFlfUk9MRV9PV05FUhACKsQBCgxDb250cmFjdEtpbmQSHQoZQ09OVFJBQ1RfS0lORF9VTlNQRUNJRklFRBAAEiAKHENPTlRSQUNUX0tJTkRfRklSU1RfVE9fU0NPUkUQARIZChVDT05UUkFDVF9LSU5EX0JFU1RfT0YQAhIfChtDT05UUkFDVF9LSU5EX0xBU1RfU1RBTkRJTkcQAxIdChlDT05UUkFDVF9LSU5EX1NJTkdMRV9HQU1FEAQSGAoUQ09OVFJBQ1RfS0lORF9DVVNUT00QBSrNAQoLTWF0Y2hTdGF0dXMSHAoYTUFUQ0hfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYTUFUQ0hfU1RBVFVTX0lOX1BST0dSRVNTEAISGAoUTUFUQ0hfU1RBVFVTX0NMQUlNRUQQAxIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiIECAEQASIECAUQBSoSTUFUQ0hfU1RBVFVTX0xPQkJZKhVNQVRDSF9TVEFUVVNfRElTUFVURUQqlwEKEVBhcnRpY2lwYW50U3RhdHVzEiIKHlBBUlRJQ0lQQU5UX1NUQVRVU19VTlNQRUNJRklFRBAAEh4KGlBBUlRJQ0lQQU5UX1NUQVRVU19JTlZJVEVEEAESHQoZUEFSVElDSVBBTlRfU1RBVFVTX0pPSU5FRBACEh8KG1BBUlRJQ0lQQU5UX1NUQVRVU19ERUNMSU5FRBADKpABChFQYXJ0aWNpcGFudFJlc3VsdBIiCh5QQVJUSUNJUEFOVF9SRVNVTFRfVU5TUEVDSUZJRUQQABIeChpQQVJUSUNJUEFOVF9SRVNVTFRfUEVORElORxABEhoKFlBBUlRJQ0lQQU5UX1JFU1VMVF9XSU4QAhIbChdQQVJUSUNJUEFOVF9SRVNVTFRfTE9TUxADQr4BChFjb20uc2NvcmVib2FyZC52MUILQ29tbW9uUHJvdG9QAVpHZ2l0aHViLmNvbS9iaGVhZHdoaXRlL3Njb3JlYm9hcmQvYmFja2VuZC9nZW4vc2NvcmVib2FyZC92MTtzY29yZWJvYXJkdjGiAgNTWFiqAg1TY29yZWJvYXJkLlYxygINU2NvcmVib2FyZFxWMeICGVNjb3JlYm9hcmRcVjFcR1BCTWV0YWRhdGHqAg5TY29yZWJvYXJkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpzY29yZWJvYXJkL3YxL2NvbW1vbi5wcm90bxINc2NvcmVib2FyZC52MSKBAQoEVXNlchIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEgoKYXZhdGFyX3VybBgDIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBITCgtwbGFjZWhvbGRlchgFIAEoCCK/AQoGRmFtaWx5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLaW52aXRlX2NvZGUYAyABKAkSEAoIb3duZXJfaWQYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoLdmlld2VyX3JvbGUYBiABKA4yGS5zY29yZWJvYXJkLnYxLkZhbWlseVJvbGUSFAoMbWVtYmVyX2NvdW50GAcgASgFIokBCgxGYW1pbHlNZW1iZXISIQoEdXNlchgBIAEoCzITLnNjb3JlYm9hcmQudjEuVXNlchInCgRyb2xlGAIgASgOMhkuc2NvcmVib2FyZC52MS5GYW1pbHlSb2xlEi0KCWpvaW5lZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAisAEKBEdhbWUSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEgwKBG5hbWUYAyABKAkSDQoFZW1vamkYBCABKAkSEgoKdGVhbV9iYXNlZBgFIAEoCBITCgttaW5fcGxheWVycxgGIAEoBRITCgttYXhfcGxheWVycxgHIAEoBRIuCgpjcmVhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCghDb250cmFjdBIpCgRraW5kGAEgASgOMhsuc2NvcmVib2FyZC52MS5Db250cmFjdEtpbmQSDgoGdGFyZ2V0GAIgASgFEg4KBmRldGFpbBgDIAEoCSJICglNYXRjaFRlYW0SCgoCaWQYASABKAkSEAoIbWF0Y2hfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdvcmRpbmFsGAQgASgFIqgDChBNYXRjaFBhcnRpY2lwYW50EhAKCG1hdGNoX2lkGAEgASgJEiEKBHVzZXIYAiABKAsyEy5zY29yZWJvYXJkLnYxLlVzZXISDwoHdGVhbV9pZBgDIAEoCRIwCgZyZXN1bHQYBCABKA4yIC5zY29yZWJvYXJkLnYxLlBhcnRpY2lwYW50UmVzdWx0Ei8KC2NvbmNlZGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkaXNwdXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoGc3RhdHVzGAcgASgOMiAuc2NvcmVib2FyZC52MS5QYXJ0aWNpcGFudFN0YXR1cxIuCgppbnZpdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxyZXNwb25kZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRpc3B1dGVfcmVhc29uGAsgASgJSgQIChALUghyZWFkeV9hdCLxBwoFTWF0Y2gSCgoCaWQYASABKAkSEQoJZmFtaWx5X2lkGAIgASgJEiEKBGdhbWUYAyABKAsyEy5zY29yZWJvYXJkLnYxLkdhbWUSKgoGc3RhdHVzGAQgASgOMhouc2NvcmVib2FyZC52MS5NYXRjaFN0YXR1cxIpCghjb250cmFjdBgFIAEoCzIXLnNjb3JlYm9hcmQudjEuQ29udHJhY3QSEgoKY3JlYXRlZF9ieRgGIAEoCRInCgV0ZWFtcxgHIAMoCzIYLnNjb3JlYm9hcmQudjEuTWF0Y2hUZWFtEjUKDHBhcnRpY2lwYW50cxgIIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpzdGFydGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjbGFpbWVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJjbGFpbWVkX2J5X3RlYW1faWQYDCABKAkSMAoMZmluYWxpemVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgZqb2luZWQYESADKAsyHy5zY29yZWJvYXJkLnYxLk1hdGNoUGFydGljaXBhbnQSMAoHaW52aXRlZBgSIAMoCzIfLnNjb3JlYm9hcmQudjEuTWF0Y2hQYXJ0aWNpcGFudBIZChF2aWV3ZXJfaXNfaW52aXRlZBgTIAEoCBIZChF2aWV3ZXJfaXNfY3JlYXRvchgXIAEoCBIaChJ2aWV3ZXJfaXNfY2xhaW1hbnQYGSABKAgSFwoPdmlld2VyX21heV92b2lkGBogASgIEhoKEmNsYWltZWRfYnlfdXNlcl9pZBgbIAEoCRIRCgljb250ZXN0ZWQYHCABKAgSJgoJb2JqZWN0b3JzGB0gAygLMhMuc2NvcmVib2FyZC52MS5Vc2VyEhcKD3ZpZXdlcl9vYmplY3RlZBgeIAEoCBITCgt1bndpdG5lc3NlZBgfIAEoCEoECA0QDkoECA8QEEoECBAQEUoECBQQFUoECBUQFkoECBYQF0oECBgQGVIQY29uY2VkZV9kZWFkbGluZVITYXdhaXRpbmdfY29uY2Vzc2lvblIWdmlld2VyX293ZXNfY29uY2Vzc2lvblIPdmlld2VyX2lzX3JlYWR5UglhbGxfcmVhZHlSDmF3YWl0aW5nX3JlYWR5UhVvcmdhbml6ZXJfbWF5X3Jlc29sdmUqWAoKRmFtaWx5Um9sZRIbChdGQU1JTFlfUk9MRV9VTlNQRUNJRklFRBAAEhYKEkZBTUlMWV9ST0xFX01FTUJFUhABEhUKEUZBTUlMWV9ST0xFX09XTkVSEAIqxAEKDENvbnRyYWN0S2luZBIdChlDT05UUkFDVF9LSU5EX1VOU1BFQ0lGSUVEEAASIAocQ09OVFJBQ1RfS0lORF9GSVJTVF9UT19TQ09SRRABEhkKFUNPTlRSQUNUX0tJTkRfQkVTVF9PRhACEh8KG0NPTlRSQUNUX0tJTkRfTEFTVF9TVEFORElORxADEh0KGUNPTlRSQUNUX0tJTkRfU0lOR0xFX0dBTUUQBBIYChRDT05UUkFDVF9LSU5EX0NVU1RPTRAFKs8BCgtNYXRjaFN0YXR1cxIcChhNQVRDSF9TVEFUVVNfVU5TUEVDSUZJRUQQABIcChhNQVRDSF9TVEFUVVNfSU5fUFJPR1JFU1MQAhIWChJNQVRDSF9TVEFUVVNfRklOQUwQBBIZChVNQVRDSF9TVEFUVVNfQ0FOQ0VMRUQQBiIECAEQASIECAMQAyIECAUQBSoSTUFUQ0hfU1RBVFVTX0xPQkJZKhRNQVRDSF9TVEFUVVNfQ0xBSU1FRCoVTUFUQ0hfU1RBVFVTX0RJU1BVVEVEKpcBChFQYXJ0aWNpcGFudFN0YXR1cxIiCh5QQVJUSUNJUEFOVF9TVEFUVVNfVU5TUEVDSUZJRUQQABIeChpQQVJUSUNJUEFOVF9TVEFUVVNfSU5WSVRFRBABEh0KGVBBUlRJQ0lQQU5UX1NUQVRVU19KT0lORUQQAhIfChtQQVJUSUNJUEFOVF9TVEFUVVNfREVDTElORUQQAyqQAQoRUGFydGljaXBhbnRSZXN1bHQSIgoeUEFSVElDSVBBTlRfUkVTVUxUX1VOU1BFQ0lGSUVEEAASHgoaUEFSVElDSVBBTlRfUkVTVUxUX1BFTkRJTkcQARIaChZQQVJUSUNJUEFOVF9SRVNVTFRfV0lOEAISGwoXUEFSVElDSVBBTlRfUkVTVUxUX0xPU1MQA0K+AQoRY29tLnNjb3JlYm9hcmQudjFCC0NvbW1vblByb3RvUAFaR2dpdGh1Yi5jb20vYmhlYWR3aGl0ZS9zY29yZWJvYXJkL2JhY2tlbmQvZ2VuL3Njb3JlYm9hcmQvdjE7c2NvcmVib2FyZHYxogIDU1hYqgINU2NvcmVib2FyZC5WMcoCDVNjb3JlYm9hcmRcVjHiAhlTY29yZWJvYXJkXFYxXEdQQk1ldGFkYXRh6gIOU2NvcmVib2FyZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * A player.
@@ -414,7 +414,9 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   startedAt?: Timestamp | undefined;
 
   /**
-   * Set when somebody names a winner.
+   * When somebody named a winner. The same instant as finalized_at now that a
+   * claim is the result rather than a proposal, and kept as its own field
+   * because it says a different thing: who spoke, versus what the record says.
    *
    * @generated from field: google.protobuf.Timestamp claimed_at = 11;
    */
@@ -428,44 +430,9 @@ export type Match = Message<"scoreboard.v1.Match"> & {
   claimedByTeamId: string;
 
   /**
-   * After this instant, players who never answered are taken to have accepted
-   * it and the match settles on its own.
-   *
-   * A backstop for a match everybody walked away from, not a countdown anyone
-   * is meant to race — it is a week by default, the claim sits on every
-   * player's list for all of it, and an objection no longer stops it, because
-   * objecting no longer needs to win an argument to have its effect.
-   *
-   * @generated from field: google.protobuf.Timestamp concede_deadline = 13;
-   */
-  concedeDeadline?: Timestamp | undefined;
-
-  /**
    * @generated from field: google.protobuf.Timestamp finalized_at = 14;
    */
   finalizedAt?: Timestamp | undefined;
-
-  /**
-   * Convenience for the UI: players who owe the claim an answer and have not
-   * given one.
-   *
-   * Never includes a placeholder. Somebody with no account has no way to answer,
-   * so listing them as outstanding would report a wait that is never going to
-   * end — and would make every game they are in look stalled. What actually
-   * happens is that the claim settles when the players who *can* answer have,
-   * and a claim nobody could answer settles on the clock. See
-   * model.Match.Answerable.
-   *
-   * @generated from field: repeated scoreboard.v1.User awaiting_concession = 15;
-   */
-  awaitingConcession: User[];
-
-  /**
-   * Whether the caller personally still owes one.
-   *
-   * @generated from field: bool viewer_owes_concession = 16;
-   */
-  viewerOwesConcession: boolean;
 
   /**
    * Players who have agreed to play. This is the roster that matters.
@@ -547,6 +514,25 @@ export type Match = Message<"scoreboard.v1.Match"> & {
    * @generated from field: bool viewer_objected = 30;
    */
   viewerObjected: boolean;
+
+  /**
+   * Whether this result stands with nobody in a position to contradict it —
+   * every opponent of the named side is a player with no account.
+   *
+   * It counts, and it is shown as a result like any other. What it carries is a
+   * mark, because the thing that makes every other result trustworthy is absent
+   * from this one: there is nobody who could object. The old protocol gestured
+   * at this by refusing to ratify such a claim early and letting the week run
+   * out instead, which delayed the identical outcome by seven days and told
+   * nobody anything. Saying so on the result is the honest version.
+   *
+   * It is not permanent. When a placeholder signs up and an administrator links
+   * them, they inherit the history and can object to any of it — which is the
+   * whole justification for one player being able to enter another into a game.
+   *
+   * @generated from field: bool unwitnessed = 31;
+   */
+  unwitnessed: boolean;
 };
 
 /**
@@ -646,16 +632,25 @@ export const ContractKindSchema: GenEnum<ContractKind> = /*@__PURE__*/
   enumDesc(file_scoreboard_v1_common, 1);
 
 /**
- * Where a match is in its lifecycle. Only MATCH_STATUS_FINAL matches count
- * toward the scoreboard.
+ * Where a match is in its lifecycle. Two live values: it has a result or it
+ * does not. Only MATCH_STATUS_FINAL matches count toward the scoreboard.
  *
- * Two values are gone from earlier versions of this app and their numbers are
+ * Three values are gone from earlier versions of this app and their numbers are
  * reserved. LOBBY went when joining became the commitment — there is no
  * staging area to sit in any more, so a match is in play from the moment it is
  * posted. DISPUTED went when an objection stopped blocking anything: a
  * contested match is an ordinary match carrying a flag, at every stage of its
  * life including after it finalizes, so being contested is a property rather
  * than a place in this list.
+ *
+ * CLAIMED is the newest departure and the largest. A claim used to sit here
+ * pending, collecting answers, until either everyone had spoken or a week ran
+ * out — and then it settled exactly as claimed either way. The waiting decided
+ * nothing: an unanswered claim and a unanimously rejected one both landed on
+ * the board, so the pending state bought a delay rather than a check. Naming a
+ * winner now writes the result immediately, and what protects the record is
+ * what always actually protected it — anybody in the match can object to a
+ * result at any time, forever, and a contested result counts for nobody.
  *
  * @generated from enum scoreboard.v1.MatchStatus
  */
@@ -666,30 +661,23 @@ export enum MatchStatus {
   UNSPECIFIED = 0,
 
   /**
-   * Posted and open. Players are joining, and any of them may claim the win.
+   * Posted and open. Players are joining, and any of them may name the winner.
    *
    * @generated from enum value: MATCH_STATUS_IN_PROGRESS = 2;
    */
   IN_PROGRESS = 2,
 
   /**
-   * Someone has named a winner; everyone else is being asked. Nobody is locked
-   * into the answer they gave — an answer stands until its author changes it,
-   * and the claimant can withdraw the claim outright.
-   *
-   * @generated from enum value: MATCH_STATUS_CLAIMED = 3;
-   */
-  CLAIMED = 3,
-
-  /**
-   * Settled. Counts on the scoreboard, unless it is contested.
+   * Decided, and on the record. Counts on the scoreboard, unless it is
+   * contested — and it can become contested, or stop being, at any point from
+   * here on.
    *
    * @generated from enum value: MATCH_STATUS_FINAL = 4;
    */
   FINAL = 4,
 
   /**
-   * Abandoned before settling. Never counts.
+   * Abandoned before anybody named a winner. Never counts.
    *
    * @generated from enum value: MATCH_STATUS_CANCELED = 6;
    */

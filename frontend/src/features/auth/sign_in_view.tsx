@@ -34,7 +34,7 @@ export function SignInView({ session }: { session: Session }) {
         <h1 className="hero__title">Gauntlet</h1>
         <p className="hero__tag">
           Every game you play with your people, permanently on the record.
-          <br />A win only counts when the losers concede it.
+          <br />Anybody can call a win. Everybody can say it did not happen.
         </p>
       </div>
 

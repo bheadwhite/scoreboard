@@ -6,7 +6,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/bheadwhite/scoreboard/backend/internal/auth"
 	"github.com/bheadwhite/scoreboard/backend/internal/events"
@@ -20,8 +19,6 @@ type base struct {
 	// Where handlers announce that something changed, so open browsers can
 	// re-read. Nil is allowed: publishing becomes a no-op.
 	hub *events.Hub
-	// How long a claim stands before outstanding concessions are assumed.
-	concedeWindow time.Duration
 	// Who runs the deployment. Empty for the services that never ask — a zero
 	// set is also the right answer for one that does, since it means nobody has
 	// been granted anything.

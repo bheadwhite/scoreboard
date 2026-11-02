@@ -119,8 +119,6 @@ func statusPB(s model.Status) scoreboardv1.MatchStatus {
 	switch s {
 	case model.StatusInProgress:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS
-	case model.StatusClaimed:
-		return scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED
 	case model.StatusFinal:
 		return scoreboardv1.MatchStatus_MATCH_STATUS_FINAL
 	case model.StatusCanceled:
@@ -134,8 +132,6 @@ func statusFromPB(s scoreboardv1.MatchStatus) (model.Status, bool) {
 	switch s {
 	case scoreboardv1.MatchStatus_MATCH_STATUS_IN_PROGRESS:
 		return model.StatusInProgress, true
-	case scoreboardv1.MatchStatus_MATCH_STATUS_CLAIMED:
-		return model.StatusClaimed, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_FINAL:
 		return model.StatusFinal, true
 	case scoreboardv1.MatchStatus_MATCH_STATUS_CANCELED:
@@ -236,8 +232,13 @@ func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 }
 
 // matchPB converts a match for one viewer, filling in the convenience fields the
-// UI needs: who owes the claim an answer, who is objecting to it, and where the
-// viewer stands in both lists.
+// UI needs: who is objecting to the result, whether anybody could have, and
+// where the viewer stands.
+//
+// It used to send an awaiting_concession list too — who the claim was still
+// waiting on — and that list is gone with the waiting. What replaces it is
+// unwitnessed, which answers a question the old list could not: not "who has
+// not spoken yet", but "could anybody have".
 //
 // Nothing here is redacted. An objection used to be shown only to the family
 // organizer and its own author, because the organizer was the one who had to
@@ -247,9 +248,7 @@ func participantPB(p model.MatchParticipant) *scoreboardv1.MatchParticipant {
 // is worse than the grudge it was avoiding. If you are going to say a result
 // did not happen, you say it under your own name.
 //
-// A method rather than a function for consistency with the rest of base; it no
-// longer needs the concession window, because nothing it computes depends on
-// one.
+// A method rather than a function for consistency with the rest of base.
 func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 	out := &scoreboardv1.Match{
 		Id:              m.ID,
@@ -262,7 +261,6 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 		ClaimedAt:       tsp(m.ClaimedAt),
 		ClaimedByTeamId: deref(m.ClaimedByTeamID),
 		ClaimedByUserId: deref(m.ClaimedByUserID),
-		ConcedeDeadline: tsp(m.ConcedeDeadline),
 		FinalizedAt:     tsp(m.FinalizedAt),
 	}
 	if m.Game != nil {
@@ -286,12 +284,10 @@ func (b base) matchPB(m model.Match, v viewer) *scoreboardv1.Match {
 	}
 
 	out.ViewerIsCreator = m.CreatedBy == v.id
-	for _, p := range m.AwaitingConcession() {
-		out.AwaitingConcession = append(out.AwaitingConcession, userPB(p.User))
-		if p.User.ID == v.id {
-			out.ViewerOwesConcession = true
-		}
-	}
+
+	// A result nobody in the match is in a position to deny. Reported rather
+	// than prevented — see model.Match.Unwitnessed.
+	out.Unwitnessed = m.Unwitnessed()
 
 	out.Contested = m.Contested()
 	for _, p := range m.Objectors() {

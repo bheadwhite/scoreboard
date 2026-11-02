@@ -9,29 +9,38 @@ The point is bragging rights. The headline stat is not "your win rate" — it is
 
 ## The mechanic
 
-**Nobody can declare their own win.**
+**Anybody can declare a win. Everybody can say it did not happen.**
 
-You claim victory, and the claim sits publicly pending until every opponent
-concedes. Only ratified matches touch the scoreboard — which is what makes the
-numbers worth arguing about.
+Somebody names the winner and the result is on the board — no lobby, no ready
+check, no pending stage, no clock. What keeps the board honest is not a delay in
+front of a result, it is that every result stays challengeable behind it: anyone
+who was in the match can object to it, at any point in its life including years
+later, with nobody's permission and no majority needed. A contested result is
+held out of every tally on the scoreboard — wins, losses, streaks, rivalries,
+game kings — while staying completely visible as a match, with the objector's
+name and reasons on it. It stops being contested the moment they take it back.
 
-Nothing about a pending claim is a one-way door. What each player says is a
-position they are holding, not a vote they have spent: concede and you can still
-object, object and you can still concede, and whoever claimed can take the claim
-back and put the game back in play. The match stays on everyone's list, showing
-where they each stand, until it settles.
+There was a week-long concession window here once, and taking it out is what the
+rule above is. It changed nothing: an unanswered claim settled exactly as
+claimed and a unanimously rejected one settled exactly as claimed and contested,
+so the wait was a delay rather than a check. What actually protected the record
+was the objection, and the objection works just as well on a settled match.
 
-Silence eventually reads as a concession, but the window is a week — that is a
-backstop for a game everybody walked away from, not a countdown to race. Any
-standing objection stops even that. The family organizer can break a deadlock,
-but only once the players genuinely cannot move it themselves.
+Nothing anybody says is a one-way door. Every answer is a position held, not a
+vote spent — concede and you can still object, object and you can still concede
+— and the side a result credits can refuse it outright, which takes it back off
+the board. Nobody can erase a loss, only refuse a win.
+
+**Nobody adjudicates.** There is no dispute resolution, no referee and no
+deadlock, because an objection cannot deadlock anything.
 
 ```
-LOBBY → IN_PROGRESS → CLAIMED → FINAL        all opponents concede, or timeout
-             ↑           ↓
-             │       DISPUTED → FINAL | VOID  organizer breaks a real deadlock
-             │           │
-             └───────────┴──  claim withdrawn / last objection taken back
+IN_PROGRESS ──somebody names the winner──> FINAL      counts immediately
+     ↑                                       │
+     └──── the winning side refuses it ──────┘
+
+        FINAL + any standing objection = contested, counts for nobody
+                                          (reversible, forever)
 ```
 
 ## Stack
@@ -62,8 +71,8 @@ Copy `.env.local.example` to `.env.local` and fill in a `DATABASE_URL`.
 | File | What is in it |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Conventions, architecture, and the things that will bite you |
-| [DESIGN.md](DESIGN.md) | Domain model, schema, and why the concession protocol works this way |
-| [DEPLOY.md](DEPLOY.md) | Cloud Run deployment, OAuth setup, the sweeper cron |
+| [DESIGN.md](DESIGN.md) | Domain model and schema. Written against an older protocol — read CLAUDE.md for what the code does now |
+| [DEPLOY.md](DEPLOY.md) | Cloud Run deployment, OAuth setup, the keepalive cron |
 | [DESIGN_BRIEF.md](DESIGN_BRIEF.md) | Visual design brief |
 
 ## Commands

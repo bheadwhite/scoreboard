@@ -11,14 +11,17 @@ import { Collection } from "./collection.js";
 import { KeyedCollection } from "./keyed_collection.js";
 
 /**
- * The statuses that mean "a game is happening right now".
+ * The statuses that mean "a game is happening right now" — one, now that a
+ * match either has a result or does not.
  *
- * Two shorter than it used to be, and neither loss is a narrowing. A match is
- * in play from the moment it is posted, so there is no lobby to list; and an
- * objection marks a match rather than moving it, so a contested one is either
- * still CLAIMED or already FINAL depending on whether everyone has answered.
+ * Three shorter than it once was, and none of the losses is a narrowing. There
+ * is no lobby, because a match is in play from the moment it is posted. There
+ * is no disputed, because an objection marks a match rather than moving it. And
+ * there is no claimed: naming a winner used to open a pending stage that
+ * collected answers for a week and then wrote the result it was always going to
+ * write, so the claim is the result and a match with one is FINAL.
  */
-export const LIVE_STATUSES = [MatchStatus.IN_PROGRESS, MatchStatus.CLAIMED];
+export const LIVE_STATUSES = [MatchStatus.IN_PROGRESS];
 
 /** What both Collection and KeyedCollection offer the store's bulk operations. */
 interface Invalidatable {

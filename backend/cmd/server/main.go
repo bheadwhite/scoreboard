@@ -88,14 +88,6 @@ func main() {
 	// on purpose — see internal/events.
 	hub := events.NewHub()
 
-	// A week, not a day. The window exists to stop a match hanging around
-	// forever because somebody stopped caring — it is not a deadline anyone is
-	// meant to hit. A day is short enough that ordinary life (a weekend away, a
-	// phone left on the charger) ripens a claim nobody actually answered, which
-	// is the one outcome the concession rule exists to prevent.
-	concedeWindow := config.Duration("CONCEDE_WINDOW", 7*24*time.Hour)
-	log.Printf("concession window: %s", concedeWindow)
-
 	// Who may erase a match from the permanent record. Empty by default, and
 	// empty means nobody — granting it takes a deploy, which is the point. The
 	// count is logged and the addresses are not; that a deployment has two
@@ -113,7 +105,7 @@ func main() {
 	api.Handle(scoreboardv1connect.NewUserServiceHandler(service.NewUserService(st, hub, admins), opts...))
 	api.Handle(scoreboardv1connect.NewFamilyServiceHandler(service.NewFamilyService(st, hub), opts...))
 	api.Handle(scoreboardv1connect.NewGameServiceHandler(service.NewGameService(st, hub), opts...))
-	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, concedeWindow, admins), opts...))
+	api.Handle(scoreboardv1connect.NewMatchServiceHandler(service.NewMatchService(st, hub, admins), opts...))
 	api.Handle(scoreboardv1connect.NewStatsServiceHandler(service.NewStatsService(st, hub, admins), opts...))
 
 	if !authn.Configured() {
@@ -171,12 +163,19 @@ func health(st *store.Store) http.HandlerFunc {
 	}
 }
 
-// sweep finalizes claimed matches whose concession window has closed.
+// sweep keeps the database awake. Cloud Scheduler calls it every few minutes so
+// a free-tier Supabase project is not paused for inactivity — a real risk for
+// an app that goes quiet between family gatherings.
 //
-// This endpoint does double duty. Cloud Scheduler calls it every few minutes,
-// which settles expired claims *and* keeps the database from being paused for
-// inactivity on a free tier — a real risk for an app that goes quiet between
-// family gatherings.
+// It used to have a second job, and the second job was the reason it existed:
+// finalizing claims whose week had run out. Nothing ripens on a clock any more,
+// so there is nothing to settle and no match anywhere whose outcome depends on
+// this endpoint being called. What is left is the request itself.
+//
+// Kept as a POST behind the same token rather than folded into /health, because
+// the schedule, the alerting and the Cloud Scheduler job are all pointed here
+// and moving them buys nothing. If the free tier stops needing a heartbeat,
+// this can go entirely.
 func sweep(st *store.Store, token string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -194,17 +193,13 @@ func sweep(st *store.Store, token string) http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 
-		n, err := st.SweepExpiredClaims(ctx)
-		if err != nil {
+		if err := st.Ping(ctx); err != nil {
 			log.Printf("sweep: %v", err)
-			http.Error(w, "sweep failed", http.StatusInternalServerError)
+			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
 			return
-		}
-		if n > 0 {
-			log.Printf("sweep: finalized %d match(es) on timeout", n)
 		}
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("ok"))

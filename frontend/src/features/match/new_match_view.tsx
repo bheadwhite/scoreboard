@@ -221,10 +221,9 @@ function AddPlayerSheet({ presenter }: { presenter: NewMatchPresenter }) {
         </div>
         <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--ink-faint)" }}>
           They cannot concede or object to anything, because there is nothing to do it from — so
-          they are added to the game rather than asked, and a result only they could have answered
-          waits out the full week instead of counting straight away. When they sign up, an
-          administrator can join the two together and they get to argue with every result they
-          inherit.
+          they are added to the game rather than asked, and a result only they lost is marked as
+          one nobody could deny. When they sign up, an administrator can join the two together and
+          they get to argue with every result they inherit.
         </p>
         <button
           className="btn btn--primary btn--block"

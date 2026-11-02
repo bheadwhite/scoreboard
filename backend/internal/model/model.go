@@ -56,20 +56,24 @@ type Game struct {
 	CreatedAt  time.Time
 }
 
-// Status values for a match. Only StatusFinal counts on the scoreboard, and
-// only a StatusFinal match nobody is objecting to counts on the clean one.
+// Status values for a match. Two live ones: it has a result or it does not.
+// Only StatusFinal counts on the scoreboard, and only a StatusFinal match
+// nobody is objecting to counts on the clean one.
 //
 // There is no lobby: a match is in play from the moment it is posted, because
 // joining is the only commitment anybody makes and there is nothing to wait
-// for before it. And there is no disputed: an objection marks a match rather
-// than moving it, so being contested is a question you ask the answers — see
+// for before it. There is no disputed: an objection marks a match rather than
+// moving it, so being contested is a question you ask the answers — see
 // Match.Contested — at any stage of the match's life, including after it has
-// finalized.
+// finalized. And there is no claimed, which is the biggest of the three
+// removals: naming a winner used to open a pending stage that collected answers
+// and closed on the last one or on a week-long clock, and both endings wrote
+// the identical result. A stage that cannot change its own outcome is a delay,
+// not a check, so the claim is now the result.
 type Status string
 
 const (
 	StatusInProgress Status = "in_progress"
-	StatusClaimed    Status = "claimed"
 	StatusFinal      Status = "final"
 	StatusCanceled   Status = "canceled"
 )
@@ -151,7 +155,6 @@ type Match struct {
 	// and then they are an opponent of the team they just crowned.
 	ClaimedByTeamID *string
 	ClaimedByUserID *string
-	ConcedeDeadline *time.Time
 	DisputeReason   string
 
 	Game         *Game
@@ -183,8 +186,8 @@ func (m *Match) PendingInvites() []MatchParticipant {
 	return out
 }
 
-// OpposingParticipants returns the players who owe the claiming team a
-// response: every joined player not on the claimed team.
+// OpposingParticipants returns every joined player not on the team credited
+// with the win — the people the result was recorded against.
 func (m *Match) OpposingParticipants() []MatchParticipant {
 	if m.ClaimedByTeamID == nil {
 		return nil
@@ -198,15 +201,19 @@ func (m *Match) OpposingParticipants() []MatchParticipant {
 	return out
 }
 
-// Answerable returns the opponents who could actually answer the claim: the
-// ones who owe it a response and have an account to give it from.
+// Answerable returns the opponents in a position to contradict the result: the
+// people it was recorded against who have an account to say so from.
 //
-// A placeholder owes nothing, because there is nobody to owe it. Asking them
-// would not be a stricter rule, it would be an unanswerable one — every match
-// with somebody's grandmother in it would sit outstanding for a week and then
-// settle exactly as it was always going to. Their agreement is deferred instead:
-// once they sign up and an administrator links them, they inherit the history
-// and can object to any of it, because objections outlive finalization.
+// This used to be a list of debts — who the claim was still waiting on. Nothing
+// waits any more, so what it names now is capability: these are the players
+// whose silence is worth something, because they could have spoken. A
+// placeholder is excluded for the same reason as before, that there is nobody
+// to ask, and their agreement stays deferred rather than assumed: once they
+// sign up and an administrator links them, they inherit the history and can
+// object to any of it, because objections outlive finalization.
+//
+// Its one remaining job is Unwitnessed, which is the honest report of a result
+// this list is empty for.
 func (m *Match) Answerable() []MatchParticipant {
 	var out []MatchParticipant
 	for _, p := range m.OpposingParticipants() {
@@ -217,47 +224,39 @@ func (m *Match) Answerable() []MatchParticipant {
 	return out
 }
 
-// Answered reports whether the claim has been put to somebody and settled.
+// Unwitnessed reports that a result stands with nobody in a position to
+// contradict it — every opponent of the named side is a player with no account.
 //
-// Two conditions, and the second is the one worth explaining. Every opponent
-// who could answer must have — either way, since an objection marks a result
-// rather than blocking it, and waiting for unanimous agreement would mean
-// waiting forever on a claim everybody rejected.
+// This is what is left of a rule that used to be enforced by delay. Match.Answered
+// required at least one opponent who could speak before a claim could ratify,
+// so a game whose only losers were placeholders could not settle early and sat
+// out the week instead. The intent was right and the mechanism did nothing: at
+// the end of the week it settled exactly as claimed, against players who by
+// construction cannot contradict anybody. Seven days of silence from people
+// with no way to make a sound is not agreement, and reporting it as a wait was
+// worse than saying nothing.
 //
-// And at least one such opponent must exist. Without that, a game whose only
-// opponents are placeholders has nobody outstanding from the first instant, so
-// it would ratify immediately — a win recorded on the say-so of the one person
-// who claimed it, against players who by construction cannot contradict them.
-// That is the exact thing this app refuses to do. So it does not ratify: it
-// waits out the concession window and settles on the clock, which is silence
-// being read as agreement rather than agreement being invented.
-func (m *Match) Answered() bool {
-	return len(m.Answerable()) > 0 && len(m.AwaitingConcession()) == 0
-}
-
-// AwaitingConcession returns opponents who could answer and have not.
-func (m *Match) AwaitingConcession() []MatchParticipant {
-	var out []MatchParticipant
-	for _, p := range m.Answerable() {
-		if p.ConcededAt == nil && p.DisputedAt == nil {
-			out = append(out, p)
-		}
-	}
-	return out
+// So the app says so on the result instead. It counts and it is shown like any
+// other, carrying the one fact that makes it different: the check every other
+// result on the board is subject to was unavailable here. It is not permanent —
+// linking a placeholder to a real account hands them the history and the
+// standing to object to it.
+func (m *Match) Unwitnessed() bool {
+	return m.ClaimedByTeamID != nil && len(m.Answerable()) == 0
 }
 
 // Objectors returns every player whose objection currently stands. An objection
 // is a position held, not an event that happened: it lasts exactly as long as
 // its author leaves it there, and conceding withdraws it.
 //
-// Every joined player, not just the opposing side — which is a wider net than
-// AwaitingConcession casts, and deliberately so. Owing the claim an answer and
-// being able to say the result is wrong are different things. Somebody on the
-// winning side is never asked, because agreeing with a win handed to them is not
-// news; but once the match has settled, "I did not win this" from the person
-// credited with the win is the single most damning thing anybody could say
-// about a result, and there has to be somewhere to say it. See answerable in
-// the store, which is what actually decides who may object and when.
+// Every joined player, not just the losing side — a wider net than Answerable
+// casts, and deliberately so. Being the person a result was recorded against
+// and being able to say the result is wrong are different things. "I did not
+// win this", from the person credited with the win, is the single most damning
+// thing anybody could say about a result, and there has to be somewhere to say
+// it — especially since whoever posts a match can hand a win to somebody who
+// never asked for one, and it lands on the board before they have looked at
+// their phone. See answerable in the store, which decides who may object.
 //
 // Nothing stale can turn up here: ClaimVictory wipes every answer on the match
 // before recording a new claim, so a disputed_at row always answers the claim
@@ -281,16 +280,17 @@ func (m *Match) Objectors() []MatchParticipant {
 // would have to be maintained at every one of those transitions; a question
 // asked of the answers cannot fall out of step with them.
 //
-// This is the whole of what an objection does. It does not stop the clock, it
-// does not block finalization, and nobody adjudicates it. It keeps the result
-// off the clean scoreboard for as long as somebody is willing to stand behind
-// saying it did not happen.
+// This is the whole of what an objection does, and — with nothing pending in
+// front of a result any more — the whole of what protects the record. Nobody
+// adjudicates it, no majority is needed and no permission is asked. It keeps
+// the result off the clean scoreboard for as long as somebody is willing to
+// stand behind saying it did not happen.
 func (m *Match) Contested() bool {
 	return len(m.Objectors()) > 0
 }
 
-// OnClaimingTeam reports whether userID answers for the standing claim rather
-// than owing a concession to it.
+// OnClaimingTeam reports whether userID is on the side credited with the win —
+// the side that may refuse it, rather than the side it was recorded against.
 func (m *Match) OnClaimingTeam(userID string) bool {
 	if m.ClaimedByTeamID == nil {
 		return false

@@ -27,8 +27,8 @@ const RANGES: { value: StatsRange; label: string }[] = [
 
 /**
  * The family's trophy case, and the landing place. Anything demanding a
- * response — a claim waiting on you — is pulled to the very top, above the
- * standings.
+ * response — a fresh result you have not looked at — is pulled to the very
+ * top, above the standings.
  */
 export function ScoreboardView({
   presenter,
@@ -53,32 +53,53 @@ export function ScoreboardView({
 
   const me = app.domain.session.user?.id;
   const mine = (m: Match) => m.joined.some((p) => p.user?.id === me);
-  const unsettled = (m: Match) => m.status === MatchStatus.CLAIMED;
 
-  const needsYou = live.filter((m) => m.viewerOwesConcession);
-  const invitations = live.filter((m) => m.viewerIsInvited && !m.viewerOwesConcession);
-  // Answering is not the same as being finished with it. A claim you have
-  // already conceded or objected to stays in front of you, with the answer you
-  // gave on it, until the match actually settles — you can still change it, and
-  // a screen that quietly dropped the match the moment you tapped made that
-  // look impossible.
-  const settling = live.filter(
-    (m) => !m.viewerOwesConcession && !m.viewerIsInvited && unsettled(m) && mine(m),
-  );
-  const otherLive = live.filter(
-    (m) =>
-      !m.viewerOwesConcession &&
-      !m.viewerIsInvited &&
-      !(unsettled(m) && mine(m)),
+  const invitations = live.filter((m) => m.viewerIsInvited);
+  const otherLive = live.filter((m) => !m.viewerIsInvited);
+
+  // Results you are in that you have not said anything about, while they are
+  // still fresh.
+  //
+  // This is what took the place of the claim queue, and it is doing a different
+  // job. The old list was a set of debts — claims that could not settle until
+  // you answered — and it was the only thing putting a result in front of the
+  // people it was recorded against. Nothing waits on anybody now, so the
+  // debts are gone, but the need to see the result is not: an objection is what
+  // keeps the scoreboard honest, and nobody objects to a result they never
+  // noticed. So this is a prompt rather than a queue.
+  //
+  // It decays on its own. Two days, then it drops off, because a list that
+  // never clears stops being read — and the result stays objectable forever
+  // from the match screen regardless, which is the guarantee that matters.
+  const unanswered = recent.filter(
+    (m) => mine(m) && !m.viewerIsClaimant && !answered(m, me) && isRecent(m),
   );
 
   return (
     <div className="stack stack--lg">
-      {needsYou.length > 0 && (
+      {/* One result gets the whole hero treatment; several get a list, because
+          five heroes in a row is a wall nobody reads. */}
+      {unanswered.length === 1 && unanswered[0] && (
         <section className="stack">
-          {needsYou.map((match) => (
-            <ClaimCallout key={match.id} match={match} onOpen={() => app.openMatch(match.id)} />
-          ))}
+          <ResultCallout
+            match={unanswered[0]}
+            onOpen={() => app.openMatch(unanswered[0]!.id)}
+          />
+        </section>
+      )}
+
+      {unanswered.length > 1 && (
+        <section className="stack">
+          <span className="section-label">New results — say if any of these is wrong</span>
+          <div className="card card--flush">
+            {unanswered.map((match) => (
+              <ResultRow
+                key={match.id}
+                match={match}
+                onOpen={() => app.openMatch(match.id)}
+              />
+            ))}
+          </div>
         </section>
       )}
 
@@ -87,22 +108,6 @@ export function ScoreboardView({
           {invitations.map((match) => (
             <InviteCallout key={match.id} match={match} onOpen={() => app.openMatch(match.id)} />
           ))}
-        </section>
-      )}
-
-      {settling.length > 0 && (
-        <section className="stack">
-          <span className="section-label">Waiting on a concession</span>
-          <div className="card card--flush">
-            {settling.map((match) => (
-              <LiveRow
-                key={match.id}
-                match={match}
-                yourAnswer={answerOf(match, me)}
-                onOpen={() => app.openMatch(match.id)}
-              />
-            ))}
-          </div>
         </section>
       )}
 
@@ -170,7 +175,7 @@ export function ScoreboardView({
               <Empty emoji="🎲">
                 <strong>Nothing on the record yet.</strong>
                 <br />
-                Play something. The record starts when someone concedes.
+                Play something. The record starts when somebody names a winner.
               </Empty>
             ) : (
               standings.rows.map((row) => (
@@ -299,28 +304,56 @@ function winnerLine(match: Match): string {
 }
 
 /**
- * A claim that is waiting on *you*. This is the single most important thing the
- * app ever shows, so it interrupts the scoreboard rather than sitting in a list.
+ * A result you are in and have not said anything about. This is the single most
+ * important thing the app shows, so it interrupts the scoreboard rather than
+ * sitting in a list.
+ *
+ * It used to be a claim that could not settle without you, and the urgency was
+ * borrowed from that: answer or the game hangs. Nothing hangs now — the result
+ * is already on the board — so the urgency has to come from what is actually
+ * true, which is that a wrong result stays on the scoreboard until somebody who
+ * was there says otherwise. That is a better reason to look, not a weaker one.
  */
-function ClaimCallout({ match, onOpen }: { match: Match; onOpen: () => void }) {
+function ResultCallout({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const players = winners(match);
   const who = players.length === 1 ? displayName(players[0]) : winningTeamName(match);
 
   return (
     <div className="claim">
-      <div className="claim__eyebrow">Awaiting your concession</div>
+      <div className="claim__eyebrow">On the board</div>
       <div className="claim__who">{who}</div>
       <div className="claim__says">
-        claims the win at {gameLabel(match.game)} — {contractText(match.contract)}
+        won at {gameLabel(match.game)} — {contractText(match.contract)}
       </div>
       <button
         className="btn btn--primary btn--block btn--claim"
         style={{ marginTop: 16 }}
         onClick={onOpen}
       >
-        Respond
+        {match.viewerObjected ? "You are objecting to this" : "Is that what happened?"}
       </button>
     </div>
+  );
+}
+
+/** The same thing in a row, for when several landed at once. */
+function ResultRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
+  return (
+    <button className="rowbtn" onClick={onOpen}>
+      <span className="rowbtn__main">
+        <span className="rowbtn__name">
+          {winnerLine(match)} <span style={{ color: "var(--ink-faint)" }}>won</span>
+        </span>
+        <span className="rowbtn__meta">
+          {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+        </span>
+      </span>
+      {match.contested ? (
+        <span className="badge badge--wait">⚑ Contested</span>
+      ) : (
+        <span className="badge">say if it is wrong</span>
+      )}
+    </button>
   );
 }
 
@@ -345,27 +378,25 @@ function InviteCallout({ match, onOpen }: { match: Match; onOpen: () => void }) 
 }
 
 /**
- * The answer the signed-in player has standing on a claim, for the list. Mirrors
+ * Whether the signed-in player has taken any position on this result. Mirrors
  * MatchPresenter.myAnswer — the list has no match presenter to ask, and one
  * `.find` is cheaper than constructing one per row.
  */
-function answerOf(match: Match, me: string | undefined): string | null {
-  if (match.viewerIsClaimant) return "you claimed this";
+function answered(match: Match, me: string | undefined): boolean {
   const p = match.joined.find((x) => x.user?.id === me);
-  if (p?.disputedAt) return "you disputed it";
-  if (p?.concededAt) return "you conceded";
-  return null;
+  return p?.disputedAt != null || p?.concededAt != null;
 }
 
-function LiveRow({
-  match,
-  onOpen,
-  yourAnswer,
-}: {
-  match: Match;
-  onOpen: () => void;
-  yourAnswer?: string | null;
-}) {
+/** Within the couple of days a new result is still worth interrupting for. */
+const PROMPT_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+function isRecent(match: Match): boolean {
+  const at = match.finalizedAt;
+  if (!at) return false;
+  return Date.now() - Number(at.seconds) * 1000 < PROMPT_WINDOW_MS;
+}
+
+function LiveRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const contractSet = match.contract && match.contract.kind !== ContractKind.UNSPECIFIED;
   // Posted, but nobody has joined yet. Not a status — every match is in play
   // from the moment it exists — but it is the difference between a game running
@@ -373,21 +404,14 @@ function LiveRow({
   // whether to go and do something about it.
   const waiting = match.status === MatchStatus.IN_PROGRESS && match.joined.length < 2;
 
-  const badge = () => {
-    if (match.contested) return <span className="badge badge--wait">⚑ Contested</span>;
-    switch (match.status) {
-      case MatchStatus.CLAIMED:
-        return <span className="badge badge--wait">⏳ Claimed</span>;
-      default:
-        return waiting ? (
-          <span className="badge">Waiting for players</span>
-        ) : (
-          <span className="badge badge--live">
-            <span className="dot" /> Live
-          </span>
-        );
-    }
-  };
+  const badge = () =>
+    waiting ? (
+      <span className="badge">Waiting for players</span>
+    ) : (
+      <span className="badge badge--live">
+        <span className="dot" /> Live
+      </span>
+    );
 
   const players = `${match.joined.length} ${match.joined.length === 1 ? "player" : "players"}`;
   const pending = match.invited.length > 0 ? ` · ${match.invited.length} invited` : "";
@@ -397,11 +421,9 @@ function LiveRow({
       <span className="rowbtn__main">
         <span className="rowbtn__name">{gameLabel(match.game)}</span>
         <span className="rowbtn__meta">
-          {yourAnswer
-            ? `${yourAnswer} · tap to change it`
-            : waiting
-              ? `${players}${pending}`
-              : `${players} · ${contractSet ? contractText(match.contract) : "no contract"}`}
+          {waiting
+            ? `${players}${pending}`
+            : `${players} · ${contractSet ? contractText(match.contract) : "no contract"}`}
         </span>
       </span>
       {badge()}

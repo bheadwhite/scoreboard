@@ -10,22 +10,24 @@ import type {
 import { MatchStatus } from "../../gen/scoreboard/v1/common_pb.js";
 
 /**
- * One player's standing position on a claim. Every one of them is changeable —
- * except "absent", which is not a position at all.
+ * One player's standing position on a result. Every one of them is changeable
+ * at any point, forever — except "absent", which is not a position at all.
  *
- * "absent" is a player with no account. They are not sitting on an unanswered
- * question, they have no way to answer one, and showing them as silent would
- * report a wait that is never going to end. The claim does not wait for them.
+ * "absent" is a player with no account. They are not sitting on a question they
+ * have not got round to, they have no way to answer one, and showing them as
+ * silent would report a wait that is never going to end.
  */
 export type Answer = "claimant" | "conceded" | "disputed" | "silent" | "absent";
 
 /**
- * MatchPresenter drives one match all the way through: joining, teams, the
- * claim, and the answers that settle it.
+ * MatchPresenter drives one match all the way through: joining, teams, naming
+ * the winner, and the answers people take to the result afterward.
  *
- * There is no lobby stage and no ready stage. The contract is declared when the
- * match is posted, so joining is the only commitment anybody makes, and the
- * match is in play from the moment it exists.
+ * Two stages, not five. There is no lobby and no ready check — the contract is
+ * declared when the match is posted, so joining is the only commitment anybody
+ * makes and the match is in play from the moment it exists. And there is no
+ * pending claim: naming a winner records the result, and everything that used
+ * to happen while a claim ripened now happens to a settled one instead.
  *
  * This is a dynamic child — the app presenter creates it when a match is opened
  * and disposes it on the way out.
@@ -38,18 +40,22 @@ export class MatchPresenter {
   private readonly _match = new Runner<Match | undefined>(undefined);
   private readonly _action = new Runner<void>(undefined);
   private readonly _error = new Signal<string | null>(null);
-  /** Set while the concede confirmation is up. */
+  /** Set while the "the result is right" confirmation is up. */
   private readonly _confirmingConcede = new Signal<boolean>(false);
   private readonly _disputing = new Signal<boolean>(false);
   /** Set when the match no longer exists — an administrator voided it. */
   private readonly _gone = new Signal<boolean>(false);
 
   private _settled = false;
-  /** Whether the scoreboard has already been told this one landed. */
-  private _announced = false;
   private _unsubscribe: (() => void) | null = null;
   /** Last status and headcount seen, to notice when the lists behind us go stale. */
   private _seen = "";
+  /**
+   * Last seen answer to "does this match count, and for whom" — status, the
+   * side credited, and whether an objection stands. Empty until the first view
+   * of the match arrives.
+   */
+  private _counts = "";
 
   constructor(domain: Domain, matchId: string, onSettled: () => void) {
     this._domain = domain;
@@ -150,11 +156,11 @@ export class MatchPresenter {
   private _afterUpdate(match: Match | undefined): void {
     if (!match) return;
 
-    // Anything that changes how this match reads in a list — somebody joined,
-    // it was claimed, somebody objected — makes the scoreboard behind us wrong.
-    // Contested is in the signature because it moves the result between the
-    // clean numbers and the contested ones, which is exactly the kind of change
-    // a list showing those numbers has to be told about.
+    // Anything that changes how this match reads in a list — somebody joined, a
+    // winner was named, somebody objected — makes the scoreboard behind us
+    // wrong. Contested is in the signature because it moves the result between
+    // the clean numbers and the contested ones, which is exactly the kind of
+    // change a list showing those numbers has to be told about.
     const signature =
       `${match.status}:${match.joined.length}:${match.invited.length}:${match.contested}`;
     if (signature !== this._seen) {
@@ -162,14 +168,20 @@ export class MatchPresenter {
       this._domain.store.invalidateMatches(match.familyId);
     }
 
-    // Settling is worth announcing once — the standings behind this screen just
-    // changed. It is not worth stopping for: a settled match can still be
-    // objected to, and the objection can be taken back again, so the screen
-    // keeps listening until the match is called off or erased.
-    if (match.status === MatchStatus.FINAL && !this._announced) {
-      this._announced = true;
-      this._onSettled();
-    }
+    // Whether this match counts, and for whom. When that changes, everything
+    // downstream of the record — standings, every head-to-head, several
+    // profiles — changed with it, so the whole cache goes stale.
+    //
+    // A change rather than a one-shot latch on FINAL, which is what this was
+    // when finalizing happened once and never came undone. Now a result lands
+    // the instant somebody names it, comes off again if the side it credits
+    // refuses it, and moves between the clean numbers and the contested ones
+    // every time somebody objects or takes an objection back. Every one of
+    // those is a standings change, and a latch would report only the first.
+    const counts = `${match.status}:${match.claimedByTeamId}:${match.contested}`;
+    if (this._counts !== "" && counts !== this._counts) this._onSettled();
+    this._counts = counts;
+
     if (match.status === MatchStatus.CANCELED && !this._settled) {
       this._settled = true;
       this.stop();
@@ -268,11 +280,11 @@ export class MatchPresenter {
   cancel = (): Promise<void> =>
     this._run(() => this._domain.api.matches.cancelMatch({ matchId: this._matchId }));
 
-  // ── The concession protocol ────────────────────────────────────────────────
+  // ── Naming the winner, and answering the result ────────────────────────────
 
   /**
-   * Names a team as the winner. This does not record a win — it opens the claim
-   * for everybody else to answer.
+   * Names a team as the winner, which records the result. There is nothing in
+   * between: no pending claim, no window, no waiting on anybody.
    *
    * Any player may name their own side; only whoever posted the match may name
    * anybody else's. The server enforces both, and `canClaimForOthers` mirrors
@@ -284,14 +296,16 @@ export class MatchPresenter {
     );
 
   /**
-   * Takes the claim back off the table. The match goes back to being in play
-   * with no winner — this is "never mind", not "you won". Handing the win over
-   * is not something a claimant can do: only somebody entitled to name that
-   * side can.
+   * Refuses the win: the result comes off the board and the match goes back to
+   * being in play with nobody credited. This is "never mind", not "you won" —
+   * handing the win to the other side is not something this can do, because
+   * only somebody entitled to name that side may put it there.
    *
-   * Open to whoever made the claim and to anyone on the side it named, so being
-   * handed a win you did not earn can be refused outright rather than only
-   * objected to.
+   * Open to the side the result credits, and to nobody else — not to whoever
+   * called it. In a match you posted you can name any side, so an author who
+   * could retract would be able to take his own loss back off the board. A win
+   * can always be refused; a loss can never be erased. `canWithdraw` mirrors
+   * the server's rule.
    */
   withdrawClaim = (): Promise<void> =>
     this._run(() => this._domain.api.matches.withdrawClaim({ matchId: this._matchId }));
@@ -351,10 +365,11 @@ export class MatchPresenter {
   /**
    * The answer the signed-in player currently has on the table.
    *
-   * "none" is a position too — it is the one the clock eventually reads as a
-   * concession — so this is what the screen shows back to you, rather than
-   * hiding the controls once you have answered. Every one of these is
-   * changeable until the match finalizes.
+   * "none" is a position too, and an honest one: it means they have not said
+   * anything about this result, which is neither agreement nor objection. So
+   * this is shown back to them rather than the controls being hidden once they
+   * have answered — every one of these is changeable, in any direction, for as
+   * long as the record exists.
    */
   myAnswer(match: Match): "none" | "conceded" | "disputed" {
     const me = this._domain.session.user?.id;
@@ -365,7 +380,7 @@ export class MatchPresenter {
   }
 
   /**
-   * Where every player stands on the claim, opponents first.
+   * Where every player stands on the result, the losing side first.
    *
    * "silent" means exactly what it says now. Objections used to be redacted to
    * everyone but the organizer, so this list had to hedge about whether a quiet
@@ -390,25 +405,11 @@ export class MatchPresenter {
       .sort((a, b) => Number(a.state === "claimant") - Number(b.state === "claimant"));
   }
 
-  /** Whether anybody in this match has no way to answer. */
+  /** Whether anybody the result was recorded against has no way to answer. */
   hasAbsentPlayers(match: Match): boolean {
     return match.joined.some(
       (p) => p.user?.placeholder && p.teamId !== match.claimedByTeamId,
     );
-  }
-
-  /**
-   * Whether the viewer's answer would be the last one outstanding. The final
-   * answer settles the match in the same transaction, and settling is the only
-   * step in this whole protocol that cannot be taken back — so it is worth
-   * saying out loud before they tap.
-   *
-   * True of an objection as well as a concession, which is the change that
-   * follows from objections no longer blocking: a last objection settles the
-   * match exactly as promptly, contested.
-   */
-  answerWouldSettleIt(match: Match): boolean {
-    return match.status === MatchStatus.CLAIMED && match.awaitingConcession.length <= 1;
   }
 
   /**
@@ -421,21 +422,31 @@ export class MatchPresenter {
   }
 
   /**
-   * Whether the viewer may still answer this result — at any point in the
-   * match's life, including long after it settled, which is when most people
-   * first see a result they disagree with.
+   * Whether the viewer may take a position on this result — anybody in the
+   * match, at any point in its life, for as long as the record exists.
    *
-   * Once it has settled that includes the named winner. While the claim is live
-   * they have a better door (`withdrawClaim`, which takes the whole thing off
-   * the table rather than flagging a result that then stands anyway); after it
-   * settles that door is shut, and they would otherwise be the only player in
-   * the match unable to say the result is wrong — which matters, because the
-   * creator can hand somebody a win they never asked for.
+   * That includes the person credited with the win, and it is not a loophole:
+   * whoever posts a match can name any side, so a result can be on the board
+   * before the player it credits has looked at their phone. Shutting them out
+   * would leave them the only person in the match unable to say it did not
+   * happen.
+   *
+   * With nothing pending in front of a result any more, this is the whole of
+   * what protects the record — so it is deliberately as wide as it can be.
    */
   canAnswer(match: Match): boolean {
-    if (match.status === MatchStatus.FINAL) return this.amIn(match);
-    if (match.status !== MatchStatus.CLAIMED) return false;
-    return this.amIn(match) && !match.viewerIsClaimant;
+    return match.status === MatchStatus.FINAL && this.amIn(match);
+  }
+
+  /**
+   * Whether the viewer may take this result off the board altogether.
+   *
+   * The side it credits, and nobody else — mirrors the server. A win can always
+   * be refused; a loss can never be erased, which is the rule that survives
+   * finalization becoming reversible.
+   */
+  canWithdraw(match: Match): boolean {
+    return match.status === MatchStatus.FINAL && match.viewerIsClaimant;
   }
 
   /** The objections standing against the result, with who made them and why. */

@@ -33,18 +33,6 @@ export function timeAgo(ts: Timestamp | undefined): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/** How much of the concession window is left, phrased for a person. */
-export function timeLeft(ts: Timestamp | undefined): string {
-  const date = toDate(ts);
-  if (!date) return "";
-
-  const seconds = Math.floor((date.getTime() - Date.now()) / 1000);
-  if (seconds <= 0) return "any moment now";
-  if (seconds < 3600) return `${Math.max(1, Math.floor(seconds / 60))} min`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr`;
-  return `${Math.floor(seconds / 86400)} days`;
-}
-
 /** The contract in plain words: "First to 500", "Best of 3". */
 export function contractText(contract: Contract | undefined): string {
   if (!contract) return "No contract set";
@@ -75,16 +63,14 @@ export function gameLabel(game: Game | undefined): string {
  *
  * Deliberately not where "contested" is expressed. Being objected to is a
  * property that sits alongside the status rather than replacing it — a
- * contested match is still awaiting answers, or still final — so the screens
- * show the mark next to this label instead of instead of it. Collapsing the two
- * would lose the fact that a contested result is a real, settled result.
+ * contested match is still a final one — so the screens show the mark next to
+ * this label rather than instead of it. Collapsing the two would lose the fact
+ * that a contested result is a real, settled result.
  */
 export function statusLabel(status: MatchStatus): string {
   switch (status) {
     case MatchStatus.IN_PROGRESS:
       return "In play";
-    case MatchStatus.CLAIMED:
-      return "Awaiting answers";
     case MatchStatus.FINAL:
       return "Final";
     case MatchStatus.CANCELED:

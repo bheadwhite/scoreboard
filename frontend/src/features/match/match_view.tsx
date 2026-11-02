@@ -13,7 +13,6 @@ import {
   displayName,
   gameLabel,
   timeAgo,
-  timeLeft,
   winners,
   winningTeamName,
 } from "../../lib/format.js";
@@ -23,11 +22,13 @@ import {
  * stage rather than showing every control at once, because at any given moment
  * there is really only one thing to do.
  *
- * Three stages, not five. There is no lobby — a match is in play from the
- * moment it is posted, and joining is the whole of the commitment — and there
- * is no disputed screen, because an objection marks the result rather than
- * moving it somewhere else. A contested match is an ordinary claimed or settled
- * one wearing a flag.
+ * Two stages, not five. There is no lobby — a match is in play from the moment
+ * it is posted, and joining is the whole of the commitment. There is no
+ * disputed screen, because an objection marks the result rather than moving it
+ * somewhere else. And there is no claimed screen, which was the largest of the
+ * three to lose: it showed a countdown and a running tally of who had answered,
+ * and neither could change where the match was going to end up. A game is being
+ * played, or it has a result and people have positions on it.
  */
 export function MatchView({
   presenter,
@@ -91,10 +92,6 @@ export function MatchView({
         <InPlayStage presenter={presenter} match={match} busy={busy} />
       )}
 
-      {match.status === MatchStatus.CLAIMED && (
-        <ClaimedStage presenter={presenter} match={match} busy={busy} />
-      )}
-
       {match.status === MatchStatus.FINAL && (
         <FinalStage presenter={presenter} match={match} busy={busy} />
       )}
@@ -109,7 +106,7 @@ export function MatchView({
       )}
 
       {/* In play, the roster is the screen's main control and carries this
-          itself. After a claim it is reference material. */}
+          itself. Once there is a result it is reference material. */}
       {match.status !== MatchStatus.IN_PROGRESS && (
         <TeamList presenter={presenter} match={match} />
       )}
@@ -142,7 +139,6 @@ function AbandonMatch({
   busy: boolean;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const claimed = match.status === MatchStatus.CLAIMED;
 
   return (
     <>
@@ -159,20 +155,9 @@ function AbandonMatch({
         <Sheet title="Call it off" onDismiss={() => setConfirming(false)}>
           <h2>Call this game off?</h2>
           <p style={{ color: "var(--ink-dim)" }}>
-            {claimed ? (
-              <>
-                Somebody has already called this one. {gameLabel(match.game)} disappears and
-                nothing is recorded — no win, no loss, for anybody. Use this for a game that
-                fizzled out, not for a result somebody disagrees with: disagreeing with it is what
-                objecting is for, and it does not need you.
-              </>
-            ) : (
-              <>
-                You did not set this one up. {gameLabel(match.game)} disappears for everyone in
-                it, and they are not told why. If you simply do not want to play, leave instead —
-                the rest of them can carry on.
-              </>
-            )}
+            You did not set this one up. {gameLabel(match.game)} disappears for everyone in it,
+            and they are not told why. If you simply do not want to play, leave instead — the
+            rest of them can carry on.
           </p>
           <div className="stack">
             <button
@@ -279,8 +264,6 @@ function VoidMatch({
   );
 }
 
-// ── Lobby ────────────────────────────────────────────────────────────────────
-
 // ── In play ──────────────────────────────────────────────────────────────────
 
 function InPlayStage({
@@ -313,7 +296,7 @@ function InPlayStage({
               ". Anyone who joins is playing under these terms — they were set when the game was posted and they do not change."
             : "Started " +
               timeAgo(match.startedAt) +
-              ". When somebody wins, call it here — it does not go on the board until everyone else has answered."}
+              ". When somebody wins, call it here. It goes on the board straight away, and anybody in the game can object to it afterward — at any point, forever."}
         </p>
       </div>
 
@@ -363,8 +346,9 @@ function InPlayStage({
         <Sheet title="Who won?" onDismiss={() => setPicking(false)}>
           <h2>Who won?</h2>
           <p style={{ color: "var(--ink-dim)", fontSize: "0.9rem" }}>
-            Everyone else still gets asked, including you. Anybody who thinks this is wrong can say
-            so, and the result carries their objection wherever it goes.
+            This records the result under your name. Everybody in the game can object to it —
+            including whoever you are about to crown — and while an objection stands the result
+            counts for nobody.
           </p>
           <div className="stack">
             {teams.map((team) => (
@@ -390,66 +374,7 @@ function InPlayStage({
   );
 }
 
-// ── Claimed: the ceremony ────────────────────────────────────────────────────
-
-/**
- * The emotional center of the app. Somebody has named a winner and everyone
- * else is being asked.
- *
- * One screen, and no separate disputed version of it. Objecting used to move
- * the match to its own status with its own screen and its own referee; it now
- * marks the result and leaves everything else exactly where it was, so this is
- * the same claim with a flag on it. Nothing here is settled until the match
- * finalizes, and every answer on it — including the claim — can still be
- * changed by whoever gave it.
- */
-function ClaimedStage({
-  presenter,
-  match,
-  busy,
-}: {
-  presenter: MatchPresenter;
-  match: Match;
-  busy: boolean;
-}) {
-  const claimants = winners(match);
-  const who = claimants.length === 1 ? displayName(claimants[0]) : winningTeamName(match);
-  // Named by somebody who is not on the side they named — the host settling a
-  // game on everyone's behalf. Worth saying out loud: it changes who is being
-  // asked to agree with what.
-  const caller = match.joined.find((p) => p.user?.id === match.claimedByUserId);
-  const calledByOther =
-    caller != null && caller.teamId !== match.claimedByTeamId ? displayName(caller.user) : "";
-
-  return (
-    <>
-      <div className="claim">
-        <div className="claim__eyebrow">{calledByOther ? `${calledByOther} says` : "Claims victory"}</div>
-        <div className="claim__who">{who}</div>
-        <div className="claim__says">
-          {calledByOther ? "won " : ""}at {gameLabel(match.game)} — {contractText(match.contract)}
-        </div>
-
-        {/* The clock runs whatever anybody says. An objection is a mark on the
-            result, not a hold on it, so there is always a deadline to report
-            and it is always honest to report it. */}
-        {match.awaitingConcession.length > 0 ? (
-          <div className="claim__deadline">
-            Waiting on {match.awaitingConcession.length}{" "}
-            {match.awaitingConcession.length === 1 ? "person" : "people"} · goes on the board in{" "}
-            {timeLeft(match.concedeDeadline)} if nobody answers
-          </div>
-        ) : (
-          <div className="claim__deadline">Settling…</div>
-        )}
-      </div>
-
-      <ContestedNotice match={match} presenter={presenter} />
-      <AnswerBoard presenter={presenter} match={match} />
-      <YourAnswer presenter={presenter} match={match} who={who} busy={busy} />
-    </>
-  );
-}
+// ── The result ───────────────────────────────────────────────────────────────
 
 /**
  * The flag itself: who is objecting to this result and why.
@@ -461,6 +386,11 @@ function ClaimedStage({
  * somebody's win that nobody can attribute or argue back against is worse than
  * the grudge it was avoiding. If you are going to say a result did not happen,
  * you say it under your own name.
+ *
+ * This carries more weight than it used to. With nothing pending in front of a
+ * result, an objection is the only thing standing between the scoreboard and
+ * whatever somebody felt like entering — so it has to be visible enough that a
+ * result nobody agrees with is obvious at a glance.
  */
 function ContestedNotice({
   match,
@@ -501,18 +431,24 @@ function ContestedNotice({
 }
 
 const ANSWER_BADGE: Record<Answer, { label: string; className: string }> = {
-  claimant: { label: "🏆 named the winner", className: "badge badge--hot" },
+  claimant: { label: "🏆 won it", className: "badge badge--hot" },
   conceded: { label: "agrees", className: "badge" },
   disputed: { label: "objects", className: "badge badge--wait" },
-  silent: { label: "no answer yet", className: "badge badge--wait" },
-  // Not a kind of silence. Nobody is waiting on them and nobody ever will be.
+  // Not "no answer yet" any more — nothing is pending, so nobody is late. They
+  // have not said anything about this result, which is its own fact.
+  silent: { label: "has not said", className: "badge badge--wait" },
+  // Not a kind of silence. There is nobody there to say anything.
   absent: { label: "not on the app", className: "badge" },
 };
 
 /**
- * Where everybody stands, right now. This is the running tally the match is
- * waiting on, and it is the thing that makes an unanswered claim feel like an
- * open question rather than a countdown.
+ * Where everybody stands on the result, right now.
+ *
+ * It used to be a tally the match was waiting on. Nothing waits, so what it is
+ * now is the honest state of opinion about a result that already counts —
+ * which is more useful, not less: a win four people agree with and a win nobody
+ * has looked at are very different things, and the board is the only place that
+ * difference shows.
  *
  * Nothing on it is hidden. Objections used to be redacted to everyone but the
  * family organizer, so this board had to hedge about whether a quiet player was
@@ -539,8 +475,9 @@ function AnswerBoard({ presenter, match }: { presenter: MatchPresenter; match: M
           row that is not going to change. */}
       {presenter.hasAbsentPlayers(match) && (
         <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-faint)" }}>
-          Players who are not on the app cannot answer, so nobody is waiting on them. When they
-          sign up and get linked to an account, they can object to this result then.
+          Players who are not on the app have no way to answer, so their row will never change.
+          When they sign up and get linked to an account, the history becomes theirs and they can
+          object to any of it.
         </p>
       )}
     </div>
@@ -548,11 +485,19 @@ function AnswerBoard({ presenter, match }: { presenter: MatchPresenter; match: M
 }
 
 /**
- * The viewer's own answer, and the ways to change it.
+ * The viewer's own position on the result, and the ways to change it.
  *
- * Deliberately always on screen while the match is open, whichever answer they
- * have given. Hiding the controls once somebody answered made a concession look
- * irreversible and left a claimant with no way to admit they had jumped the gun.
+ * Always on screen, whichever position they hold. Hiding the controls once
+ * somebody answered made a concession look irreversible and left a winner with
+ * no way to admit they had jumped the gun — and now that a result lands the
+ * instant somebody names it, jumping the gun is the likeliest mistake there is.
+ *
+ * Nothing here is a step in a protocol any more. The result already counts;
+ * these are positions people hold about it, and every one of them can be
+ * changed in either direction for as long as the record exists. Which makes
+ * this screen, rather than any countdown, the thing that keeps the scoreboard
+ * honest — so the objection control is never more than one tap away, for
+ * everybody in the match including whoever the win is credited to.
  */
 function YourAnswer({
   presenter,
@@ -571,133 +516,116 @@ function YourAnswer({
   const [reason, setReason] = useState("");
 
   const answer = presenter.myAnswer(match);
-  const settles = presenter.answerWouldSettleIt(match);
-  const done = match.status === MatchStatus.FINAL;
+  // The side the result credits. They object in different words to everybody
+  // else — "I did not win this" is a denial of their own win, which is the most
+  // damning thing anybody in the match can say — and they alone can take the
+  // result off the board outright.
+  const iWon = match.viewerIsClaimant;
 
   // Not in the match at all — a family member reading someone else's game.
   if (!presenter.amIn(match)) return null;
 
-  if (match.viewerIsClaimant) {
-    return (
-      <>
-        <div className="bottombar">
-          <button
-            className="btn btn--block btn--sm"
-            style={{ color: "var(--ink-faint)" }}
-            disabled={busy}
-            onClick={() => setWithdrawing(true)}
-          >
-            Take this claim back
-          </button>
-        </div>
-
-        {withdrawing && (
-          <Sheet title="Take it back" onDismiss={() => setWithdrawing(false)}>
-            <h2>Take back the claim?</h2>
-            <p style={{ color: "var(--ink-dim)" }}>
-              The game goes back to being in play with nobody claiming it, and every answer given
-              so far is cleared. This is “never mind”, not “they won” — if the other side actually
-              won, they have to claim it themselves.
-            </p>
-            <div className="stack">
-              <button
-                className="btn btn--block"
-                disabled={busy}
-                onClick={() => {
-                  void presenter.withdrawClaim();
-                  setWithdrawing(false);
-                }}
-              >
-                Yes, take it back
-              </button>
-              <button
-                className="btn btn--ghost btn--block"
-                onClick={() => setWithdrawing(false)}
-              >
-                Never mind
-              </button>
-            </div>
-          </Sheet>
-        )}
-      </>
-    );
-  }
+  const objectLabel = iWon ? "I did not win this" : "That is not what happened";
+  const concedeLabel = iWon ? "Actually, I did win it" : "I concede";
 
   return (
     <>
       <div className="bottombar">
         <div className="stack" style={{ gap: 8 }}>
-          {done && match.viewerIsClaimant ? (
-            answer === "disputed" ? (
-              <>
-                <button className="btn btn--block" disabled>
-                  ⚑ You say you did not win this
-                </button>
-                <button
-                  className="btn btn--concede btn--block btn--sm"
-                  disabled={busy}
-                  onClick={presenter.askToConcede}
-                >
-                  Actually, I did win it
-                </button>
-              </>
-            ) : (
-              <button
-                className="btn btn--dispute btn--block btn--sm"
-                disabled={busy}
-                onClick={presenter.openDispute}
-              >
-                I did not win this
-              </button>
-            )
-          ) : answer === "conceded" ? (
+          {answer === "disputed" ? (
             <>
               <button className="btn btn--block" disabled>
-                ✓ You conceded
-              </button>
-              <button
-                className="btn btn--dispute btn--block btn--sm"
-                disabled={busy}
-                onClick={presenter.openDispute}
-              >
-                Actually, that is not what happened
-              </button>
-            </>
-          ) : answer === "disputed" ? (
-            <>
-              <button className="btn btn--block" disabled>
-                ⚖️ You are disputing this
+                {iWon ? "⚑ You say you did not win this" : "⚖️ You are objecting to this"}
               </button>
               <button
                 className="btn btn--concede btn--block btn--sm"
                 disabled={busy}
                 onClick={presenter.askToConcede}
               >
-                Actually, I concede
+                {concedeLabel}
               </button>
             </>
-          ) : (
+          ) : answer === "conceded" ? (
             <>
-              <button
-                className="btn btn--concede btn--block"
-                disabled={busy}
-                onClick={presenter.askToConcede}
-              >
-                I concede
+              <button className="btn btn--block" disabled>
+                {iWon ? "🏆 You won this" : "✓ You agree with this"}
               </button>
               <button
                 className="btn btn--dispute btn--block btn--sm"
                 disabled={busy}
                 onClick={presenter.openDispute}
               >
-                That is not what happened
+                {iWon ? objectLabel : "Actually, that is not what happened"}
               </button>
             </>
+          ) : (
+            <>
+              {!iWon && (
+                <button
+                  className="btn btn--concede btn--block"
+                  disabled={busy}
+                  onClick={presenter.askToConcede}
+                >
+                  {concedeLabel}
+                </button>
+              )}
+              <button
+                className="btn btn--dispute btn--block btn--sm"
+                disabled={busy}
+                onClick={presenter.openDispute}
+              >
+                {objectLabel}
+              </button>
+            </>
+          )}
+
+          {/* Refusing the win. Only the side it credits gets this, which is what
+              keeps "a win can be refused, a loss cannot be erased" true. */}
+          {presenter.canWithdraw(match) && (
+            <button
+              className="btn btn--block btn--sm"
+              style={{ color: "var(--ink-faint)" }}
+              disabled={busy}
+              onClick={() => setWithdrawing(true)}
+            >
+              Take this result back
+            </button>
           )}
         </div>
       </div>
 
-      {confirming && match.viewerIsClaimant ? (
+      {withdrawing && (
+        <Sheet title="Take it back" onDismiss={() => setWithdrawing(false)}>
+          <h2>Take this result back?</h2>
+          <p style={{ color: "var(--ink-dim)" }}>
+            The win comes off the board — off the standings, off the head-to-head record, out of
+            everybody's streaks — and {gameLabel(match.game)} goes back to being in play with
+            nobody credited. Every answer on it is cleared.
+          </p>
+          <p style={{ color: "var(--ink-dim)" }}>
+            This is “never mind”, not “they won”. If the other side actually won, they have to
+            call it themselves. Only you can do this, because it is your win to refuse — nobody
+            can take a loss back off the board.
+          </p>
+          <div className="stack">
+            <button
+              className="btn btn--block"
+              disabled={busy}
+              onClick={() => {
+                void presenter.withdrawClaim();
+                setWithdrawing(false);
+              }}
+            >
+              Yes, take it back
+            </button>
+            <button className="btn btn--ghost btn--block" onClick={() => setWithdrawing(false)}>
+              Never mind
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {confirming && iWon ? (
         <Sheet title="Take it back" onDismiss={presenter.cancelConcede}>
           <h2>Withdraw your objection?</h2>
           <p style={{ color: "var(--ink-dim)" }}>
@@ -720,13 +648,14 @@ function YourAnswer({
       ) : confirming ? (
         <Sheet title="Concede?" onDismiss={presenter.cancelConcede}>
           <h2>Concede to {who}?</h2>
-          {/* Finalizing is the one step in this whole protocol that cannot be
-              undone, so whether this tap is that step decides what to warn
-              about. Every other concession can be taken back. */}
+          {/* Nothing irreversible left to warn about — this used to be the tap
+              that could put a result on the permanent record, and the result is
+              already there. So the copy says what it actually does: it puts
+              your name to something, and takes down an objection if you had
+              one. */}
           <p style={{ color: "var(--ink-dim)" }}>
-            {settles
-              ? "You are the last one they are waiting on, so this puts it on the permanent record straight away. That part cannot be undone — though you can still object to it afterward."
-              : "You can change your mind at any point, including after it lands. Once everybody has answered, the result goes on the permanent record for good."}
+            The result already counts — this puts your name to it, and takes down your objection
+            if you had one. You can change your mind at any point, including years from now.
           </p>
           <div className="stack">
             <button
@@ -745,12 +674,12 @@ function YourAnswer({
 
       {disputing && (
         <Sheet title="Object" onDismiss={presenter.cancelDispute}>
-          <h2>{match.viewerIsClaimant ? "Say you did not win this" : "Say that is not what happened"}</h2>
+          <h2>{iWon ? "Say you did not win this" : "Say that is not what happened"}</h2>
           <p style={{ color: "var(--ink-dim)" }}>
-            This does not stop the game finishing and it does not undo the result. It marks it: the
-            match stays on everyone's list with your name and your reason on it, and it counts for
-            nobody — no win, no loss, no streak — for as long as you leave it there. Nobody rules on
-            it. You can take it back whenever you like.
+            This does not undo the result and nobody rules on it. It marks it: the match stays on
+            everyone's list with your name and your reason on it, and it counts for nobody — no
+            win, no loss, no streak — for as long as you leave it there. One objection is enough,
+            you do not need anybody's agreement, and you can take it back whenever you like.
           </p>
           <div className="stack">
             <textarea
@@ -809,13 +738,28 @@ function FinalStage({
         </div>
       </div>
 
+      {/* A result nobody in the game was in a position to deny. It counts and
+          it is shown like any other, carrying the one fact that makes it
+          different — said here rather than enforced, because the old rule that
+          held such a claim back for a week ended by recording it anyway. */}
+      {match.unwitnessed && (
+        <div className="card">
+          <p style={{ margin: 0, color: "var(--ink-dim)", fontSize: "0.88rem" }}>
+            Nobody who lost this one is on the app, so there is nobody who could say it went
+            differently. It counts like any other result — but every other result on the board has
+            been open to that, and this one has not. If they sign up and get linked to an account,
+            they can object to it then.
+          </p>
+        </div>
+      )}
+
       <ContestedNotice match={match} presenter={presenter} />
       <AnswerBoard presenter={presenter} match={match} />
 
-      {/* Still answerable, on purpose. Seeing a result in the standings is when
-          most people first notice one they disagree with, and by then it has
-          already settled — under the old rules that was too late and the only
-          remedy was an administrator erasing the match. */}
+      {/* The only thing between the scoreboard and whatever somebody felt like
+          entering, so it is on every settled match forever, for everybody in
+          it. Seeing a result in the standings is when most people first notice
+          one they disagree with, and that is always after it has landed. */}
       {presenter.canAnswer(match) && (
         <YourAnswer presenter={presenter} match={match} who={who} busy={busy} />
       )}
@@ -846,7 +790,7 @@ function TeamList({ presenter, match }: { presenter: MatchPresenter; match: Matc
             >
               <div className="row row--between">
                 <span className="team__name">{team.name}</span>
-                {claimed && <span className="badge badge--hot">🏆 {settled ? "Won" : "Claims"}</span>}
+                {claimed && <span className="badge badge--hot">🏆 Won</span>}
               </div>
               <div className="team__players">
                 {team.players.map((p) => (
@@ -857,9 +801,7 @@ function TeamList({ presenter, match }: { presenter: MatchPresenter; match: Matc
                     <Avatar user={p.user} size="sm" />
                     <span>{displayName(p.user)}</span>
                     <span className="spacer" />
-                    {/* disputedAt is only sent to the organizer (and to the
-                        person who objected), so this simply has nothing to
-                        render for everyone else. */}
+                    {/* Nothing is redacted — everybody sees who objected. */}
                     {p.disputedAt ? (
                       <span className="badge badge--wait">disputed</span>
                     ) : p.concededAt ? (

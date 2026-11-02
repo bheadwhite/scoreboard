@@ -50,32 +50,51 @@ service MatchService {
   rpc DeclineMatch(DeclineMatchRequest) returns (DeclineMatchResponse);
   // Ask more players once the match exists.
   rpc InvitePlayers(InvitePlayersRequest) returns (InvitePlayersResponse);
-  // Replaces the whole team layout. Creator only, and only while no claim
-  // stands — who is on which side decides who owes an answer.
+  // Replaces the whole team layout. Creator only, and only while the match has
+  // no result — who is on which side is what the result is written against.
   rpc SetTeams(SetTeamsRequest) returns (SetTeamsResponse);
 
-  // Names the winner and starts the clock. Any player may name their own side.
-  // Whoever posted the match may name any side, which is the short circuit for
-  // a game that is plainly over and where the winner is not the one holding the
-  // phone. Idempotent: re-naming the same side is a no-op.
-  rpc ClaimVictory(ClaimVictoryRequest) returns (ClaimVictoryResponse);
-  // Takes the claim back off the table. The match returns to IN_PROGRESS with
-  // no winner and every answer cleared — this is "never mind", not "you won".
-  // Open to whoever made the claim and to anyone on the side it named, so being
-  // handed a win you did not earn is something you can refuse outright rather
-  // than merely object to.
-  rpc WithdrawClaim(WithdrawClaimRequest) returns (WithdrawClaimResponse);
-  // Accept the standing claim. Idempotent, and reversible: this also withdraws
-  // an objection you made earlier, at any point in the match's life.
-  rpc Concede(ConcedeRequest) returns (ConcedeResponse);
-  // Object to the claim, or take back a concession you already gave. Marks the
-  // match contested for as long as the objection stands, which keeps it out of
-  // the clean numbers without stopping it settling.
+  // Names the winner, which records the result. Any player may name their own
+  // side; whoever posted the match may name any side, which is the short
+  // circuit for a game that is plainly over and where the winner is not the one
+  // holding the phone. Idempotent: re-naming the same side is a no-op.
   //
-  // Reachable on a FINAL match on purpose. The likeliest moment anybody notices
-  // a bogus result is when they see it on the scoreboard, which is after it has
-  // settled — and since objecting only annotates, letting it land late costs
-  // nothing that blocking would have cost.
+  // There is no pending stage between this and the record. There used to be —
+  // the claim sat collecting answers and settled on the last one or on a
+  // week-long clock — and it decided nothing, because both endings wrote the
+  // same result. What keeps a manufactured win from standing is not a delay in
+  // front of it, it is that everybody in the match can object to it afterward,
+  // for as long as the record exists.
+  rpc ClaimVictory(ClaimVictoryRequest) returns (ClaimVictoryResponse);
+  // Refuse the win. The match returns to IN_PROGRESS with no winner, every
+  // answer cleared and every result back to pending — "never mind", not "they
+  // won": if the other side actually won, they have to name themselves.
+  //
+  // Open to the side the result names, and to nobody else. Not to whoever
+  // called it, which is the one rule this app cannot bend: in a match you
+  // posted you could name the other side the winner and then take your own loss
+  // back off the board, and a record you can retract a defeat from is not a
+  // record. So a win can always be refused and a loss can never be erased.
+  // Somebody who called a game wrong and cannot fix it objects to it instead.
+  rpc WithdrawClaim(WithdrawClaimRequest) returns (WithdrawClaimResponse);
+  // Say the result is right. Idempotent, and reversible: this also withdraws an
+  // objection you made earlier, at any point in the match's life.
+  //
+  // It changes no tally — the result already counts — so this is a position on
+  // the answer board rather than a step in a protocol. It matters as the way
+  // back from an objection, and as the difference between a player who agrees
+  // and one who has not looked.
+  rpc Concede(ConcedeRequest) returns (ConcedeResponse);
+  // Object to the result, or take back a concession you already gave. Marks the
+  // match contested for as long as the objection stands, which keeps it out of
+  // every clean number while leaving it fully visible as a match.
+  //
+  // This is the whole of what protects the record, now that nothing is pending.
+  // Anybody in the match may say a result did not happen, at any point in its
+  // life, without needing anybody's permission and without a majority — one
+  // objection is enough, and it can be taken back just as freely. The likeliest
+  // moment somebody notices a bogus result is when they see it in the
+  // standings, which is why it has to work forever rather than during a window.
   rpc DisputeMatch(DisputeMatchRequest) returns (DisputeMatchResponse);
 
   rpc CancelMatch(CancelMatchRequest) returns (CancelMatchResponse);
