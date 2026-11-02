@@ -23,6 +23,9 @@ import { KeyedCollection } from "./keyed_collection.js";
  */
 export const LIVE_STATUSES = [MatchStatus.IN_PROGRESS];
 
+/** The most the server hands back in one ListMatches call. */
+const MATCH_PAGE = 200;
+
 /** What both Collection and KeyedCollection offer the store's bulk operations. */
 interface Invalidatable {
   invalidateAll(): void;
@@ -36,6 +39,7 @@ export const key = {
   headToHead: (familyId: string, userId: string, opponentId: string, gameId: string) =>
     `${familyId}|${userId}|${opponentId}|${gameId}`,
   profile: (familyId: string, userId: string) => `${familyId}|${userId}`,
+  playerMatches: (familyId: string, userId: string) => `${familyId}|${userId}`,
 };
 
 /**
@@ -61,6 +65,8 @@ export class Store {
   readonly standings: KeyedCollection<GetStandingsResponse | undefined>;
   readonly headToHead: KeyedCollection<GetHeadToHeadResponse | undefined>;
   readonly profiles: KeyedCollection<GetPlayerProfileResponse | undefined>;
+  /** Every finished game a player was in, newest first. */
+  readonly playerMatches: KeyedCollection<Match[]>;
 
   /** Everything the bulk refresh and teardown walk over. */
   private readonly _all: Invalidatable[];
@@ -124,6 +130,24 @@ export class Store {
       },
     );
 
+    // Its own cell rather than part of the profile, so the record on that screen
+    // never waits on the list, and only somebody opening a profile pays for it.
+    this.playerMatches = new KeyedCollection<Match[]>([], async (composite) => {
+      const [familyId = "", userId = ""] = composite.split("|");
+      const all: Match[] = [];
+      for (;;) {
+        const { matches } = await api.matches.listMatches({
+          familyId,
+          userId,
+          statuses: [MatchStatus.FINAL],
+          limit: MATCH_PAGE,
+          offset: all.length,
+        });
+        all.push(...matches);
+        if (matches.length < MATCH_PAGE) return all;
+      }
+    });
+
     this._all = [
       this.families,
       this.members,
@@ -133,6 +157,7 @@ export class Store {
       this.standings,
       this.headToHead,
       this.profiles,
+      this.playerMatches,
     ];
   }
 

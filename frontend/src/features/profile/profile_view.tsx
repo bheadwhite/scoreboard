@@ -6,6 +6,7 @@ import { useCollection } from "../../lib/domain/use_collection.js";
 import type { AppPresenter } from "../../app/app_presenter.js";
 import type { ProfilePresenter } from "./profile_presenter.js";
 import type { GetPlayerProfileResponse } from "../../gen/scoreboard/v1/stats_pb.js";
+import type { Match } from "../../gen/scoreboard/v1/common_pb.js";
 import { Alert, AsyncBoundary, Avatar, Empty, Record, Sheet } from "../../components/ui.js";
 import {
   contestedLine,
@@ -14,8 +15,11 @@ import {
   droughtVerdict,
   gameLabel,
   streakLabel,
+  timeAgo,
   unfinishedLine,
   winRateText,
+  winners,
+  winningTeamName,
 } from "../../lib/format.js";
 
 /**
@@ -31,6 +35,7 @@ export function ProfileView({
   app: AppPresenter;
 }) {
   const profile = useCollection(presenter.profile);
+  const matches = useCollection(presenter.matches);
 
   useEffect(() => {
     void presenter.load();
@@ -249,6 +254,26 @@ export function ProfileView({
             </section>
           )}
 
+          <AsyncBoundary runner={presenter.matches.broadcast}>
+            {matches.length > 0 && (
+              <section className="stack">
+                <span className="section-label">
+                  All games · <span className="num">{matches.length}</span>
+                </span>
+                <div className="card card--flush">
+                  {matches.map((match) => (
+                    <GameRow
+                      key={match.id}
+                      match={match}
+                      userId={presenter.userId}
+                      onOpen={() => app.openMatch(match.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </AsyncBoundary>
+
           {profile.wins + profile.losses === 0 && (
             <Empty emoji="🫥">
               {profile.contestedWins + profile.contestedLosses > 0 ? (
@@ -395,5 +420,47 @@ function LinkPlaceholder({
         </Sheet>
       )}
     </>
+  );
+}
+
+/**
+ * One game from this player's side of it: who won, who else was there, and how
+ * it went for them. A contested game is listed like any other, flagged rather
+ * than given a W or an L, because it counts for nobody.
+ */
+function GameRow({
+  match,
+  userId,
+  onOpen,
+}: {
+  match: Match;
+  userId: string;
+  onOpen: () => void;
+}) {
+  const players = winners(match);
+  const won = players.some((p) => p.id === userId);
+  const others = match.joined
+    .filter((p) => p.user?.id !== userId)
+    .map((p) => displayName(p.user).split(" ")[0]);
+
+  return (
+    <button className="rowbtn" onClick={onOpen}>
+      <Avatar user={players[0]} size="sm" />
+      <span className="rowbtn__main">
+        <span className="rowbtn__name">
+          {players.length === 1 ? displayName(players[0]) : winningTeamName(match)}{" "}
+          <span style={{ color: "var(--ink-faint)" }}>won</span>
+        </span>
+        <span className="rowbtn__meta">
+          {gameLabel(match.game)} · {timeAgo(match.finalizedAt)}
+          {others.length > 0 && ` · with ${others.join(", ")}`}
+        </span>
+      </span>
+      {match.contested ? (
+        <span className="badge badge--wait">⚑</span>
+      ) : (
+        <span className={`badge ${won ? "badge--live" : "badge--cold"}`}>{won ? "W" : "L"}</span>
+      )}
+    </button>
   );
 }

@@ -100,10 +100,8 @@ func (s *Store) GetMatchesByIDs(ctx context.Context, ids []string) ([]model.Matc
 		return nil, err
 	}
 
-	for i := range out {
-		if err := hydrate(ctx, s.pool, &out[i]); err != nil {
-			return nil, err
-		}
+	if err := hydrateAll(ctx, s.pool, out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
