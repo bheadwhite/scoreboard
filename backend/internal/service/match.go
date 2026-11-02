@@ -126,12 +126,22 @@ func (svc *MatchService) JoinMatch(
 func (svc *MatchService) LeaveMatch(
 	ctx context.Context, req *connect.Request[scoreboardv1.LeaveMatchRequest],
 ) (*connect.Response[scoreboardv1.LeaveMatchResponse], error) {
-	_, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
+	m0, v, err := svc.matchViewer(ctx, req.Msg.GetMatchId())
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := svc.store.LeaveMatch(ctx, req.Msg.GetMatchId(), v.id)
+	// The other half of the host adding people: whoever can put somebody in by
+	// mistake has to be able to take them back out.
+	target, byCreator := v.id, false
+	if id := req.Msg.GetUserId(); id != "" && id != v.id {
+		if m0.CreatedBy != v.id {
+			return nil, denied("only whoever set this game up can take somebody else out")
+		}
+		target, byCreator = id, true
+	}
+
+	m, err := svc.store.LeaveMatch(ctx, req.Msg.GetMatchId(), target, byCreator)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

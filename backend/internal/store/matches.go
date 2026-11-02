@@ -430,7 +430,10 @@ func (s *Store) InvitePlayers(ctx context.Context, matchID string, userIDs []str
 	return out, err
 }
 
-func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.Match, error) {
+// LeaveMatch takes a player out while the roster is open. byCreator is the host
+// doing it to somebody else, which cannot erase a refusal: a declined row is what
+// stops that person being added again.
+func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string, byCreator bool) (model.Match, error) {
 	var out model.Match
 
 	err := s.tx(ctx, func(tx pgx.Tx) error {
@@ -443,9 +446,11 @@ func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.M
 		}
 
 		var teamID *string
-		if err := tx.QueryRow(ctx,
-			`DELETE FROM match_participants WHERE match_id = $1 AND user_id = $2 RETURNING team_id`,
-			matchID, userID).Scan(&teamID); err != nil {
+		if err := tx.QueryRow(ctx, `
+			DELETE FROM match_participants
+			WHERE match_id = $1 AND user_id = $2 AND (NOT $3::boolean OR status <> 'declined')
+			RETURNING team_id`,
+			matchID, userID, byCreator).Scan(&teamID); err != nil {
 			return noRows(err)
 		}
 		// Drop the team too, if leaving emptied it.
@@ -454,6 +459,17 @@ func (s *Store) LeaveMatch(ctx context.Context, matchID, userID string) (model.M
 				DELETE FROM match_teams t WHERE t.id = $1
 				  AND NOT EXISTS (SELECT 1 FROM match_participants p WHERE p.team_id = t.id)`,
 				*teamID); err != nil {
+				return err
+			}
+			// A team that survives is named after its players, and a result is
+			// about to be written under that name.
+			if _, err := tx.Exec(ctx, `
+				UPDATE match_teams t
+				SET name = (
+					SELECT string_agg(u.display_name, ' & ' ORDER BY u.display_name)
+					FROM match_participants p JOIN users u ON u.id = p.user_id
+					WHERE p.team_id = t.id)
+				WHERE t.id = $1`, *teamID); err != nil {
 				return err
 			}
 		}

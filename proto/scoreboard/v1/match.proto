@@ -145,6 +145,9 @@ message JoinMatchResponse {
 
 message LeaveMatchRequest {
   string match_id = 1;
+  // Who to take out. Empty means you, which is the ordinary case. Naming somebody
+  // else is the creator's alone, and only until a winner is named.
+  string user_id = 2;
 }
 
 message LeaveMatchResponse {

@@ -207,6 +207,10 @@ export class MatchPresenter {
   joinFor = (userId: string): Promise<void> =>
     this._run(() => this._domain.api.matches.joinMatch({ matchId: this._matchId, userId }));
 
+  /** Takes somebody else out of the game. The host's alone, until a winner is named. */
+  removePlayer = (userId: string): Promise<void> =>
+    this._run(() => this._domain.api.matches.leaveMatch({ matchId: this._matchId, userId }));
+
   /** Turn down an invitation. The match carries on without you. */
   decline = (): Promise<void> =>
     this._run(() => this._domain.api.matches.declineMatch({ matchId: this._matchId }));
@@ -467,6 +471,11 @@ export class MatchPresenter {
     const me = this._domain.session.user?.id;
     if (!me) return null;
     return match.joined.find((p) => p.user?.id === me)?.teamId ?? null;
+  }
+
+  /** Whether this user id is the signed-in player. */
+  isMe(userId: string): boolean {
+    return userId === this._domain.session.user?.id;
   }
 
   amIn(match: Match): boolean {

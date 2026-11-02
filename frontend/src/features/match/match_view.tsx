@@ -981,29 +981,46 @@ function Roster({
           const partners = match.joined.filter((x) => x.teamId === p.teamId).length;
 
           return (
-            <button
-              key={id}
-              className="rowbtn"
-              style={{
-                border: "1px solid",
-                borderColor: isSelected ? "var(--gold)" : "var(--line)",
-                borderRadius: "var(--radius)",
-                cursor: canPair ? "pointer" : "default",
-                minHeight: 54,
-              }}
-              aria-pressed={canPair ? isSelected : undefined}
-              disabled={!canPair}
-              onClick={() => toggle(id)}
-            >
-              <Avatar user={p.user} size="sm" />
-              <span className="rowbtn__main">
-                <span className="rowbtn__name">{displayName(p.user)}</span>
-                {partners > 1 && <span className="rowbtn__meta">with {teamNameOf(match, p)}</span>}
-                {p.user?.placeholder && (
-                  <span className="rowbtn__meta">not on the app · will not be asked</span>
-                )}
-              </span>
-            </button>
+            <div key={id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button
+                className="rowbtn"
+                style={{
+                  border: "1px solid",
+                  borderColor: isSelected ? "var(--gold)" : "var(--line)",
+                  borderRadius: "var(--radius)",
+                  cursor: canPair ? "pointer" : "default",
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 54,
+                }}
+                aria-pressed={canPair ? isSelected : undefined}
+                disabled={!canPair}
+                onClick={() => toggle(id)}
+              >
+                <Avatar user={p.user} size="sm" />
+                <span className="rowbtn__main">
+                  <span className="rowbtn__name">{displayName(p.user)}</span>
+                  {partners > 1 && <span className="rowbtn__meta">with {teamNameOf(match, p)}</span>}
+                  {p.user?.placeholder && (
+                    <span className="rowbtn__meta">not on the app · will not be asked</span>
+                  )}
+                </span>
+              </button>
+              {match.viewerIsCreator && !presenter.isMe(id) && (
+                <button
+                  className="btn btn--ghost btn--sm"
+                  style={{ color: "var(--ink-faint)" }}
+                  aria-label={`Remove ${displayName(p.user)}`}
+                  disabled={busy}
+                  onClick={() => {
+                    setSelected((prev) => prev.filter((x) => x !== id));
+                    void presenter.removePlayer(id);
+                  }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           );
         })}
 

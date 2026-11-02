@@ -57,7 +57,8 @@ objection, or overrule a result. That is the whole argument of the app.
 match is posted with its game, its contract and its players, and it is live from
 that moment. Whoever posts it says who is at the table, and the people they add
 are in without confirming anything: they can see who is sitting there, a second
-tap bought nothing, and everybody added this way can object to any result. Other
+tap bought nothing, and everybody added this way can object to any result. They
+can also take anybody back out until a winner is named. Other
 players can only invite, and you confirm those on your own device by joining.
 Somebody who wanders up halfway through can still join, right until a winner is
 named.
