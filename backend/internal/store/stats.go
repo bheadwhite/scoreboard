@@ -74,7 +74,7 @@ func (s *Store) LoadParticipations(ctx context.Context, familyID, gameID string,
 }
 
 // GetMatchesByIDs loads full matches for the given ids, newest first. Used for
-// the recent-meetings list on the head-to-head screen.
+// the list of meetings on the head-to-head screen.
 func (s *Store) GetMatchesByIDs(ctx context.Context, ids []string) ([]model.Match, error) {
 	if len(ids) == 0 {
 		return nil, nil

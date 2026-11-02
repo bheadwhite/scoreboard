@@ -26,9 +26,6 @@ func NewStatsService(s *store.Store, hub *events.Hub, admins auth.Admins) *Stats
 	return &StatsService{base: base{store: s, hub: hub, admins: admins}}
 }
 
-// How many recent meetings the head-to-head screen shows.
-const recentMeetings = 10
-
 func (svc *StatsService) GetStandings(
 	ctx context.Context, req *connect.Request[scoreboardv1.GetStandingsRequest],
 ) (*connect.Response[scoreboardv1.GetStandingsResponse], error) {
@@ -242,11 +239,7 @@ func (svc *StatsService) GetHeadToHead(
 
 	h := stats.HeadToHead(ps, subject, opponent)
 
-	ids := h.MatchIDs
-	if len(ids) > recentMeetings {
-		ids = ids[:recentMeetings]
-	}
-	recent, err := svc.store.GetMatchesByIDs(ctx, ids)
+	recent, err := svc.store.GetMatchesByIDs(ctx, h.MatchIDs)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

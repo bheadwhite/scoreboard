@@ -147,7 +147,7 @@ message GetHeadToHeadResponse {
   int32 together_losses = 6;
   // Per-game breakdown, most-played first.
   repeated HeadToHeadGame games = 7;
-  // Most recent meetings, newest first.
+  // Every meeting, newest first.
   repeated Match recent_matches = 8;
   // From user's point of view: positive is a winning streak against opponent.
   int32 streak = 9;

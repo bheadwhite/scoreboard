@@ -386,7 +386,7 @@ export type GetHeadToHeadResponse = Message<"scoreboard.v1.GetHeadToHeadResponse
   games: HeadToHeadGame[];
 
   /**
-   * Most recent meetings, newest first.
+   * Every meeting, newest first.
    *
    * @generated from field: repeated scoreboard.v1.Match recent_matches = 8;
    */

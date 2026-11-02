@@ -674,7 +674,7 @@ type GetHeadToHeadResponse struct {
 	TogetherLosses int32 `protobuf:"varint,6,opt,name=together_losses,json=togetherLosses,proto3" json:"together_losses,omitempty"`
 	// Per-game breakdown, most-played first.
 	Games []*HeadToHeadGame `protobuf:"bytes,7,rep,name=games,proto3" json:"games,omitempty"`
-	// Most recent meetings, newest first.
+	// Every meeting, newest first.
 	RecentMatches []*Match `protobuf:"bytes,8,rep,name=recent_matches,json=recentMatches,proto3" json:"recent_matches,omitempty"`
 	// From user's point of view: positive is a winning streak against opponent.
 	Streak int32 `protobuf:"varint,9,opt,name=streak,proto3" json:"streak,omitempty"`
