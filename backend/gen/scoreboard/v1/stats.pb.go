@@ -364,8 +364,12 @@ type GetStandingsRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	FamilyId string                 `protobuf:"bytes,1,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
 	// Empty means all games combined.
-	GameId        string     `protobuf:"bytes,2,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	Range         StatsRange `protobuf:"varint,3,opt,name=range,proto3,enum=scoreboard.v1.StatsRange" json:"range,omitempty"`
+	GameId string     `protobuf:"bytes,2,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	Range  StatsRange `protobuf:"varint,3,opt,name=range,proto3,enum=scoreboard.v1.StatsRange" json:"range,omitempty"`
+	// Empty means everybody. Otherwise only matches every one of these players
+	// was in count, and only these players get a row, so everybody on the board is
+	// measured over the same games and nobody climbs by playing without the others.
+	PlayerIds     []string `protobuf:"bytes,4,rep,name=player_ids,json=playerIds,proto3" json:"player_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -421,6 +425,13 @@ func (x *GetStandingsRequest) GetRange() StatsRange {
 	return StatsRange_STATS_RANGE_UNSPECIFIED
 }
 
+func (x *GetStandingsRequest) GetPlayerIds() []string {
+	if x != nil {
+		return x.PlayerIds
+	}
+	return nil
+}
+
 type GetStandingsResponse struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	Rows         []*StandingsRow        `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
@@ -430,11 +441,14 @@ type GetStandingsResponse struct {
 	// includes a dozen games nobody here has played, and every one of those
 	// filters to an empty table.
 	//
-	// Not narrowed by game_id: selecting a filter must not collapse the list of
-	// filters to the one already chosen.
+	// Not narrowed by game_id or player_ids: selecting a filter must not collapse
+	// the list of filters to the one already chosen, or take away the chip that
+	// would get you back out of it.
 	PlayedGames []*Game `protobuf:"bytes,3,rep,name=played_games,json=playedGames,proto3" json:"played_games,omitempty"`
 	// Who owns each game that has been finished in range. One per game, and the
 	// reason the scoreboard can say "Lisa owns Catan" without a request per game.
+	// Narrowed by player_ids, since a crown won elsewhere is the same boost the
+	// filter is there to take out.
 	GameKings []*GameKing `protobuf:"bytes,4,rep,name=game_kings,json=gameKings,proto3" json:"game_kings,omitempty"`
 	// Settled matches in range that somebody is objecting to. Not included in
 	// total_matches, and the reason the two numbers can disagree with a raw count
@@ -1078,11 +1092,13 @@ const file_scoreboard_v1_stats_proto_rawDesc = "" +
 	"\x06streak\x18\x05 \x01(\x05R\x06streak\x12\x12\n" +
 	"\x04rank\x18\x06 \x01(\x05R\x04rank\x12%\n" +
 	"\x0econtested_wins\x18\a \x01(\x05R\rcontestedWins\x12)\n" +
-	"\x10contested_losses\x18\b \x01(\x05R\x0fcontestedLosses\"|\n" +
+	"\x10contested_losses\x18\b \x01(\x05R\x0fcontestedLosses\"\x9b\x01\n" +
 	"\x13GetStandingsRequest\x12\x1b\n" +
 	"\tfamily_id\x18\x01 \x01(\tR\bfamilyId\x12\x17\n" +
 	"\agame_id\x18\x02 \x01(\tR\x06gameId\x12/\n" +
-	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\"\x89\x02\n" +
+	"\x05range\x18\x03 \x01(\x0e2\x19.scoreboard.v1.StatsRangeR\x05range\x12\x1d\n" +
+	"\n" +
+	"player_ids\x18\x04 \x03(\tR\tplayerIds\"\x89\x02\n" +
 	"\x14GetStandingsResponse\x12/\n" +
 	"\x04rows\x18\x01 \x03(\v2\x1b.scoreboard.v1.StandingsRowR\x04rows\x12#\n" +
 	"\rtotal_matches\x18\x02 \x01(\x05R\ftotalMatches\x126\n" +

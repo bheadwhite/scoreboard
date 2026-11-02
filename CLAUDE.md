@@ -428,6 +428,15 @@ drift apart about which meetings exist, and they have to agree for the same
 reason they already have to agree about free-for-all losses. Contested tallies
 are counted by running the same code over the other half.
 
+**The player filter is what keeps the board fair to somebody who plays less.**
+Standings rank by wins first, so on the full board playing more is itself a way
+to climb. `stats.AtTheTable` counts only matches *every* picked player was in and
+gives a row only to them, which is the only version that does the job: counting
+any match among the picked players would still let two of them pull away from
+the third by playing each other. The kings follow it and `played_games` does not.
+It narrows before the stats run, so `stats.Split` and the rest of the package
+never hear about it. The choice is remembered per device, in `localStorage`.
+
 ## Testing
 
 Go tests live beside the code (`go test ./...`); the stats package carries the

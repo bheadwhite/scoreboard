@@ -117,6 +117,37 @@ func (s PlayerStanding) WinRate() float64 {
 	return float64(s.Wins) / float64(total)
 }
 
+// AtTheTable narrows ps to the matches every one of players was in, and to those
+// players' rows in them. No players means no narrowing.
+//
+// It is what makes a board fair between people who do not play the same amount:
+// everybody on it is measured over exactly the same games, so nobody climbs by
+// playing without the others. Other people at the table do not disqualify a
+// match, but they get no row. Contested results pass through untouched, because
+// that is Split's call, and every function they are handed to makes it.
+func AtTheTable(ps []Participation, players []string) []Participation {
+	if len(players) == 0 {
+		return ps
+	}
+	wanted := make(map[string]bool, len(players))
+	for _, id := range players {
+		wanted[id] = true
+	}
+	present := map[string]int{}
+	for _, p := range ps {
+		if wanted[p.UserID] {
+			present[p.MatchID]++
+		}
+	}
+	var out []Participation
+	for _, p := range ps {
+		if wanted[p.UserID] && present[p.MatchID] == len(wanted) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // byMatch groups participations by match, each group sorted for determinism.
 func byMatch(ps []Participation) map[string][]Participation {
 	out := make(map[string][]Participation)
